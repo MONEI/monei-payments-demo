@@ -1,7 +1,7 @@
 const {Monei} = require('@monei-js/node-sdk');
 const config = require('./config');
 const express = require('express');
-const uuid = require('uuid');
+const shortid = require('shortid');
 const {items, itemsById} = require('./inventory');
 const router = express.Router();
 
@@ -36,7 +36,7 @@ router.post('/payments', async (req, res) => {
     // This order ID should be a reference in your system.
     // If payment is not successful you can create a new one with the same order id.
     // For simplicity in this example we create a new unique orderId for each payment attempt.
-    const orderId = uuid.v4();
+    const orderId = shortid();
 
     const payment = await monei.payments.create({
       amount,

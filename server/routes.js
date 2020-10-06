@@ -2,14 +2,14 @@ const {Monei} = require('@monei-js/node-sdk');
 const config = require('./config');
 const express = require('express');
 const shortid = require('shortid');
-const {items, itemsById} = require('./inventory');
+const {products, productsById} = require('./inventory');
 const router = express.Router();
 
 const monei = new Monei(config.monei.apiKey);
 
 const calculatePaymentAmount = (items) => {
   return items.reduce((total, item) => {
-    const product = itemsById[item.id];
+    const product = productsById[item.productId];
     if (!product) {
       throw new Error(`Product with id: ${item.id} is not found in the inventory`);
     }
@@ -24,7 +24,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/products', (req, res) => {
-  res.json(items);
+  res.json(products);
 });
 
 router.post('/payments', async (req, res) => {

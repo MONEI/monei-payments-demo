@@ -6,6 +6,7 @@
   "author": "Dmitriy Nevzorov",
   "license": "MIT",
   "devDependencies": {
+    "@types/faker": "^5.1.2",
     "dotenv": "^8.2.0",
     "ejs": "^3.1.5",
     "ngrok": "^3.3.0",
@@ -15,6 +16,7 @@
     "@monei-js/node-sdk": "^1.0.3",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
+    "faker": "^5.1.0",
     "shortid": "^2.2.15"
   },
   "scripts": {

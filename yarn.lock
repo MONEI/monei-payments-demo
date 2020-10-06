@@ -14,6 +14,11 @@
   resolved "https://registry.yarnpkg.com/@types/caseless/-/caseless-0.12.2.tgz#f65d3d6389e01eeb458bd54dc8f52b95a9463bc8"
   integrity sha512-6ckxMjBBD8URvjB6J3NcnuAn5Pkl7t3TizAg+xdlzzQGSPSmBcXf8KoIH0ua/i+tio+ZRUHEXp0HEmvaR4kt0w==
 
+"@types/faker@^5.1.2":
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/@types/faker/-/faker-5.1.2.tgz#3d5a97d5648502d7fb1eeb2809ca105edcd0d59b"
+  integrity sha512-a3FADSHjjinczCwr7tTejoMZzbSS5vi70VCyns4C1idxJrDSRGZCQG0s27YppXLcoWrBOkwBbBsZ9vDRDpQK7A==
+
 "@types/node@*":
   version "14.11.5"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.11.5.tgz#fecad41c041cae7f2404ad4b2d0742fdb628b305"
@@ -376,6 +381,11 @@ extsprintf@^1.2.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.4.0.tgz#e2689f8f356fad62cca65a3a91c5df5f9551692f"
   integrity sha1-4mifjzVvrWLMplo6kcXfX5VRaS8=
+
+faker@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/faker/-/faker-5.1.0.tgz#e10fa1dec4502551aee0eb771617a7e7b94692e8"
+  integrity sha512-RrWKFSSA/aNLP0g3o2WW1Zez7/MnMr7xkiZmoCfAGZmdkDQZ6l2KtuXHN5XjdvpRjDl8+3vf+Rrtl06Z352+Mw==
 
 fast-deep-equal@^3.1.1:
   version "3.1.3"

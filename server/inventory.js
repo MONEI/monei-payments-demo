@@ -1,6 +1,6 @@
 const faker = require('faker');
 
-const products = Array(5)
+const products = Array(3)
   .fill()
   .map(() => ({
     id: faker.random.uuid(),

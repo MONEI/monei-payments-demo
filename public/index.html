@@ -43,7 +43,7 @@
           <ul class="list-group mb-3" id="order-total">
             <li class="list-group-item d-flex justify-content-between">
               <span>Subtotal</span>
-              <span data-subtotal ></span>
+              <span data-subtotal></span>
             </li>
             <li class="list-group-item d-flex justify-content-between">
               <span>Shipping</span>
@@ -56,19 +56,20 @@
           </ul>
         </div>
         <div class="col-md-7 order-md-1">
-          <h4 class="mb-3">Shipping & Billing information</h4>
-          <div class="card">
-            <div class="card-body">
-              <form class="needs-validation" novalidate>
+          <form class="needs-validation mb-5" novalidate id="checkout_form">
+            <h4 class="mb-3">Shipping & Billing information</h4>
+            <div class="card mb-3">
+              <div class="card-body">
                 <div class="form-group">
                   <label for="name">Name</label>
-                  <input type="text" class="form-control" id="name" placeholder="John Doe" required />
+                  <input type="text" name="name" class="form-control" id="name" placeholder="John Doe" required />
                   <div class="invalid-feedback">Valid name is required.</div>
                 </div>
                 <div class="form-group">
                   <label for="email">Email</label>
                   <input
                     type="email"
+                    name="email"
                     class="form-control"
                     id="email"
                     placeholder="email@example.com"
@@ -77,19 +78,30 @@
                   <div class="invalid-feedback">Please enter a valid email address.</div>
                 </div>
                 <div class="form-group">
-                  <label for="address">Address</label>
+                  <label for="line1">Address 1</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="address"
+                    id="line1"
+                    name="line1"
                     placeholder="1234 Main St"
                     required
                   />
                   <div class="invalid-feedback">Please enter your address.</div>
                 </div>
                 <div class="form-group">
+                  <label for="line2">Address 2</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="line2"
+                    name="line2"
+                    placeholder="apt. 23"
+                  />
+                </div>
+                <div class="form-group">
                   <label for="country">Country</label>
-                  <select class="custom-select d-block w-100" id="country" required>
+                  <select class="custom-select d-block w-100" id="country" name="country" required>
                     <option value="AU">Australia</option>
                     <option value="AT">Austria</option>
                     <option value="BE">Belgium</option>
@@ -124,21 +136,67 @@
                 <div class="row">
                   <div class="col">
                     <label for="state">State</label>
-                    <input type="text" class="form-control" id="state" placeholder="CA" required />
+                    <input type="text" class="form-control" id="state" placeholder="CA" name="state" required />
                     <div class="invalid-feedback">Please provide a valid state.</div>
                   </div>
                   <div class="col">
                     <label for="zip">Zip</label>
-                    <input type="text" class="form-control" id="zip" placeholder="94103" required />
+                    <input type="text" class="form-control" id="zip" placeholder="94103" name="zip" required />
                     <div class="invalid-feedback">Zip code required.</div>
                   </div>
                 </div>
-                <button class="btn btn-primary btn-lg btn-block mt-5" type="submit">
-                  Continue to checkout
-                </button>
-              </form>
+              </div>
             </div>
-          </div>
+            <h4 class="mb-3">Payment flow</h4>
+            <div class="card">
+              <div class="card-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input"
+                         type="radio"
+                         name="paymentFlow"
+                         id="paymentFlow1"
+                         value="hosted_payment_redirect"
+                         checked>
+                  <label class="form-check-label" for="paymentFlow1">
+                    Prebuilt payment page
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input"
+                         type="radio"
+                         name="paymentFlow"
+                         id="paymentFlow2"
+                         value="hosted_payment_popup">
+                  <label class="form-check-label" for="paymentFlow2">
+                    Payment popup
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input"
+                         type="radio"
+                         name="paymentFlow"
+                         id="paymentFlow3"
+                         value="card_input_redirect">
+                  <label class="form-check-label" for="paymentFlow3">
+                    Credit card input with redirect
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input"
+                         type="radio"
+                         name="paymentFlow"
+                         id="paymentFlow4"
+                         value="card_input_popup">
+                  <label class="form-check-label" for="paymentFlow4">
+                    Credit card input with popup confirmation
+                  </label>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-success btn-lg btn-block mt-5" type="submit">
+              Continue to checkout
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -159,5 +217,6 @@
       crossorigin="anonymous"
     ></script>
     <script src="javascript/store.js"></script>
+    <script src="javascript/checkout.js"></script>
   </body>
 </html>

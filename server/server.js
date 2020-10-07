@@ -8,10 +8,10 @@ const app = express();
 // Setup useful middleware.
 app.use(
   bodyParser.json({
-    // We need the raw body to verify webhook signatures.
-    // Let's compute it only when hitting the Monei webhook endpoint.
+    // We need the raw body to verify callback signature.
+    // Let's compute it only when hitting the callback endpoint.
     verify: function (req, res, buf) {
-      if (req.originalUrl.startsWith('/webhook')) {
+      if (req.originalUrl.startsWith('/callback')) {
         req.rawBody = buf.toString();
       }
     }

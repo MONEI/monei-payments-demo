@@ -41,10 +41,14 @@ router.post('/payments', async (req, res) => {
     const payment = await monei.payments.create({
       amount,
       currency: 'EUR',
+      description: `MONEI Payments Demo - #${orderId}`,
       orderId,
       customer,
       billingDetails,
-      shippingDetails
+      shippingDetails,
+      completeUrl: `https://${req.hostname}`,
+      cancelUrl: `https://${req.hostname}`,
+      callbackUrl: `https://${req.hostname}/callback`
     });
     return res.status(200).json({
       paymentId: payment.id,
@@ -53,6 +57,11 @@ router.post('/payments', async (req, res) => {
   } catch (error) {
     return res.status(500).json({error: error.message});
   }
+});
+
+router.post('/callback', async (req, res) => {
+  console.log(req.body);
+  return res.status(200);
 });
 
 module.exports = router;

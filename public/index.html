@@ -34,8 +34,9 @@
         </ul>
       </div>
     </nav>
-    <div class="container animated fadeIn" id="content">
-      <div class="row">
+    <div class="container" id="content">
+      <div class="card text-center d-none" id="result_message"></div>
+      <div class="row" id="checkout">
         <div class="col-md-5 order-md-2 mb-4">
           <h4 class="d-flex justify-content-between align-items-center mb-3">
             Your cart
@@ -164,7 +165,7 @@
                   </div>
               </div>
             </div>
-            <button class="btn btn-success btn-lg btn-block mt-5" disabled type="submit">
+            <button class="btn btn-dark btn-lg btn-block mt-5" disabled type="submit">
               Checkout
             </button>
           </form>

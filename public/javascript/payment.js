@@ -109,6 +109,28 @@
     });
   };
 
+  const displayResult = (payment) => {
+    const result = document.getElementById('result_message');
+    const checkout = document.getElementById('checkout');
+    checkout.classList.add('d-none');
+    result.classList.remove('d-none');
+    if (payment.status === 'SUCCEEDED') {
+      result.innerHTML = `
+      <div class="card-body">
+        <h2 class="card-title text-success">Thanks for your order!</h2>
+        Yay! You successfully made a payment with MONEI.
+      </div>
+      `;
+    } else {
+      result.innerHTML = `
+      <div class="card-body">
+        <h2 class="card-title text-danger">Oops, payment failed.</h2>
+        ${payment.statusMessage}
+      </div>
+      `;
+    }
+  };
+
   const cart = await loadCart();
   displayCartSummary(cart);
 
@@ -146,8 +168,8 @@
       billingDetails,
       shippingDetails: billingDetails
     });
-    console.log(payment);
     const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
     console.log(result);
+    displayResult(result);
   });
 })();

@@ -109,12 +109,12 @@
     });
   };
 
-  const displayResult = (payment) => {
+  const displayResult = (status, message) => {
     const result = document.getElementById('result_message');
     const checkout = document.getElementById('checkout');
     checkout.classList.add('d-none');
     result.classList.remove('d-none');
-    if (payment.status === 'SUCCEEDED') {
+    if (status === 'SUCCEEDED') {
       result.innerHTML = `
       <div class="card-body">
         <h2 class="card-title text-success">Thanks for your order!</h2>
@@ -125,7 +125,7 @@
       result.innerHTML = `
       <div class="card-body">
         <h2 class="card-title text-danger">Oops, payment failed.</h2>
-        ${payment.statusMessage}
+        ${message}
       </div>
       `;
     }
@@ -162,14 +162,21 @@
         state: form.querySelector('input[name="state"]').value
       }
     };
-    const payment = await createPayment({
-      cart,
-      customer,
-      billingDetails,
-      shippingDetails: billingDetails
-    });
-    const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
-    console.log(result);
-    displayResult(result);
+    try {
+      const payment = await createPayment({
+        cart,
+        customer,
+        billingDetails,
+        shippingDetails: billingDetails
+      });
+      const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
+      console.log(result);
+      displayResult(result.status, result.statusMessage);
+    } catch (error) {
+      console.log(error);
+      displayResult(error.status, error.message);
+    } finally {
+      setLoading(false);
+    }
   });
 })();

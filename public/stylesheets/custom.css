@@ -1,0 +1,21 @@
+.card-input .form-control {
+  padding: 0;
+}
+
+.card-input .form-control.is-invalid {
+  background-image: none;
+  padding: 0;
+}
+
+.card-input .form-control.is-focused {
+  color: #495057;
+  background-color: #fff;
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.card-input. .form-control.is-invalid.is-focused {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}

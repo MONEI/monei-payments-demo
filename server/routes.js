@@ -2,10 +2,16 @@ const {Monei} = require('@monei-js/node-sdk');
 const config = require('./config');
 const express = require('express');
 const shortid = require('shortid');
+const faker = require('faker');
 const {products, productsById} = require('./inventory');
 const router = express.Router();
 
 const monei = new Monei(config.monei.apiKey);
+
+// You need to provide a unique order id for each payment.
+// This order ID should be a reference in your system.
+// If payment is not successful you can create a new one with the same order id.
+let orderId = shortid();
 
 const calculatePaymentAmount = (items) => {
   return items.reduce((total, item) => {
@@ -27,17 +33,31 @@ router.get('/products', (req, res) => {
   res.json(products);
 });
 
+router.get('/cart', (req, res) => {
+  const lineItems = products.map(({id, description, image, name, price}) => ({
+    productId: id,
+    description,
+    image,
+    name,
+    price,
+    quantity: faker.random.number({
+      min: 1,
+      max: 5
+    })
+  }));
+  const cart = {
+    orderId,
+    lineItems,
+    accountId: config.monei.accountId,
+    totalAmount: calculatePaymentAmount(lineItems)
+  };
+  res.json(cart);
+});
+
 router.post('/payments', async (req, res) => {
   let {items, customer, shippingDetails, billingDetails} = req.body;
   try {
     const amount = calculatePaymentAmount(items);
-
-    // You need to provide a unique order id for each payment.
-    // This order ID should be a reference in your system.
-    // If payment is not successful you can create a new one with the same order id.
-    // For simplicity in this example we create a new unique orderId for each payment attempt.
-    const orderId = shortid();
-
     const payment = await monei.payments.create({
       amount,
       currency: 'EUR',
@@ -50,9 +70,12 @@ router.post('/payments', async (req, res) => {
       cancelUrl: `https://${req.hostname}`,
       callbackUrl: `https://${req.hostname}/callback`
     });
+
+    // Update order ID for the next payment
+    orderId = shortid();
+
     return res.status(200).json({
-      paymentId: payment.id,
-      amount: payment.amount
+      paymentId: payment.id
     });
   } catch (error) {
     return res.status(500).json({error: error.message});

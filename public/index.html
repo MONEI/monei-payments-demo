@@ -16,6 +16,7 @@
       integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
       crossorigin="anonymous"
     />
+    <link rel="stylesheet" type="text/css" href="stylesheets/custom.css">
   </head>
   <body class="bg-light">
     <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-dark mb-5">
@@ -57,9 +58,10 @@
         </div>
         <div class="col-md-7 order-md-1">
           <form class="needs-validation mb-5" novalidate id="checkout_form">
-            <h4 class="mb-3">Shipping & Billing information</h4>
+            <h4 class="mb-3">Checkout information</h4>
             <div class="card mb-3">
               <div class="card-body">
+                <p>Complete / <a href="#" id="generate">generate</a> your shipping and payment details below</p>
                 <div class="form-group">
                   <label for="name">Name</label>
                   <input type="text" name="name" class="form-control" id="name" placeholder="John Doe" required />
@@ -90,14 +92,28 @@
                   <div class="invalid-feedback">Please enter your address.</div>
                 </div>
                 <div class="form-group">
-                  <label for="line2">Address 2</label>
+                  <label for="city">City</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="line2"
-                    name="line2"
-                    placeholder="apt. 23"
+                    id="city"
+                    name="city"
+                    placeholder="San Francisco"
+                    required
                   />
+                  <div class="invalid-feedback">Please enter your address.</div>
+                </div>
+                <div class="row form-group">
+                  <div class="col">
+                    <label for="state">State</label>
+                    <input type="text" class="form-control" id="state" placeholder="CA" name="state" required />
+                    <div class="invalid-feedback">Please provide a valid state.</div>
+                  </div>
+                  <div class="col">
+                    <label for="zip">Zip</label>
+                    <input type="text" class="form-control" id="zip" placeholder="94103" name="zip" required />
+                    <div class="invalid-feedback">Zip code required.</div>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label for="country">Country</label>
@@ -133,90 +149,35 @@
                   </select>
                   <div class="invalid-feedback">Please select a valid country.</div>
                 </div>
-                <div class="row">
-                  <div class="col">
-                    <label for="state">State</label>
-                    <input type="text" class="form-control" id="state" placeholder="CA" name="state" required />
-                    <div class="invalid-feedback">Please provide a valid state.</div>
+                  <div class="form-group card-input">
+                    <label for="country">Credit card</label>
+                    <div id="card_input" class="form-control"></div>
+                    <div id="card_input_error" class="invalid-feedback"></div>
                   </div>
-                  <div class="col">
-                    <label for="zip">Zip</label>
-                    <input type="text" class="form-control" id="zip" placeholder="94103" name="zip" required />
-                    <div class="invalid-feedback">Zip code required.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <h4 class="mb-3">Payment flow</h4>
-            <div class="card">
-              <div class="card-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input"
-                         type="radio"
-                         name="paymentFlow"
-                         id="paymentFlow1"
-                         value="hosted_payment_redirect"
-                         checked>
-                  <label class="form-check-label" for="paymentFlow1">
-                    Prebuilt payment page
-                  </label>
-                </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input"
-                         type="radio"
-                         name="paymentFlow"
-                         id="paymentFlow2"
-                         value="hosted_payment_popup">
-                  <label class="form-check-label" for="paymentFlow2">
-                    Payment popup
-                  </label>
-                </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input"
-                         type="radio"
-                         name="paymentFlow"
-                         id="paymentFlow3"
-                         value="card_input_redirect">
-                  <label class="form-check-label" for="paymentFlow3">
-                    Credit card input with redirect
-                  </label>
-                </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input"
-                         type="radio"
-                         name="paymentFlow"
-                         id="paymentFlow4"
-                         value="card_input_popup">
-                  <label class="form-check-label" for="paymentFlow4">
-                    Credit card input with popup confirmation
-                  </label>
-                </div>
               </div>
             </div>
             <button class="btn btn-success btn-lg btn-block mt-5" type="submit">
-              Continue to checkout
+              Checkout
             </button>
           </form>
         </div>
       </div>
     </div>
     </div>
-    <script
-      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
-      integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-      integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
-      crossorigin="anonymous"
-    ></script>
-    <script src="javascript/store.js"></script>
-    <script src="javascript/checkout.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js"
+            integrity="sha384-PlFzuf6GOlJNxLuosezJ/jwndIVZ2hWI/AmvYQtBzstOdLtcUe6DPSI4LsqwiN1y"
+            crossorigin="anonymous"></script>
+    <script src="https://js.monei.net/v1/monei.js"></script>
+    <script src="javascript/payment.js"></script>
+    <script src="javascript/generate.js"></script>
   </body>
 </html>

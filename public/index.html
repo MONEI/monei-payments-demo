@@ -21,17 +21,28 @@
   <body class="bg-light">
     <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-dark mb-5">
       <div class="container">
-        <a class="navbar-brand" href="https://monei.net">MONEI Payments Demo</a>
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" target="_blank" href="https://docs.monei.net/">Documentation</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" target="_blank" href="https://github.com/MONEI/monei-payments-demo">
-              View on github
-            </a>
-          </li>
-        </ul>
+        <a class="navbar-brand" href="/">MONEI Payments Demo</a>
+        <button class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" target="_blank" href="https://docs.monei.net/">Documentation</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" target="_blank" href="https://github.com/MONEI/monei-payments-demo">
+                View on github
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
     <div class="container" id="content">
@@ -61,7 +72,8 @@
               <h5 class="card-title">Demo in test mode</h5>
               <p>You can copy and paste the following test card:</p>
               <pre>4918 0191 9988 3839  12/20  123</pre>
-              <p class="m-0">See the <a href="https://docs.monei.net/docs/testing/" target="_blank">docs</a> for a full list of test cards. </p>
+              <p class="m-0">See the <a href="https://docs.monei.net/docs/testing/" target="_blank">docs</a> for a full
+                list of test cards. </p>
             </div>
           </div>
         </div>
@@ -158,11 +170,11 @@
                   </select>
                   <div class="invalid-feedback">Please select a valid country.</div>
                 </div>
-                  <div class="form-group card-input">
-                    <label for="country">Credit card</label>
-                    <div id="card_input" class="form-control"></div>
-                    <div id="card_input_error" class="invalid-feedback"></div>
-                  </div>
+                <div class="form-group card-input">
+                  <label for="country">Credit card</label>
+                  <div id="card_input" class="form-control"></div>
+                  <div id="card_input_error" class="invalid-feedback"></div>
+                </div>
               </div>
             </div>
             <button class="btn btn-dark btn-lg btn-block mt-5" disabled type="submit">

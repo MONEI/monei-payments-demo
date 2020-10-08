@@ -20,6 +20,7 @@
     "faker": "^5.1.0"
   },
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "web": "node server/server.js"
   }
 }

@@ -1,4 +1,17 @@
 (async () => {
+  const form = document.getElementById('checkout_form');
+  const button = form.querySelector('button[type="submit"]');
+
+  const setLoading = (isLoading) => {
+    if (isLoading) {
+      button.disabled = true;
+      button.innerHTML = 'Processing...';
+    } else {
+      button.disabled = false;
+      button.innerHTML = 'Checkout';
+    }
+  };
+
   const formatPrice = (amount, currency = 'EUR') => {
     let price = amount / 100;
     let numberFormat = new Intl.NumberFormat(['en-US'], {
@@ -9,13 +22,16 @@
     return numberFormat.format(price);
   };
 
-  const createPayment = async (cart) => {
+  const createPayment = async ({cart, customer, billingDetails, shippingDetails}) => {
     try {
       const response = await fetch('/payments', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-          items: cart.lineItems
+          items: cart.lineItems,
+          customer,
+          billingDetails,
+          shippingDetails
         })
       });
       const data = await response.json();
@@ -39,7 +55,10 @@
     const errorText = document.getElementById('card_input_error');
     const cardInput = monei.CardInput({
       accountId: cart.accountId,
-      orderId: cart.orderId,
+      orderId: cart.sessionId,
+      onLoad: () => {
+        document.querySelector('button[type="submit"]').disabled = false;
+      },
       onFocus: () => {
         container.classList.add('is-focused');
       },
@@ -90,21 +109,45 @@
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.target.classList.add('was-validated');
-    const customer = {
-      name: e.target.querySelector('input[name="name"]').value
-    };
-
-    console.log(customer);
-  };
-
-  const form = document.getElementById('checkout_form');
-  form.addEventListener('submit', handleSubmit);
-
   const cart = await loadCart();
   displayCartSummary(cart);
+
   const cardInput = renderCardInput(cart);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isValid = form.checkValidity();
+    form.classList.add('was-validated');
+    if (!isValid) return;
+    setLoading(true);
+    const {token} = await monei.createToken(cardInput);
+    if (!token) {
+      return setLoading(false);
+    }
+    const customer = {
+      name: form.querySelector('input[name="name"]').value,
+      email: form.querySelector('input[name="email"]').value
+    };
+    const billingDetails = {
+      name: customer.name,
+      email: customer.email,
+      address: {
+        country: form.querySelector('select[name="country"]').value,
+        city: form.querySelector('input[name="city"]').value,
+        line1: form.querySelector('input[name="line1"]').value,
+        zip: form.querySelector('input[name="zip"]').value,
+        state: form.querySelector('input[name="state"]').value
+      }
+    };
+    const payment = await createPayment({
+      cart,
+      customer,
+      billingDetails,
+      shippingDetails: billingDetails
+    });
+    console.log(payment);
+    const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
+    console.log(result);
+  });
 })();

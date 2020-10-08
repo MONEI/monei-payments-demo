@@ -2,6 +2,8 @@ const config = require('./config');
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const session = require('express-session');
+const faker = require('faker');
 const ngrok = config.ngrok.enabled ? require('ngrok') : null;
 const app = express();
 
@@ -15,6 +17,16 @@ app.use(
         req.rawBody = buf.toString();
       }
     }
+  })
+);
+app.set('trust proxy', 1); // trust first proxy
+app.use(
+  session({
+    secret: config.monei.apiKey,
+    resave: false,
+    saveUninitialized: true,
+    genid: () => faker.random.alphaNumeric(16),
+    cookie: {secure: true}
   })
 );
 app.use(bodyParser.urlencoded({extended: true}));

@@ -34,7 +34,7 @@
         </ul>
       </div>
     </nav>
-    <div class="container">
+    <div class="container animated fadeIn" id="content">
       <div class="row">
         <div class="col-md-5 order-md-2 mb-4">
           <h4 class="d-flex justify-content-between align-items-center mb-3">
@@ -55,6 +55,14 @@
               <strong data-total></strong>
             </li>
           </ul>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Demo in test mode</h5>
+              <p>You can copy and paste the following test card:</p>
+              <pre>4918 0191 9988 3839  12/20  123</pre>
+              <p class="m-0">See the <a href="https://docs.monei.net/docs/testing/" target="_blank">docs</a> for a full list of test cards. </p>
+            </div>
+          </div>
         </div>
         <div class="col-md-7 order-md-1">
           <form class="needs-validation mb-5" novalidate id="checkout_form">
@@ -156,7 +164,7 @@
                   </div>
               </div>
             </div>
-            <button class="btn btn-success btn-lg btn-block mt-5" type="submit">
+            <button class="btn btn-success btn-lg btn-block mt-5" disabled type="submit">
               Checkout
             </button>
           </form>

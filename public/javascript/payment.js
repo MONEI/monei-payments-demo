@@ -66,12 +66,16 @@
         container.classList.remove('is-focused');
       },
       onChange: (props) => {
-        if (props.isTouched && props.error) {
-          container.classList.add('is-invalid');
-          errorText.innerText = props.error;
-        } else {
-          container.classList.remove('is-invalid');
-          errorText.innerText = '';
+        if (props.isTouched) {
+          if (props.error) {
+            container.classList.add('is-invalid');
+            container.classList.remove('is-valid');
+            errorText.innerText = props.error;
+          } else {
+            container.classList.remove('is-invalid');
+            container.classList.add('is-valid');
+            errorText.innerText = '';
+          }
         }
       }
     });

@@ -65,6 +65,9 @@
       onBlur: () => {
         container.classList.remove('is-focused');
       },
+      onEnter: () => {
+        button.click();
+      },
       onChange: (props) => {
         if (props.isTouched) {
           if (props.error) {

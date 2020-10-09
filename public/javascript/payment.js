@@ -114,7 +114,6 @@
       const total = formatPrice(cart.totalAmount);
       orderTotal.querySelector('[data-subtotal]').innerText = total;
       orderTotal.querySelector('[data-total]').innerText = total;
-      content.classList.add('ready');
     });
   };
 

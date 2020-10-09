@@ -20,13 +20,3 @@
   border-color: #28a745;
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
-
-#content {
-  opacity: 0;
-  transition: opacity 0.3s ease-in;
-  will-change: opacity;
-}
-
-#content.ready {
-  opacity: 1;
-}

@@ -11,7 +11,7 @@ const products = Array(3)
         min: 1,
         max: 25
       }) * 100,
-    image: faker.image.imageUrl(75, 75, null, true)
+    image: faker.image.imageUrl(75, 75, null, true, true)
   }));
 
 const productsById = products.reduce((result, item) => {

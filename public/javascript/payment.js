@@ -86,6 +86,7 @@
   const displayCartSummary = (cart) => {
     const orderItems = document.getElementById('order-items');
     const orderTotal = document.getElementById('order-total');
+    const content = document.getElementById('content');
     cart.lineItems.map((li) => {
       let lineItemPrice = formatPrice(li.price * li.quantity);
       let lineItem = document.createElement('li');
@@ -110,6 +111,7 @@
       const total = formatPrice(cart.totalAmount);
       orderTotal.querySelector('[data-subtotal]').innerText = total;
       orderTotal.querySelector('[data-total]').innerText = total;
+      content.classList.add('ready');
     });
   };
 

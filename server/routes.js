@@ -70,7 +70,7 @@ router.post('/payments', async (req, res) => {
     });
     res.status(200).json(payment);
   } catch (error) {
-    return res.status(500).json({error: error.message});
+    res.status(500).json({error: error.message});
   }
 });
 
@@ -78,7 +78,7 @@ router.post('/callback', async (req, res) => {
   console.log(req.header('MONEI-Signature'));
   console.log(`🔔  Callback received!`);
   console.log('Callback payload', req.body);
-  return res.status(200);
+  res.sendStatus(200);
 });
 
 module.exports = router;

@@ -20,3 +20,23 @@
   border-color: #28a745;
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
+
+.btn svg {
+  vertical-align: middle;
+}
+
+.btn .btn__inner-loading {
+  display: none;
+}
+
+.btn .btn__inner {
+  display: block;
+}
+
+.btn-loading .btn__inner-loading {
+  display: block;
+}
+
+.btn-loading .btn__inner {
+  display: none;
+}

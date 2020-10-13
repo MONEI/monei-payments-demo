@@ -29,6 +29,7 @@ router.get('/products', (req, res) => {
 
 router.get('/cart', (req, res) => {
   req.session.regenerate(() => {
+    const sessionId = req.session.id;
     const lineItems = products.map(({id, description, image, name, price}) => ({
       productId: id,
       description,
@@ -42,7 +43,7 @@ router.get('/cart', (req, res) => {
     }));
     const cart = {
       lineItems,
-      sessionId: req.session.id,
+      sessionId,
       accountId: config.monei.accountId,
       totalAmount: calculatePaymentAmount(lineItems)
     };
@@ -55,11 +56,13 @@ router.post('/payments', async (req, res) => {
   let {items, customer, shippingDetails, billingDetails} = req.body;
   try {
     const amount = calculatePaymentAmount(items);
-    const orderId = req.session.id;
+    const sessionId = req.session.id;
+    const orderId = faker.random.number({min: 100000, max: 999999}).toString();
     const payment = await monei.payments.create({
       amount,
       currency: 'EUR',
       description: `MONEI Payments Demo - #${orderId}`,
+      sessionId,
       orderId,
       customer,
       billingDetails,

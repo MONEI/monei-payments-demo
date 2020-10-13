@@ -5,10 +5,10 @@
   const setLoading = (isLoading) => {
     if (isLoading) {
       button.disabled = true;
-      button.innerHTML = 'Processing...';
+      button.classList.add('btn-loading');
     } else {
       button.disabled = false;
-      button.innerHTML = 'Checkout';
+      button.classList.remove('btn-loading');
     }
   };
 
@@ -55,7 +55,7 @@
     const errorText = document.getElementById('card_input_error');
     const cardInput = monei.CardInput({
       accountId: cart.accountId,
-      orderId: cart.sessionId,
+      sessionId: cart.sessionId,
       onLoad: () => {
         document.querySelector('button[type="submit"]').disabled = false;
       },
@@ -113,6 +113,7 @@
       const total = formatPrice(cart.totalAmount);
       orderTotal.querySelector('[data-subtotal]').innerText = total;
       orderTotal.querySelector('[data-total]').innerText = total;
+      button.querySelector('[data-total]').innerText = total;
     });
   };
 

@@ -22,6 +22,7 @@
     return numberFormat.format(price);
   };
 
+  // Create a payment on the server
   const createPayment = async ({cart, customer, billingDetails, shippingDetails}) => {
     try {
       const response = await fetch('/payments', {
@@ -45,18 +46,21 @@
     }
   };
 
+  // Load cart information
   const loadCart = async () => {
     const res = await fetch('/cart');
     return await res.json();
   };
 
+  // Render MONEI Card Input Component
   const renderCardInput = (cart) => {
     const container = document.getElementById('card_input');
     const errorText = document.getElementById('card_input_error');
     const cardInput = monei.CardInput({
+      // Use MONEI Account ID to initialize the component
       accountId: cart.accountId,
-      sessionId: cart.sessionId,
       onLoad: () => {
+        // Enable submit button when component is loaded
         document.querySelector('button[type="submit"]').disabled = false;
       },
       onFocus: () => {
@@ -66,9 +70,11 @@
         container.classList.remove('is-focused');
       },
       onEnter: () => {
+        // Submit form on enter key inside the card input
         button.click();
       },
       onChange: (props) => {
+        // Provide real time validation errors
         if (props.isTouched) {
           if (props.error) {
             container.classList.add('is-invalid');
@@ -82,10 +88,13 @@
         }
       }
     });
+
+    // Render card input into a container div
     cardInput.render(container);
     return cardInput;
   };
 
+  // Display cart summary using the date received form the server
   const displayCartSummary = (cart) => {
     const orderItems = document.getElementById('order-items');
     const orderTotal = document.getElementById('order-total');
@@ -117,6 +126,7 @@
     });
   };
 
+  // Display payment result
   const displayResult = (status, message) => {
     const result = document.getElementById('result_message');
     const checkout = document.getElementById('checkout');
@@ -142,8 +152,10 @@
   const cart = await loadCart();
   displayCartSummary(cart);
 
+  // Render MONEI Card Input Component
   const cardInput = renderCardInput(cart);
 
+  // Listen to submit event on the payment form
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -151,33 +163,46 @@
     form.classList.add('was-validated');
     if (!isValid) return;
     setLoading(true);
-    const {token} = await monei.createToken(cardInput);
-    if (!token) {
-      return setLoading(false);
-    }
-    const customer = {
-      name: form.querySelector('input[name="name"]').value,
-      email: form.querySelector('input[name="email"]').value
-    };
-    const billingDetails = {
-      name: customer.name,
-      email: customer.email,
-      address: {
-        country: form.querySelector('select[name="country"]').value,
-        city: form.querySelector('input[name="city"]').value,
-        line1: form.querySelector('input[name="line1"]').value,
-        zip: form.querySelector('input[name="zip"]').value,
-        state: form.querySelector('input[name="state"]').value
-      }
-    };
     try {
+      // Generate a payment token from the card input
+      const {token} = await monei.createToken(cardInput);
+      if (!token) {
+        return setLoading(false);
+      }
+      const customer = {
+        name: form.querySelector('input[name="name"]').value,
+        email: form.querySelector('input[name="email"]').value
+      };
+      const billingDetails = {
+        name: customer.name,
+        email: customer.email,
+        address: {
+          country: form.querySelector('select[name="country"]').value,
+          city: form.querySelector('input[name="city"]').value,
+          line1: form.querySelector('input[name="line1"]').value,
+          zip: form.querySelector('input[name="zip"]').value,
+          state: form.querySelector('input[name="state"]').value
+        }
+      };
+
+      // Create a payment on the server
+      // As an alternative you can pass a payment token directly to your server
+      // when you're creating a payment
       const payment = await createPayment({
         cart,
         customer,
         billingDetails,
         shippingDetails: billingDetails
       });
+
+      // Pass paymentId and paymentToken to confirm payment using monei.js
+      // This will automatically open a 3D secure confirmation popup if needed
+      // As an alternative you can redirect your customer to payment.nextAction.redirectUrl on the server
       const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
+
+      // At this moment you can show a customer the payment result
+      // But you should always rely on the result passed to the callback endpoint on your server
+      // to update the order status
       console.log(result);
       displayResult(result.status, result.statusMessage);
     } catch (error) {

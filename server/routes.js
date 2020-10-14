@@ -8,11 +8,12 @@ const router = express.Router();
 const monei = new Monei(config.monei.apiKey);
 
 /**
- * MONEI integration to accept credit card payments in 3 simple steps.
+ * MONEI integration to accept credit card payments in 4 simple steps.
  *
- * 1. POST endpoint to create a Payment.
- * 2. The Payment is confirmed automatically with monei.js on the client-side.
- * 3. POST endpoint to be set as a callback to securely receive payment result
+ * 1. Generate a payment token on the frontend using MONEI Card Input Component
+ * 2. POST endpoint to create a Payment.
+ * 3. The Payment is confirmed automatically with monei.js on the client-side.
+ * 4. POST endpoint to be set as a callback to securely receive payment result
  */
 
 const calculatePaymentAmount = (items) => {
@@ -39,33 +40,24 @@ router.get('/products', (req, res) => {
 // Return a current shopping cart details
 // For simplicity of this demo we generate a random cart items
 router.get('/cart', (req, res) => {
-  req.session.regenerate(() => {
-    // Provide a unique session ID for each customer.
-    // This ID is used on the frontend to initialize MONEI Card Input Component
-    // You will need to pass the same id when you create a payment on your server
-    // It will insure that a user generated the payment token on the frontend is the same as the one doing the payment
-    const sessionId = req.session.id;
+  const lineItems = products.map(({id, description, image, name, price}) => ({
+    productId: id,
+    description,
+    image,
+    name,
+    price,
+    quantity: faker.random.number({
+      min: 1,
+      max: 5
+    })
+  }));
+  const cart = {
+    lineItems,
+    accountId: config.monei.accountId,
+    totalAmount: calculatePaymentAmount(lineItems)
+  };
 
-    const lineItems = products.map(({id, description, image, name, price}) => ({
-      productId: id,
-      description,
-      image,
-      name,
-      price,
-      quantity: faker.random.number({
-        min: 1,
-        max: 5
-      })
-    }));
-    const cart = {
-      lineItems,
-      sessionId,
-      accountId: config.monei.accountId,
-      totalAmount: calculatePaymentAmount(lineItems)
-    };
-
-    res.json(cart);
-  });
+  res.json(cart);
 });
 
 // Create a payment
@@ -74,10 +66,6 @@ router.post('/payments', async (req, res) => {
   let {items, customer, shippingDetails, billingDetails} = req.body;
   try {
     const amount = calculatePaymentAmount(items);
-
-    // Pass the same session ID that was used to initialize MONEI Card Input Component
-    // It will insure that a user generated the payment token on the frontend is the same as the one doing the payment
-    const sessionId = req.session.id;
 
     // Provide a unique order ID.
     // For simplicity of this example we generate a new order ID on each payment attempt,
@@ -88,7 +76,6 @@ router.post('/payments', async (req, res) => {
       amount,
       currency: 'EUR',
       description: `MONEI Payments Demo - #${orderId}`,
-      sessionId,
       orderId,
       customer,
       billingDetails,

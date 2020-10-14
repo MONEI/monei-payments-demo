@@ -2,7 +2,6 @@ const config = require('./config');
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const session = require('express-session');
 const faker = require('faker');
 const ngrok = config.ngrok.enabled ? require('ngrok') : null;
 const app = express();
@@ -19,16 +18,8 @@ app.use(
     }
   })
 );
-app.set('trust proxy', 1); // trust first proxy
 
-// Setup session middleware to generate unique session id for each customer
-app.use(
-  session({
-    secret: 'MY_SESSION_SECRET',
-    resave: false,
-    saveUninitialized: true
-  })
-);
+app.set('trust proxy', 1); // trust first proxy
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(path.join(__dirname, '../public')));
 app.engine('html', require('ejs').renderFile);

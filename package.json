@@ -1,10 +1,27 @@
 {
   "name": "monei-payments-demo",
-  "description": "Sample store accepting universal payments on the web with MONEI",
+  "description": "Sample store accepting card payments on the web with MONEI Components and Payments API.",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Dmitriy Nevzorov",
+  "homepage": "https://monei-payments-demo.herokuapp.com/",
+  "author": "MONEI <support@monei.net> (https://monei.net)",
   "license": "MIT",
+  "contributors": [
+    "Dmitriy Nevzorov <dmitriy.nevzorov@microapps.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MONEI/monei-payments-demo"
+  },
+  "keywords": [
+    "monei",
+    "monei-components",
+    "node",
+    "javascript",
+    "payments",
+    "payment-methods",
+    "payment-request"
+  ],
   "devDependencies": {
     "@types/faker": "^5.1.2",
     "ngrok": "^3.3.0",

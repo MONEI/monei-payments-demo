@@ -1,0 +1,27 @@
+{
+  "name": "MONEI Payments Demo",
+  "description": "Sample store accepting card payments on the web with MONEI Components and Payments API.",
+  "repository": "https://github.com/MONEI/monei-payments-demo",
+  "logo": "https://static.monei.net/favicon.png",
+  "keywords": [
+    "monei",
+    "monei-components",
+    "node",
+    "javascript",
+    "payments",
+    "payment-methods",
+    "payment-request"
+  ],
+  "env": {
+    "MONEI_ACCOUNT_ID": {
+      "description":
+      "Your MONEI Account ID. Find it here in your Dashboard: https://dashboard.monei.net/settings/api",
+      "required": true
+    },
+    "MONEI_API_KEY": {
+      "description":
+      "Your MONEI API Key. Find it here in your Dashboard: https://dashboard.monei.net/settings/api",
+      "required": true
+    }
+  }
+}

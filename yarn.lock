@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@monei-js/node-sdk@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@monei-js/node-sdk/-/node-sdk-1.0.4.tgz#89fc63d86feff3e71931ad047ba3d5f2629e3d3e"
-  integrity sha512-Kfhx6ivELRM29mI3At1Oh6hQRCvFEqwJ5kA3CRBwhD0P/MCJdr4RxYrhs2iD9HyXaWCTQMb8eZbwqH4iKG69ow==
+"@monei-js/node-sdk@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@monei-js/node-sdk/-/node-sdk-1.0.5.tgz#0a5b480b624d9ddb3e034e4a5c16e6eb5547f0a0"
+  integrity sha512-02qfdpNcNTGKo5g5f2FvrZJmmLL5T0X7sevClhpE8wjwZ0Yf3W5KJwkAUbsSl9hYmRqQTcMtdSBq+j9qrDCuQA==
   dependencies:
     axios "^0.20.0"
 

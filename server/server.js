@@ -25,8 +25,7 @@ app.use(
     secret: config.monei.apiKey,
     resave: false,
     saveUninitialized: true,
-    genid: () => faker.random.alphaNumeric(16),
-    cookie: {secure: true}
+    genid: () => faker.random.alphaNumeric(16)
   })
 );
 app.use(bodyParser.urlencoded({extended: true}));

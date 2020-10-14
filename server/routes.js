@@ -78,9 +78,13 @@ router.post('/payments', async (req, res) => {
 });
 
 router.post('/callback', async (req, res) => {
-  console.log(req.header('MONEI-Signature'));
   console.log(`🔔  Callback received!`);
-  console.log('Callback payload', req.body);
+  try {
+    const body = monei.verifySignature(req.rawBody, req.header('MONEI-Signature'));
+    console.log(body);
+  } catch (error) {
+    console.log(`⚠️  Callback signature verification failed.`);
+  }
   res.sendStatus(200);
 });
 

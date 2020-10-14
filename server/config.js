@@ -4,7 +4,7 @@ require('dotenv').config();
 module.exports = {
   monei: {
     accountId: process.env.MONEI_ACCOUNT_ID,
-    apiKey: process.env.MONEI_API_KET
+    apiKey: process.env.MONEI_API_KEY
   },
 
   // Server port.

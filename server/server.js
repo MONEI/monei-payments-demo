@@ -20,12 +20,13 @@ app.use(
   })
 );
 app.set('trust proxy', 1); // trust first proxy
+
+// Setup session middleware to generate unique session id for each customer
 app.use(
   session({
-    secret: config.monei.apiKey,
+    secret: 'MY_SESSION_SECRET',
     resave: false,
-    saveUninitialized: true,
-    genid: () => faker.random.alphaNumeric(16)
+    saveUninitialized: true
   })
 );
 app.use(bodyParser.urlencoded({extended: true}));

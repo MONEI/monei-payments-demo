@@ -1,5 +1,6 @@
 const faker = require('faker');
 
+// Generate a list of random products
 const products = Array(3)
   .fill()
   .map(() => ({

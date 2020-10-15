@@ -19,14 +19,15 @@ This demo provides an all-in-one example for integrating with MONEI on the web:
 🔧 | **Webhook signing**. We allow for [webhook signature verification](https://docs.monei.net/docs/verify-signature), which is a recommended security practice.
 📱 | **Responsive design**. The checkout experience works on all screen sizes.
 
-## Payments Integration
+## Payments Integration with MONEI Components
 
 The frontend code for the demo is in the `public/` directory.
 
-The core logic of the Stripe integration is mostly contained within two files:
+The core logic of the MONEI integration is mostly contained within three files:
 
-1.  [`public/javascripts/payments.js`](public/javascript/card-input.js) creates the payment experience on the frontend using [MONEI Components](https://docs.monei.net/docs/monei-js-overview).
-2.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
+1.  [`public/javascripts/payment-components.js`](public/javascript/payment-components.js) creates the payment experience on the frontend using [MONEI Components](https://docs.monei.net/docs/monei-js-overview).
+2.  [`public/javascripts/payment-modal.js`](public/javascript/payment-modal.js) creates the payment experience on the frontend using [MONEI Payment Modal](https://docs.monei.net/docs/use-payment-modal).
+3.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
 
 ## Getting Started with Node
 

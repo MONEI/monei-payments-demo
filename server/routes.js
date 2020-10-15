@@ -86,10 +86,6 @@ router.post('/payments', async (req, res) => {
       billingDetails,
       shippingDetails,
 
-      // Complete and cancel urls are only needed if you are using redirect flows
-      completeUrl: `https://${req.hostname}`,
-      cancelUrl: `https://${req.hostname}`,
-
       // Specify a url for async callback
       // You will receive a payment result as a POST request to this url
       // This ensures that you get the payment status even when customer closed the browser window or lost internet connection.

@@ -25,7 +25,7 @@ The frontend code for the demo is in the `public/` directory.
 
 The core logic of the Stripe integration is mostly contained within two files:
 
-1.  [`public/javascripts/payments.js`](public/javascript/payment.js) creates the payment experience on the frontend using [MONEI Components](https://docs.monei.net/docs/monei-js-overview).
+1.  [`public/javascripts/payments.js`](public/javascript/card-input.js) creates the payment experience on the frontend using [MONEI Components](https://docs.monei.net/docs/monei-js-overview).
 2.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
 
 ## Getting Started with Node

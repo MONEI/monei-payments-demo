@@ -27,9 +27,14 @@ const calculatePaymentAmount = (items) => {
   }, 0);
 };
 
-// Render the main app HTML.
+// Render the app HTML with card input flow.
 router.get('/', (req, res) => {
   res.render('index.html');
+});
+
+// Render the app HTML with payment modal flow.
+router.get('/payment-modal', (req, res) => {
+  res.render('payment-modal.html');
 });
 
 // Return a list of all products

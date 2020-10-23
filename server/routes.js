@@ -53,7 +53,7 @@ router.get('/cart', (req, res) => {
     price,
     quantity: faker.random.number({
       min: 1,
-      max: 5
+      max: 3
     })
   }));
   const cart = {

@@ -7,11 +7,10 @@ const products = Array(3)
     id: faker.random.uuid(),
     name: faker.commerce.productName(),
     description: faker.commerce.productAdjective(),
-    price:
-      faker.random.number({
-        min: 1,
-        max: 25
-      }) * 100,
+    price: faker.random.number({
+      min: parseInt(process.env.MIN_PRICE || '100'),
+      max: parseInt(process.env.MAX_PRICE || '2500')
+    }),
     image: faker.image.imageUrl(75, 75, null, true, true)
   }));
 

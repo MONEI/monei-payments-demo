@@ -22,6 +22,18 @@
       "description":
       "Your MONEI API Key. Find it here in your Dashboard: https://dashboard.monei.net/settings/api",
       "required": true
+    },
+    "MIN_PRICE": {
+      "description":
+      "Minimum price of the random product in cents",
+      "required": false,
+      "value": "100"
+    },
+    "MAX_PRICE": {
+      "description":
+      "Maximum price of the random product in cents",
+      "required": false,
+      "value": "2500"
     }
   }
 }

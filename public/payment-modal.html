@@ -84,15 +84,6 @@
               <strong data-total></strong>
             </li>
           </ul>
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Demo in test mode</h5>
-              <p>You can copy and paste the following test card:</p>
-              <pre>4918 0191 9988 3839  12/20  123</pre>
-              <p class="m-0">See the <a href="https://docs.monei.net/docs/testing/" target="_blank">docs</a> for a full
-                list of test cards. </p>
-            </div>
-          </div>
         </div>
         <div class="col-md-7 order-md-1">
           <form class="needs-validation mb-5" novalidate id="checkout_form">
@@ -189,10 +180,16 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary btn-lg btn-block mt-4" type="submit">
-              <span class="btn__inner-loading">Processing...</span>
+            <button class="btn btn-primary btn-lg btn-block mt-4" disabled type="submit">
+              <span class="btn__inner-loading">
+                <span class="spinner-border spinner-border-sm" style="margin:0 5px 3px 0"></span>
+                Processing...
+              </span>
               <span class="btn__inner">
-                Pay <span data-total>now</span>
+                <svg style="margin:0 5px 5px 0" width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-lock-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <path d="M2.5 9a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V9z"/>
+  <path fill-rule="evenodd" d="M4.5 4a3.5 3.5 0 1 1 7 0v3h-1V4a2.5 2.5 0 0 0-5 0v3h-1V4z"/>
+</svg> Pay <span data-total>now</span>
               </span>
             </button>
           </form>

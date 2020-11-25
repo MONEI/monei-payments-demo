@@ -26,7 +26,11 @@
       // Pass paymentId and paymentToken to confirm payment using monei.js
       // This will automatically open a payment popup to collect customer's card information
       // As an alternative you can redirect your customer to payment.nextAction.redirectUrl on the server
-      const result = await monei.confirmPayment({paymentId: payment.id});
+      const result = await monei.confirmPayment({
+        paymentId: payment.id,
+        // Set fullscreen payment page
+        fullscreen: store.form.querySelector('input[name="fullscreen"]').checked
+      });
 
       // At this moment you can show a customer the payment result
       // But you should always rely on the result passed to the callback endpoint on your server

@@ -1,6 +1,22 @@
+const parseQuery = (queryString) => {
+  const query = {};
+  const pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  pairs.forEach((item) => {
+    const pair = item.split('=');
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+  });
+  return query;
+};
+
 (async () => {
   const cart = await store.loadCart();
   store.displayCartSummary(cart);
+
+  const result = parseQuery(window.location.search);
+
+  if (result.status) {
+    store.displayResult(result.status, result.message);
+  }
 
   // Listen to submit event on the payment form
   store.form.addEventListener('submit', async (e) => {
@@ -22,6 +38,12 @@
         billingDetails,
         shippingDetails: billingDetails
       });
+
+      const isRedirect = store.form.querySelector('input[name="redirect"]').checked;
+
+      if (isRedirect) {
+        window.location.assign(payment.nextAction.redirectUrl);
+      }
 
       // Pass paymentId and paymentToken to confirm payment using monei.js
       // This will automatically open a payment popup to collect customer's card information

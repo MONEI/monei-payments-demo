@@ -86,6 +86,9 @@ router.post('/payments', async (req, res) => {
       billingDetails,
       shippingDetails,
 
+      completeUrl: `https://${req.hostname}/payment-modal`,
+      cancelUrl: `https://${req.hostname}/payment-modal`,
+
       // Specify a url for async callback
       // You will receive a payment result as a POST request to this url
       // This ensures that you get the payment status even when customer closed the browser window or lost internet connection.

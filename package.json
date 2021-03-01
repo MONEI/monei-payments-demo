@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "homepage": "https://monei-payments-demo.herokuapp.com/",
-  "author": "MONEI <support@monei.net> (https://monei.net)",
+  "author": "MONEI <support@monei.com> (https://monei.com)",
   "license": "MIT",
   "contributors": [
     "Dmitriy Nevzorov <dmitriy.nevzorov@microapps.com>"
@@ -28,7 +28,7 @@
     "prettier": "^2.1.2"
   },
   "dependencies": {
-    "@monei-js/node-sdk": "^1.0.8",
+    "@monei-js/node-sdk": "^1.0.10",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
     "ejs": "^3.1.5",

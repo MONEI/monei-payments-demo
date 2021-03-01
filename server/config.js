@@ -3,7 +3,7 @@ require('dotenv').config();
 
 module.exports = {
   // Your MONEI account credentials.
-  // You can find them at https://dashboard.monei.net/settings/api
+  // You can find them at https://dashboard.monei.com/settings/api
   monei: {
     accountId: process.env.MONEI_ACCOUNT_ID,
     apiKey: process.env.MONEI_API_KEY

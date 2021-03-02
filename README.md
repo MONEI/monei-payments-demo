@@ -2,7 +2,7 @@
 
 This demo features a sample e-commerce store that uses [MONEI Components](https://docs.monei.com/docs/monei-js-overview) and the [Payments API](https://docs.monei.com/api/#tag/Payments) to illustrate how to accept card paymentson the web.
 
-**You can see this demo app running in test mode on [monei-payments-demo.herokuapp.com](https://monei-payments-demo.herokuapp.com/).**
+**You can see this demo app running in test mode on [payments-demo.monei.com](https://payments-demo.monei.com).**
 
 ## Overview
 

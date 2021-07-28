@@ -26,7 +26,6 @@
           content="Sample store accepting card payments on the web with MONEI Components and Payments API." />
     <meta name="twitter:image:alt"
           content="Sample store accepting card payments on the web with MONEI Components and Payments API." />
-    
     <link
       rel="stylesheet"
       href="stylesheets/bootstrap.min.css"
@@ -49,9 +48,9 @@
         <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link active" href="/">Card Input</a>
+              <a class="nav-link" href="/">Card Input</a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
               <a class="nav-link" href="/payment-modal">Payment Modal</a>
             </li>
             <li class="nav-item">
@@ -205,14 +204,17 @@
                   </select>
                   <div class="invalid-feedback">Please select a valid country.</div>
                 </div>
-                <div class="form-group card-input">
-                  <label for="country">Credit card</label>
-                  <div id="card_input" class="form-control"></div>
-                  <div id="card_input_error" class="invalid-feedback"></div>
+                <div class="form-group form-check">
+                  <input type="checkbox" name="fullscreen" class="form-check-input" id="fullscreen">
+                  <label class="form-check-label" for="fullscreen">Show fullscreen payment page</label>
+                </div>
+                <div class="form-group form-check">
+                  <input type="checkbox" name="redirect" class="form-check-input" id="redirect">
+                  <label class="form-check-label" for="redirect">Redirect mode</label>
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary btn-lg btn-block mt-4" disabled type="submit">
+            <button class="btn btn-primary btn-lg btn-block mt-4" type="submit">
               <span class="btn__inner-loading">
                 <span class="spinner-border spinner-border-sm" style="margin:0 5px 3px 0"></span>
                 Processing...
@@ -249,7 +251,7 @@
             crossorigin="anonymous"></script>
     <script src="https://js.monei.com/v1/monei.js"></script>
     <script src="javascript/store.js"></script>
-    <script src="javascript/payment-components.js"></script>
+    <script src="javascript/payment-modal.js"></script>
     <script src="javascript/generate.js"></script>
   </body>
 </html>

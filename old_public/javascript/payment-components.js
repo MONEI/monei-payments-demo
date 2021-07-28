@@ -6,6 +6,7 @@
     const cardInput = monei.CardInput({
       // Use MONEI Account ID to initialize the component
       accountId: cart.accountId,
+      language: 'en',
       onLoad: () => {
         // Enable submit button when component is loaded
         store.button.disabled = false;
@@ -76,7 +77,10 @@
       // Pass paymentId and paymentToken to confirm payment using monei.js
       // This will automatically open a 3D secure confirmation popup if needed
       // As an alternative you can redirect your customer to payment.nextAction.redirectUrl on the server
-      const result = await monei.confirmPayment({paymentId: payment.id, paymentToken: token});
+      const result = await monei.confirmPayment({
+        paymentId: payment.id,
+        paymentToken: token
+      });
 
       // At this moment you can show a customer the payment result
       // But you should always rely on the result passed to the callback endpoint on your server

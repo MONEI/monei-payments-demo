@@ -1,4 +1,4 @@
-const faker = require('faker');
+const faker = require("faker");
 
 // Generate a list of random products
 const products = Array(3)
@@ -8,8 +8,8 @@ const products = Array(3)
     name: faker.commerce.productName(),
     description: faker.commerce.productAdjective(),
     price: faker.random.number({
-      min: parseInt(process.env.MIN_PRICE || '100'),
-      max: parseInt(process.env.MAX_PRICE || '2500')
+      min: parseInt(process.env.MIN_PRICE || "10"),
+      max: parseInt(process.env.MAX_PRICE || "25")
     }),
     image: faker.image.imageUrl(75, 75, null, true, true)
   }));

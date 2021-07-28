@@ -1,8 +1,8 @@
 const config = require('./config');
 const express = require('express');
+const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const path = require('path');
-const faker = require('faker');
 const ngrok = config.ngrok.enabled ? require('ngrok') : null;
 const app = express();
 
@@ -19,12 +19,22 @@ app.use(
   })
 );
 
+const hbs = exphbs.create({
+  extname: '.hbs',
+  helpers: {
+    currency: function (amount) {
+      const num = Number(amount);
+      return num.toLocaleString('en', {style: 'currency', currency: 'EUR'});
+    }
+  }
+});
+
 app.set('trust proxy', 1); // trust first proxy
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(path.join(__dirname, '../public')));
-app.engine('html', require('ejs').renderFile);
-app.set('view engine', 'html');
-app.set('views', path.join(__dirname, '../public'));
+app.engine('.hbs', hbs.engine);
+app.set('views', path.join(__dirname, './views'));
+app.set('view engine', '.hbs');
 
 // Define routes.
 app.use('/', require('./routes'));

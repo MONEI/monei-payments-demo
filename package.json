@@ -24,8 +24,9 @@
   ],
   "devDependencies": {
     "@types/faker": "^5.1.2",
+    "@types/request-promise": "^4.1.47",
     "ngrok": "^3.3.0",
-    "prettier": "^2.1.2"
+    "prettier": "^2.3.2"
   },
   "dependencies": {
     "@monei-js/node-sdk": "^1.0.10",
@@ -33,10 +34,17 @@
     "dotenv": "^8.2.0",
     "ejs": "^3.1.5",
     "express": "^4.17.1",
-    "faker": "^5.1.0"
+    "express-handlebars": "^5.3.2",
+    "faker": "^5.1.0",
+    "request-promise": "^4.2.6"
   },
   "scripts": {
     "start": "node server/server.js",
     "web": "node server/server.js"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "printWidth": 120,
+    "trailingComma": "none"
   }
 }

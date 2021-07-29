@@ -21,11 +21,12 @@ Array.prototype.slice.call(forms).forEach(function (form) {
   form.addEventListener(
     "submit",
     function (event) {
+      form.classList.add("was-validated");
       if (!form.checkValidity()) {
         event.preventDefault();
         event.stopPropagation();
+        return;
       }
-      form.classList.add("was-validated");
       const button = form.querySelector('button[type="submit"]');
       button.classList.add("btn-loading");
       button.disabled = true;

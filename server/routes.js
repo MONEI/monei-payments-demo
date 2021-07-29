@@ -91,7 +91,7 @@ router.get("/orders/:orderId/receipt", async (req, res) => {
   if (!order.payment) return res.redirect("/");
   const payment = await monei.payments.get(order.payment.id);
   orders.set(orderId, {...order, payment});
-  if (payment.status === PaymentStatus.FAILED) {
+  if (payment.status !== PaymentStatus.SUCCEEDED) {
     return res.redirect(`/orders/${orderId}`);
   }
   res.render("receipt", {payment});

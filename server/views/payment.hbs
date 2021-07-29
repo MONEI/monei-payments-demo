@@ -4,6 +4,31 @@
   </h4>
   <div class="card mb-3">
     <div class="card-body">
+      <dl class="row">
+        <dt class="col-sm-4">Name</dt>
+        <dd class="col-sm-6">{{details.name}}</dd>
+
+        <dt class="col-sm-4">Email</dt>
+        <dd class="col-sm-6">{{details.email}}</dd>
+
+        <dt class="col-sm-4">Shipping address</dt>
+        <dd class="col-sm-6">{{address details}}</dd>
+      </dl>
+      <a href="/orders/{{orderId}}" class="card-link">Edit order information</a>
+    </div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="form-group">
+        <div class="payment-button" id="bizum"></div>
+      </div>
+      <div class="form-group">
+        <div class="payment-button" id="paypal"></div>
+      </div>
+      <div class="form-group">
+        <div class="payment-button" id="payment_request"></div>
+      </div>
+      <p class="text-center">Or pay with card</p>
       <div class="form-group">
         <label for="cardholder">
           Name on Card
@@ -43,8 +68,15 @@
     </div>
   </div>
 </form>
+<div class="overlay d-none" id="loader">
+  <div class="spinner-border text-light"></div>
+</div>
+<form method="POST" action="https://secure.monei.com/payments/{{payment.id}}/confirm" id="confirm_form">
+  <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
+</form>
 <script>
-  window.paymentId = "{{payment.id}}";
+  window.paymentId = "{{payment.id}}"; window.amount =
+  {{payment.amount}}; window.currency = "{{payment.currency}}";
 </script>
 <script src="https://js.monei.com/v1/monei.js"></script>
 <script src="/javascript/payment.js"></script>

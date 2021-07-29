@@ -59,16 +59,6 @@
         <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link active" href="/">
-                Card Input
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/payment-modal">
-                Payment Modal
-              </a>
-            </li>
-            <li class="nav-item">
               <a class="nav-link" target="_blank" href="https://docs.monei.com/">
                 Docs
               </a>
@@ -101,86 +91,95 @@
         </div>
       </div>
     </nav>
-    <div class="container-lg" id="content">
-      <div class="row" id="checkout">
-        <div class="col-md-5 order-md-2 mb-4">
-          <h4 class="d-flex justify-content-between align-items-center mb-3">
-            Your cart
-          </h4>
-          <ul class="list-group mb-3" id="order-items">
-            {{#each cart.lineItems}}
-              <li class="list-group-item d-flex justify-content-between lh-condensed">
-                <img src="{{this.image}}" width="75" height="75" alt="{{this.name}}" class="rounded mr-3" />
-                <div class="flex-fill mr-3">
-                  <h6 class="my-0">
-                    {{this.name}}
-                  </h6>
-                  <small class="text-muted">
-                    {{this.description}}
-                  </small>
-                </div>
-                <div class="text-right">
-                  <div class="text-muted text-nowrap">
-                    {{this.quantity}}
-                    x
-                    {{currency this.price}}
+    <div class="container-lg">
+      {{#if cart}}
+        <div class="row">
+          <div class="col-md-5 order-md-2 mb-4">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+              Your cart
+            </h4>
+            <ul class="list-group mb-3">
+              {{#each cart.lineItems}}
+                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                  <img
+                    src="/images/placeholder.png"
+                    style="width: 75px; height:75px"
+                    alt="{{this.name}}"
+                    class="img-thumbnail mr-3"
+                  />
+                  <div class="flex-fill mr-3">
+                    <h6 class="my-0">
+                      {{this.name}}
+                    </h6>
+                    <small class="text-muted">
+                      {{this.description}}
+                    </small>
                   </div>
-                  <div>
-                    {{currency this.totalPrice}}
+                  <div class="text-right">
+                    <div class="text-muted text-nowrap">
+                      {{this.quantity}}
+                      x
+                      {{currency this.price}}
+                    </div>
+                    <div>
+                      {{currency this.totalPrice}}
+                    </div>
                   </div>
-                </div>
+                </li>
+              {{/each}}
+            </ul>
+            <ul class="list-group mb-3" id="order-total">
+              <li class="list-group-item d-flex justify-content-between">
+                <span>
+                  Subtotal
+                </span>
+                <span>
+                  {{currency cart.totalAmount}}
+                </span>
               </li>
-            {{/each}}
-          </ul>
-          <ul class="list-group mb-3" id="order-total">
-            <li class="list-group-item d-flex justify-content-between">
-              <span>
-                Subtotal
-              </span>
-              <span>
-                {{currency cart.totalAmount}}
-              </span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>
-                Shipping
-              </span>
-              <span>
-                Free
-              </span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <strong>
-                Total
-              </strong>
-              <strong>
-                {{currency cart.totalAmount}}
-              </strong>
-            </li>
-          </ul>
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">
-                Demo in test mode
-              </h5>
-              <p>
-                You can copy and paste the following test card:
-              </p>
-              <pre>4444 4444 4444 4406 12/34 123</pre>
-              <p class="m-0">
-                See the
-                <a href="https://docs.monei.com/docs/testing/" target="_blank">
-                  docs
-                </a>
-                for a full list of test cards.
-              </p>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>
+                  Shipping
+                </span>
+                <span>
+                  Free
+                </span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <strong>
+                  Total
+                </strong>
+                <strong>
+                  {{currency cart.totalAmount}}
+                </strong>
+              </li>
+            </ul>
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">
+                  Demo in test mode
+                </h5>
+                <p>
+                  You can copy and paste the following test card:
+                </p>
+                <pre>4444 4444 4444 4406 12/34 123</pre>
+                <p class="m-0">
+                  See the
+                  <a href="https://docs.monei.com/docs/testing/" target="_blank">
+                    docs
+                  </a>
+                  for a full list of test cards.
+                </p>
+              </div>
             </div>
           </div>
+          <div class="col-md-7 order-md-1">
+            {{{body}}}
+          </div>
         </div>
-        <div class="col-md-7 order-md-1">
-          {{{body}}}
-        </div>
-      </div>
+      {{else}}
+        {{{body}}}
+      {{/if}}
     </div>
     <script
       src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
@@ -197,12 +196,5 @@
       integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
       crossorigin="anonymous"
     ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js"
-      integrity="sha384-PlFzuf6GOlJNxLuosezJ/jwndIVZ2hWI/AmvYQtBzstOdLtcUe6DPSI4LsqwiN1y"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://js.monei.com/v1/monei.js"></script>
-    <script src="/javascript/custom.js"></script>
   </body>
 </html>

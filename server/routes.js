@@ -1,23 +1,17 @@
-const {Monei} = require("@monei-js/node-sdk");
+const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
 const config = require("./config");
 const express = require("express");
 const faker = require("faker");
-const {products, productsById} = require("./inventory");
+const {products} = require("./inventory");
 const router = express.Router();
 const monei = new Monei(config.monei.apiKey);
 
-/** * MONEI integration to accept credit card payments
- in 4 simple steps. * * 1. Generate a payment token on the frontend using MONEI Card Input Component * 2. POST endpoint
- to create a Payment. * 3. The Payment is confirmed automatically with monei.js on the client-side. * 4. POST endpoint to
- be set as a callback to securely receive payment result */
-
 const generateRandomCart = () => {
-  const lineItems = products.map(({id, description, image, name, price}) => {
+  const lineItems = products.map(({id, description, name, price}) => {
     const quantity = faker.random.number({min: 1, max: 3});
     return {
       productId: id,
       description,
-      image,
       name,
       price,
       quantity,
@@ -44,7 +38,8 @@ router.get("/", (req, res) => {
 router.get("/orders/:orderId", (req, res) => {
   const order = orders.get(req.params.orderId);
   if (!order) return res.redirect("/");
-  res.render("checkout", order);
+  const errorMessage = order.payment && order.payment.statusMessage;
+  res.render("checkout", {...order, errorMessage});
 });
 
 router.post("/orders/:orderId", async (req, res) => {
@@ -63,7 +58,7 @@ router.post("/orders/:orderId", async (req, res) => {
     billingDetails: {line1, city, state, zip, country},
     shippingDetails: {line1, city, state, zip, country},
 
-    completeUrl: `https://${req.hostname}/orders/${orderId}/result`,
+    completeUrl: `https://${req.hostname}/orders/${orderId}/receipt`,
     cancelUrl: `https://${req.hostname}/orders/${orderId}`,
 
     // Specify a url for async callback
@@ -84,7 +79,22 @@ router.post("/orders/:orderId", async (req, res) => {
 router.get("/orders/:orderId/payment", (req, res) => {
   const order = orders.get(req.params.orderId);
   if (!order) return res.redirect("/");
+  if (order.payment && order.payment.status !== PaymentStatus.PENDING) {
+    return res.redirect("/");
+  }
   res.render("payment", order);
+});
+
+router.get("/orders/:orderId/receipt", async (req, res) => {
+  const orderId = req.params.orderId;
+  const order = orders.get(orderId);
+  if (!order.payment) return res.redirect("/");
+  const payment = await monei.payments.get(order.payment.id);
+  orders.set(orderId, {...order, payment});
+  if (payment.status === PaymentStatus.FAILED) {
+    return res.redirect(`/orders/${orderId}`);
+  }
+  res.render("receipt", {payment});
 });
 
 // Receive a payment result

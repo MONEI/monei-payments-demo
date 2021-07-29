@@ -10,8 +10,7 @@ const products = Array(3)
     price: faker.random.number({
       min: parseInt(process.env.MIN_PRICE || "10"),
       max: parseInt(process.env.MAX_PRICE || "25")
-    }),
-    image: faker.image.imageUrl(75, 75, null, true, true)
+    })
   }));
 
 const productsById = products.reduce((result, item) => {

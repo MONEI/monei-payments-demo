@@ -75,8 +75,9 @@
   <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
 </form>
 <script>
-  window.paymentId = "{{payment.id}}"; window.amount =
-  {{payment.amount}}; window.currency = "{{payment.currency}}";
+  window.paymentId = "{{payment.id}}";
+  window.amount = {{payment.amount}};
+  window.currency = "{{payment.currency}}";
 </script>
 <script src="https://js.monei.com/v1/monei.js"></script>
 <script src="/javascript/payment.js"></script>

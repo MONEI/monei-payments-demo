@@ -9,6 +9,8 @@ module.exports = {
     apiKey: process.env.MONEI_API_KEY
   },
 
+  hostname: process.env.HOSTNAME,
+
   // Server port.
   port: process.env.PORT || 8000,
 

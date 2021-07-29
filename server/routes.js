@@ -49,6 +49,8 @@ router.post("/orders/:orderId", async (req, res) => {
 
   const {name, email, line1, city, state, zip, country, redirect} = req.body;
 
+  const hostname = config.hostname || req.hostname;
+
   const payment = await monei.payments.create({
     amount: order.cart.totalAmount * 100,
     currency: "EUR",
@@ -58,13 +60,13 @@ router.post("/orders/:orderId", async (req, res) => {
     billingDetails: {line1, city, state, zip, country},
     shippingDetails: {line1, city, state, zip, country},
 
-    completeUrl: `https://${req.hostname}/orders/${orderId}/receipt`,
-    cancelUrl: `https://${req.hostname}/orders/${orderId}`,
+    completeUrl: `https://${hostname}/orders/${orderId}/receipt`,
+    cancelUrl: `https://${hostname}/orders/${orderId}`,
 
     // Specify a url for async callback
     // You will receive a payment result as a POST request to this url
     // This ensures that you get the payment status even when customer closed the browser window or lost internet connection.
-    callbackUrl: `https://${req.hostname}/callback`
+    callbackUrl: `https://${hostname}/callback`
   });
 
   orders.set(orderId, {...order, payment, details: req.body});

@@ -1,0 +1,82 @@
+<form novalidate id="payment_form">
+  <h4 class="mb-3">
+    Choose payment method
+  </h4>
+  <div class="card mb-3">
+    <div class="card-body">
+      <dl class="row">
+        <dt class="col-sm-4">Name</dt>
+        <dd class="col-sm-6">{{details.name}}</dd>
+
+        <dt class="col-sm-4">Email</dt>
+        <dd class="col-sm-6">{{details.email}}</dd>
+
+        <dt class="col-sm-4">Shipping address</dt>
+        <dd class="col-sm-6">{{address details}}</dd>
+      </dl>
+      <a href="/orders/{{orderId}}" class="card-link">Edit order information</a>
+    </div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="form-group">
+        <div class="payment-button" id="bizum"></div>
+      </div>
+      <div class="form-group">
+        <div class="payment-button" id="paypal"></div>
+      </div>
+      <div class="form-group">
+        <div class="payment-button" id="payment_request"></div>
+      </div>
+      <p class="text-center">Or pay with card</p>
+      <div class="form-group">
+        <label for="cardholder">
+          Name on Card
+        </label>
+        <input type="text" name="cardholder" class="form-control" id="cardholder" placeholder="John Doe" required />
+        <div class="invalid-feedback">
+          Valid cardholder name is required.
+        </div>
+      </div>
+      <div class="form-group card-input">
+        <label for="country">Credit Card</label>
+        <div id="card_input" class="form-control"></div>
+        <div id="card_input_error" class="invalid-feedback"></div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit" disabled>
+        <span class="btn__inner-loading">
+          <span class="spinner-border spinner-border-sm" style="margin:0 5px 3px 0"></span>
+          Processing...
+        </span>
+        <span class="btn__inner">
+          <svg
+            style="margin:0 5px 5px 0"
+            width="1em"
+            height="1em"
+            viewBox="0 0 16 16"
+            class="bi bi-lock-fill"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M2.5 9a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V9z"></path>
+            <path fill-rule="evenodd" d="M4.5 4a3.5 3.5 0 1 1 7 0v3h-1V4a2.5 2.5 0 0 0-5 0v3h-1V4z"></path>
+          </svg>
+          Pay
+          {{currency cart.totalAmount}}
+        </span>
+      </button>
+    </div>
+  </div>
+</form>
+<div class="overlay d-none" id="loader">
+  <div class="spinner-border text-light"></div>
+</div>
+<form method="POST" action="https://secure.monei.com/payments/{{payment.id}}/confirm" id="confirm_form">
+  <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
+</form>
+<script>
+  window.paymentId = "{{payment.id}}"; window.amount =
+  {{payment.amount}}; window.currency = "{{payment.currency}}";
+</script>
+<script src="https://js.monei.com/v1/monei.js"></script>
+<script src="/javascript/payment.js"></script>

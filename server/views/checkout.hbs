@@ -1,6 +1,6 @@
 <form method="POST" action="/checkout" class="needs-validation" novalidate>
   <h4 class="mb-3">
-    Order information
+    Customer information
   </h4>
   {{#if errorMessage}}
     <div class="alert alert-danger">
@@ -10,11 +10,7 @@
   <div class="card mb-3">
     <div class="card-body">
       <p>
-        Complete /
-        <a href="#" id="generate">
-          generate
-        </a>
-        your shipping and payment details below
+        Complete / <a href="#" id="generate">generate</a> your shipping and payment details below
       </p>
       <div class="form-group">
         <label for="name">

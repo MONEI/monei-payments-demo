@@ -4,6 +4,7 @@ const exphbs = require("express-handlebars");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser')
 const path = require("path");
+const {formatCurrency, formatAddress} = require("./utils");
 const ngrok = config.ngrok.enabled ? require("ngrok") : null;
 const app = express();
 
@@ -23,27 +24,8 @@ app.use(
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
-    currency: function (amount) {
-      const num = Number(amount);
-      return num.toLocaleString("en", {style: "currency", currency: "EUR"});
-    },
-    address: function (address) {
-      if (!address) return null;
-      const {line1, line2, city, country, state, zip} = address;
-      const lines = [];
-      if (line1) lines.push(line1);
-      if (line2) lines.push(line2);
-      if (city || state || zip || country) {
-        const line = [];
-        if (city) line.push(city);
-        if (state) line.push(state);
-        if (zip) line.push(zip);
-        if (country) line.push(country);
-        lines.push(line.join(", "));
-      }
-      if (lines.length === 0) return null;
-      return lines.join(" ");
-    }
+    currency: formatCurrency,
+    address: formatAddress
   }
 });
 

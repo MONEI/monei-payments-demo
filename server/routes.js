@@ -3,31 +3,10 @@ const express = require("express");
 const faker = require("faker");
 const router = express.Router();
 const url = require("url");
-const {products} = require("./inventory");
 const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
+const {generateRandomCart, getPaymentMethod} = require("./utils");
 
 const monei = new Monei(config.monei.apiKey);
-
-const generateRandomCart = () => {
-  const lineItems = products.map(({id, description, name, price}) => {
-    const quantity = faker.random.number({min: 1, max: 3});
-    return {
-      productId: id,
-      description,
-      name,
-      price,
-      quantity,
-      totalPrice: quantity * price
-    };
-  });
-  return {
-    lineItems,
-    totalAmount: lineItems.reduce((total, item) => {
-      total += item.totalPrice;
-      return total;
-    }, 0)
-  };
-};
 
 router.get("/", (req, res) => {
   const cart = generateRandomCart();
@@ -47,10 +26,11 @@ router.get("/checkout", (req, res) => {
 router.post("/checkout", async (req, res) => {
   const {name, email, line1, city, state, zip, country, redirect} = req.body;
 
-
   const cart = JSON.parse(req.cookies.cart);
   const orderId = faker.random.alpha({count: 8, upcase: true});
   const hostname = config.hostname || req.hostname;
+
+  const address = {line1, city, state, zip, country}
 
   const payment = await monei.payments.create({
     amount: cart.totalAmount * 100,
@@ -58,8 +38,8 @@ router.post("/checkout", async (req, res) => {
     description: `MONEI Payments Demo - #${orderId}`,
     orderId: orderId,
     customer: {name, email},
-    billingDetails: {line1, city, state, zip, country},
-    shippingDetails: {line1, city, state, zip, country},
+    billingDetails: {name, address},
+    shippingDetails: {name, address},
 
     completeUrl: `https://${hostname}/receipt`,
     cancelUrl: `https://${hostname}/checkout`,
@@ -93,7 +73,10 @@ router.get("/receipt", async (req, res) => {
   if (payment.status !== PaymentStatus.SUCCEEDED) {
     return res.redirect(`/checkout?message=${payment.statusMessage}`);
   }
-  res.render("receipt", {payment});
+  const cart = JSON.parse(req.cookies.cart);
+  const details = req.cookies.details ? JSON.parse(req.cookies.details) : {};
+  const paymentMethod = getPaymentMethod(payment);
+  res.render("receipt", {payment, cart, details, paymentMethod});
 });
 
 // Receive a payment result

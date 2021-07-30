@@ -1,6 +1,40 @@
-<div class="card text-center">
+<h4 class="mb-3">
+  Thank you
+  {{details.name}}!
+</h4>
+<div class="alert alert-success">
+  Your order
+  <strong>#{{payment.orderId}}</strong>
+  is confirmed.
+</div>
+<div class="card mb-3">
   <div class="card-body">
-    <h2 class="card-title text-success">Thanks for your order!</h2>
-    Yay! You successfully made a payment with MONEI.
+    <dl class="row">
+      <dt class="col-sm-4">Order</dt>
+      <dd class="col-sm-6">{{payment.orderId}}</dd>
+      <dt class="col-sm-4">Name</dt>
+      <dd class="col-sm-6">{{payment.customer.name}}</dd>
+
+      <dt class="col-sm-4">Email</dt>
+      <dd class="col-sm-6">{{payment.customer.email}}</dd>
+
+      <dt class="col-sm-4">Shipping address</dt>
+      <dd class="col-sm-6">{{address payment.shippingDetails.address}}</dd>
+
+      <dt class="col-sm-4">Billing address</dt>
+      <dd class="col-sm-6">{{address payment.billingDetails.address}}</dd>
+
+      <dt class="col-sm-4">Payment method</dt>
+      <dd class="col-sm-6">{{paymentMethod}}</dd>
+    </dl>
+    <p>
+      Check our
+      <a target="_blank" href="https://docs.monei.com/">documentation</a>
+      to learn more about how to natively integrate different payment methods into your checkout flow with MONEI.
+    </p>
+    <a href="/" class="btn btn-outline-secondary btn-block">Create another order</a>
+    <a class="btn btn-primary btn-block" target="_blank" href="https://dashboard.monei.com/?action=signUp">
+      Create account
+    </a>
   </div>
 </div>

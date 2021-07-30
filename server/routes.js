@@ -20,7 +20,6 @@ router.get("/checkout", (req, res) => {
   const errorMessage = req.query.message;
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);
-  if (!cart) res.redirect(`/`);
   res.render("checkout", {cart, details, errorMessage});
 });
 

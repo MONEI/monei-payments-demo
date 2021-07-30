@@ -4,27 +4,27 @@
   </h4>
   <div class="card mb-3">
     <div class="card-header">
-      <div class="row">
-        <div class="col-8">Customer information</div>
-        <div class="col-4 text-right"><a href="/checkout" class="card-link">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              style="margin:0 3px 3px 0"
-              width="1em"
-              height="1em"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              ></path>
-            </svg>
-            Edit
-          </a></div>
+      <div class="d-flex justify-content-between">
+        <div>Customer information</div>
+        <a href="/checkout" class="card-link">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            style="margin:0 3px 3px 0"
+            width="1em"
+            height="1em"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            ></path>
+          </svg>
+          Edit
+        </a>
       </div>
     </div>
     <div class="card-body">
@@ -107,8 +107,9 @@
   <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
 </form>
 <script>
-  window.paymentId = "{{payment.id}}"; window.amount =
-  {{payment.amount}}; window.currency = "{{payment.currency}}";
+  window.paymentId = "{{payment.id}}";
+  window.amount = {{payment.amount}};
+  window.currency = "{{payment.currency}}";
 </script>
 <script src="https://js.monei.com/v1/monei.js"></script>
 <script src="/javascript/payment.js"></script>

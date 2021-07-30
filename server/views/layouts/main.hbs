@@ -40,7 +40,7 @@
     <link rel="stylesheet" type="text/css" href="/stylesheets/custom.css" />
   </head>
   <body class="bg-light">
-    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary mb-5">
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary mb-4 mb-md-5">
       <div class="container-lg">
         <a class="navbar-brand" href="/">
           MONEI Payments Demo
@@ -95,81 +95,118 @@
       {{#if cart}}
         <div class="row">
           <div class="col-md-5 order-md-2 mb-4">
-            <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <div class="card d-md-none" data-toggle="collapse" data-target="#sidebar">
+              <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="22"
+                      height="22"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      ></path>
+                    </svg>
+                    Show order summary
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                  <div style="font-weight: bold; font-size: 1.2rem">{{currency cart.totalAmount}}</div>
+                </div>
+              </div>
+            </div>
+            <h4 class="mb-3 d-none d-md-block">
               Your cart
             </h4>
-            <ul class="list-group mb-3">
-              {{#each cart.lineItems}}
-                <li class="list-group-item d-flex justify-content-between lh-condensed">
-                  <img
-                    src="/images/placeholder.png"
-                    style="width: 75px; height:75px"
-                    alt="{{this.name}}"
-                    class="img-thumbnail mr-3"
-                  />
-                  <div class="flex-fill mr-3">
-                    <h6 class="my-0">
-                      {{this.name}}
-                    </h6>
-                    <small class="text-muted">
-                      {{this.description}}
-                    </small>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-muted text-nowrap">
-                      {{this.quantity}}
-                      x
-                      {{currency this.price}}
+            <div class="collapse dont-collapse-sm" id="sidebar">
+              <ul class="list-group mb-3 mt-4">
+                {{#each cart.lineItems}}
+                  <li class="list-group-item d-flex justify-content-between lh-condensed">
+                    <img
+                      src="/images/placeholder.png"
+                      style="width: 75px; height:75px"
+                      alt="{{this.name}}"
+                      class="img-thumbnail mr-3"
+                    />
+                    <div class="flex-fill mr-3">
+                      <h6 class="my-0">
+                        {{this.name}}
+                      </h6>
+                      <small class="text-muted">
+                        {{this.description}}
+                      </small>
                     </div>
-                    <div>
-                      {{currency this.totalPrice}}
+                    <div class="text-right">
+                      <div class="text-muted text-nowrap">
+                        {{this.quantity}}
+                        x
+                        {{currency this.price}}
+                      </div>
+                      <div>
+                        {{currency this.totalPrice}}
+                      </div>
                     </div>
-                  </div>
+                  </li>
+                {{/each}}
+              </ul>
+              <ul class="list-group mb-3" id="order-total">
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>
+                    Subtotal
+                  </span>
+                  <span>
+                    {{currency cart.totalAmount}}
+                  </span>
                 </li>
-              {{/each}}
-            </ul>
-            <ul class="list-group mb-3" id="order-total">
-              <li class="list-group-item d-flex justify-content-between">
-                <span>
-                  Subtotal
-                </span>
-                <span>
-                  {{currency cart.totalAmount}}
-                </span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <span>
-                  Shipping
-                </span>
-                <span>
-                  Free
-                </span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <strong>
-                  Total
-                </strong>
-                <strong>
-                  {{currency cart.totalAmount}}
-                </strong>
-              </li>
-            </ul>
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">
-                  Demo in test mode
-                </h5>
-                <p>
-                  You can copy and paste the following test card:
-                </p>
-                <pre>4444 4444 4444 4406 12/34 123</pre>
-                <p class="m-0">
-                  See the
-                  <a href="https://docs.monei.com/docs/testing/" target="_blank">
-                    docs
-                  </a>
-                  for a full list of test cards.
-                </p>
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>
+                    Shipping
+                  </span>
+                  <span>
+                    Free
+                  </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                  <strong>
+                    Total
+                  </strong>
+                  <strong>
+                    {{currency cart.totalAmount}}
+                  </strong>
+                </li>
+              </ul>
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    Demo in test mode
+                  </h5>
+                  <p>
+                    You can copy and paste the following test card:
+                  </p>
+                  <pre>4444 4444 4444 4406 12/34 123</pre>
+                  <p class="m-0">
+                    See the
+                    <a href="https://docs.monei.com/docs/testing/" target="_blank">
+                      docs
+                    </a>
+                    for a full list of test cards.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

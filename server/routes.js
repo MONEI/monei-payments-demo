@@ -2,7 +2,6 @@ const config = require("./config");
 const express = require("express");
 const faker = require("faker");
 const router = express.Router();
-const url = require("url");
 const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
 const {generateRandomCart, getPaymentMethod, parseJSON} = require("./utils");
 

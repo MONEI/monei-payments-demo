@@ -1,9 +1,18 @@
-const {products} = require("./inventory");
-const {PaymentPaymentMethodMethodEnum, PaymentPaymentMethodCardBrandEnum} = require('@monei-js/node-sdk')
 const faker = require("faker");
-const unpipe = require("unpipe");
 
 module.exports.generateRandomCart = () => {
+  const products = Array(3)
+    .fill()
+    .map(() => ({
+      id: faker.random.uuid(),
+      name: faker.commerce.productName(),
+      description: faker.commerce.productAdjective(),
+      price: faker.random.number({
+        min: parseInt(process.env.MIN_PRICE || "10"),
+        max: parseInt(process.env.MAX_PRICE || "25")
+      })
+    }));
+
   const lineItems = products.map(({id, description, name, price}) => {
     const quantity = faker.random.number({min: 1, max: 3});
     return {
@@ -15,6 +24,7 @@ module.exports.generateRandomCart = () => {
       totalPrice: quantity * price
     };
   });
+
   return {
     lineItems,
     totalAmount: lineItems.reduce((total, item) => {

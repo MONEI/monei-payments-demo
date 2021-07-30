@@ -2,8 +2,8 @@ const config = require("./config");
 const express = require("express");
 const exphbs = require("express-handlebars");
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser')
 const path = require("path");
-const session = require("express-session");
 const ngrok = config.ngrok.enabled ? require("ngrok") : null;
 const app = express();
 
@@ -48,14 +48,7 @@ const hbs = exphbs.create({
 });
 
 app.set("trust proxy", 1); // trust first proxy
-app.use(
-  session({
-    secret: "keyboard cat",
-    resave: false,
-    saveUninitialized: true,
-    cookie: {secure: true}
-  })
-);
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(path.join(__dirname, "../public")));
 app.engine(".hbs", hbs.engine);

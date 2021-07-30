@@ -2,7 +2,7 @@ const config = require("./config");
 const express = require("express");
 const faker = require("faker");
 const router = express.Router();
-const url = require('url');
+const url = require("url");
 const {products} = require("./inventory");
 const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
 
@@ -30,25 +30,26 @@ const generateRandomCart = () => {
 };
 
 router.get("/", (req, res) => {
-  req.session.regenerate(function() {
-    const orderId = faker.random.alpha({count: 8, upcase: true});
-    req.session.cart = generateRandomCart();
-    res.redirect(`/orders/${orderId}`);
-  })
+  const cart = generateRandomCart();
+  res.clearCookie('cart');
+  res.clearCookie('details');
+  res.cookie('cart', JSON.stringify(cart), {maxAge: 900000});
+  res.redirect(`/checkout`);
 });
 
-router.get("/orders/:orderId", (req, res) => {
-  const orderId = req.params.orderId;
+router.get("/checkout", (req, res) => {
   const errorMessage = req.query.message;
-  const cart = req.session.cart;
-  const details = req.session.details || {};
-  res.render("checkout", {cart, errorMessage, details, orderId});
+  const cart = JSON.parse(req.cookies.cart);
+  const details = req.cookies.details ? JSON.parse(req.cookies.details) : {};
+  res.render("checkout", {cart, details, errorMessage});
 });
 
-router.post("/orders/:orderId", async (req, res) => {
-  const orderId = req.params.orderId;
+router.post("/checkout", async (req, res) => {
   const {name, email, line1, city, state, zip, country, redirect} = req.body;
-  const cart = req.session.cart;
+
+
+  const cart = JSON.parse(req.cookies.cart);
+  const orderId = faker.random.alpha({count: 8, upcase: true});
   const hostname = config.hostname || req.hostname;
 
   const payment = await monei.payments.create({
@@ -60,8 +61,8 @@ router.post("/orders/:orderId", async (req, res) => {
     billingDetails: {line1, city, state, zip, country},
     shippingDetails: {line1, city, state, zip, country},
 
-    completeUrl: `https://${hostname}/orders/${orderId}/receipt`,
-    cancelUrl: `https://${hostname}/orders/${orderId}`,
+    completeUrl: `https://${hostname}/receipt`,
+    cancelUrl: `https://${hostname}/checkout`,
 
     // Specify a url for async callback
     // You will receive a payment result as a POST request to this url
@@ -69,36 +70,28 @@ router.post("/orders/:orderId", async (req, res) => {
     callbackUrl: `https://${hostname}/callback`
   });
 
-  req.session.details = req.body;
+  res.cookie('details', JSON.stringify(req.body), {maxAge: 900000});
 
   if (redirect === "true") {
     return res.redirect(payment.nextAction.redirectUrl);
   }
 
-  res.redirect(url.format({
-    pathname: `/orders/${orderId}/payment`,
-    query: {id: payment.id}
-  }));
+  res.redirect(`/payment?id=${payment.id}`);
 });
 
-router.get("/orders/:orderId/payment", async (req, res) => {
-  const orderId = req.params.orderId;
+router.get("/payment", async (req, res) => {
   const paymentId = req.query.id;
-  const cart = req.session.cart;
-  const details = req.session.details;
+  const cart = JSON.parse(req.cookies.cart);
+  const details = JSON.parse(req.cookies.details);
   const payment = await monei.payments.get(paymentId);
-  res.render("payment", {cart, details, orderId, payment});
+  res.render("payment", {cart, details, payment});
 });
 
-router.get("/orders/:orderId/receipt", async (req, res) => {
-  const orderId = req.params.orderId;
+router.get("/receipt", async (req, res) => {
   const paymentId = req.query.id;
   const payment = await monei.payments.get(paymentId);
   if (payment.status !== PaymentStatus.SUCCEEDED) {
-    return res.redirect(url.format({
-      pathname: `/orders/${orderId}`,
-      query: {message: payment.statusMessage}
-    }));
+    return res.redirect(`/checkout?message=${payment.statusMessage}`);
   }
   res.render("receipt", {payment});
 });

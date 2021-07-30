@@ -1,9 +1,11 @@
-const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
 const config = require("./config");
 const express = require("express");
 const faker = require("faker");
-const {products} = require("./inventory");
 const router = express.Router();
+const url = require('url');
+const {products} = require("./inventory");
+const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
+
 const monei = new Monei(config.monei.apiKey);
 
 const generateRandomCart = () => {
@@ -27,32 +29,30 @@ const generateRandomCart = () => {
   };
 };
 
-const orders = new Map();
-
 router.get("/", (req, res) => {
-  const orderId = faker.random.alpha({count: 8, upcase: true});
-  orders.set(orderId, {cart: generateRandomCart(), orderId, details: {}});
-  res.redirect(`/orders/${orderId}`);
+  req.session.regenerate(function() {
+    const orderId = faker.random.alpha({count: 8, upcase: true});
+    req.session.cart = generateRandomCart();
+    res.redirect(`/orders/${orderId}`);
+  })
 });
 
 router.get("/orders/:orderId", (req, res) => {
-  const order = orders.get(req.params.orderId);
-  if (!order) return res.redirect("/");
-  const errorMessage = order.payment && order.payment.statusMessage;
-  res.render("checkout", {...order, errorMessage});
+  const orderId = req.params.orderId;
+  const errorMessage = req.query.message;
+  const cart = req.session.cart;
+  const details = req.session.details || {};
+  res.render("checkout", {cart, errorMessage, details, orderId});
 });
 
 router.post("/orders/:orderId", async (req, res) => {
   const orderId = req.params.orderId;
-  const order = orders.get(req.params.orderId);
-  if (!order) return res.redirect("/");
-
   const {name, email, line1, city, state, zip, country, redirect} = req.body;
-
+  const cart = req.session.cart;
   const hostname = config.hostname || req.hostname;
 
   const payment = await monei.payments.create({
-    amount: order.cart.totalAmount * 100,
+    amount: cart.totalAmount * 100,
     currency: "EUR",
     description: `MONEI Payments Demo - #${orderId}`,
     orderId: orderId,
@@ -69,32 +69,36 @@ router.post("/orders/:orderId", async (req, res) => {
     callbackUrl: `https://${hostname}/callback`
   });
 
-  orders.set(orderId, {...order, payment, details: req.body});
+  req.session.details = req.body;
 
   if (redirect === "true") {
     return res.redirect(payment.nextAction.redirectUrl);
   }
 
-  res.redirect(`/orders/${orderId}/payment`);
+  res.redirect(url.format({
+    pathname: `/orders/${orderId}/payment`,
+    query: {id: payment.id}
+  }));
 });
 
-router.get("/orders/:orderId/payment", (req, res) => {
-  const order = orders.get(req.params.orderId);
-  if (!order) return res.redirect("/");
-  if (order.payment && order.payment.status !== PaymentStatus.PENDING) {
-    return res.redirect("/");
-  }
-  res.render("payment", order);
+router.get("/orders/:orderId/payment", async (req, res) => {
+  const orderId = req.params.orderId;
+  const paymentId = req.query.id;
+  const cart = req.session.cart;
+  const details = req.session.details;
+  const payment = await monei.payments.get(paymentId);
+  res.render("payment", {cart, details, orderId, payment});
 });
 
 router.get("/orders/:orderId/receipt", async (req, res) => {
   const orderId = req.params.orderId;
-  const order = orders.get(orderId);
-  if (!order.payment) return res.redirect("/");
-  const payment = await monei.payments.get(order.payment.id);
-  orders.set(orderId, {...order, payment});
+  const paymentId = req.query.id;
+  const payment = await monei.payments.get(paymentId);
   if (payment.status !== PaymentStatus.SUCCEEDED) {
-    return res.redirect(`/orders/${orderId}`);
+    return res.redirect(url.format({
+      pathname: `/orders/${orderId}`,
+      query: {message: payment.statusMessage}
+    }));
   }
   res.render("receipt", {payment});
 });

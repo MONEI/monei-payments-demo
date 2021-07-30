@@ -8,8 +8,10 @@ const loader = document.getElementById("loader");
 const setLoading = (isLoading) => {
   if (isLoading) {
     loader.classList.remove("d-none");
+    submitButton.disabled = true;
   } else {
     loader.classList.add("d-none");
+    submitButton.disabled = false;
   }
 };
 

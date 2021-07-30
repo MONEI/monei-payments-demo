@@ -3,8 +3,32 @@
     Choose payment method
   </h4>
   <div class="card mb-3">
+    <div class="card-header">
+      <div class="row">
+        <div class="col">Customer information</div>
+        <div class="col text-right"><a href="/checkout" class="card-link">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              style="margin:0 3px 3px 0"
+              width="1em"
+              height="1em"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              ></path>
+            </svg>
+            Edit
+          </a></div>
+      </div>
+    </div>
     <div class="card-body">
-      <dl class="row">
+      <dl class="row mb-0">
         <dt class="col-sm-4">Name</dt>
         <dd class="col-sm-6">{{details.name}}</dd>
 
@@ -14,21 +38,29 @@
         <dt class="col-sm-4">Shipping address</dt>
         <dd class="col-sm-6">{{address details}}</dd>
       </dl>
-      <a href="/checkout" class="card-link">Edit</a>
     </div>
+
   </div>
   <div class="card mb-3">
     <div class="card-body">
-      <div class="form-group">
-        <div class="payment-button" id="bizum"></div>
+      <div class="row">
+        <div class="col-md mb-3 mb-md-0">
+          <div class="payment-button" id="bizum"></div>
+        </div>
+        <div class="col-md mb-3 mb-md-0">
+          <div class="payment-button" id="paypal"></div>
+        </div>
+        <div class="col-md">
+          <div class="payment-button" id="payment_request"></div>
+        </div>
       </div>
-      <div class="form-group">
-        <div class="payment-button" id="paypal"></div>
-      </div>
-      <div class="form-group">
-        <div class="payment-button" id="payment_request"></div>
-      </div>
-      <p class="text-center">Or pay with card</p>
+    </div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-header">
+      Pay with Credit Card
+    </div>
+    <div class="card-body">
       <div class="form-group">
         <label for="cardholder">
           Name on Card
@@ -75,9 +107,8 @@
   <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
 </form>
 <script>
-  window.paymentId = "{{payment.id}}";
-  window.amount = {{payment.amount}};
-  window.currency = "{{payment.currency}}";
+  window.paymentId = "{{payment.id}}"; window.amount =
+  {{payment.amount}}; window.currency = "{{payment.currency}}";
 </script>
 <script src="https://js.monei.com/v1/monei.js"></script>
 <script src="/javascript/payment.js"></script>

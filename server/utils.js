@@ -1,6 +1,7 @@
 const {products} = require("./inventory");
 const {PaymentPaymentMethodMethodEnum, PaymentPaymentMethodCardBrandEnum} = require('@monei-js/node-sdk')
 const faker = require("faker");
+const unpipe = require("unpipe");
 
 module.exports.generateRandomCart = () => {
   const lineItems = products.map(({id, description, name, price}) => {
@@ -65,3 +66,11 @@ module.exports.getPaymentMethod = (payment) => {
 
   return method;
 };
+
+module.exports.parseJSON = (string) => {
+  try {
+    return JSON.parse(string);
+  } catch (error) {
+    return undefined;
+  }
+}

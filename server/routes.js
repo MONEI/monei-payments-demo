@@ -4,7 +4,7 @@ const faker = require("faker");
 const router = express.Router();
 const url = require("url");
 const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
-const {generateRandomCart, getPaymentMethod} = require("./utils");
+const {generateRandomCart, getPaymentMethod, parseJSON} = require("./utils");
 
 const monei = new Monei(config.monei.apiKey);
 
@@ -18,8 +18,8 @@ router.get("/", (req, res) => {
 
 router.get("/checkout", (req, res) => {
   const errorMessage = req.query.message;
-  const cart = JSON.parse(req.cookies.cart);
-  const details = req.cookies.details ? JSON.parse(req.cookies.details) : {};
+  const cart = parseJSON(req.cookies.cart);
+  const details = parseJSON(req.cookies.details);
   res.render("checkout", {cart, details, errorMessage});
 });
 
@@ -61,8 +61,8 @@ router.post("/checkout", async (req, res) => {
 
 router.get("/payment", async (req, res) => {
   const paymentId = req.query.id;
-  const cart = JSON.parse(req.cookies.cart);
-  const details = JSON.parse(req.cookies.details);
+  const cart = parseJSON(req.cookies.cart);
+  const details = parseJSON(req.cookies.details);
   const payment = await monei.payments.get(paymentId);
   res.render("payment", {cart, details, payment});
 });
@@ -73,8 +73,8 @@ router.get("/receipt", async (req, res) => {
   if (payment.status !== PaymentStatus.SUCCEEDED) {
     return res.redirect(`/checkout?message=${payment.statusMessage}`);
   }
-  const cart = JSON.parse(req.cookies.cart);
-  const details = req.cookies.details ? JSON.parse(req.cookies.details) : {};
+  const cart = parseJSON(req.cookies.cart);
+  const details = parseJSON(req.cookies.details);
   const paymentMethod = getPaymentMethod(payment);
   res.render("receipt", {payment, cart, details, paymentMethod});
 });

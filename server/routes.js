@@ -20,6 +20,7 @@ router.get("/checkout", (req, res) => {
   const errorMessage = req.query.message;
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);
+  if (!cart) res.redirect(`/`);
   res.render("checkout", {cart, details, errorMessage});
 });
 
@@ -64,6 +65,7 @@ router.get("/payment", async (req, res) => {
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);
   const payment = await monei.payments.get(paymentId);
+  if (!cart) res.redirect(`/`);
   res.render("payment", {cart, details, payment});
 });
 
@@ -76,6 +78,7 @@ router.get("/receipt", async (req, res) => {
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);
   const paymentMethod = getPaymentMethod(payment);
+  if (!cart) res.redirect(`/`);
   res.render("receipt", {payment, cart, details, paymentMethod});
 });
 

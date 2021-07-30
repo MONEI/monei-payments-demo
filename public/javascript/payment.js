@@ -20,6 +20,8 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
   // This will automatically open a 3D secure confirmation popup if needed
   // As an alternative you can redirect your customer to payment.nextAction.redirectUrl on the server
 
+  setLoading(true);
+
   const params = {
     paymentId: window.paymentId,
     paymentToken

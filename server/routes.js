@@ -72,7 +72,7 @@ router.get("/receipt", async (req, res) => {
   const paymentId = req.query.id;
   const payment = await monei.payments.get(paymentId);
   if (payment.status !== PaymentStatus.SUCCEEDED) {
-    const message = payment.statusMessage || 'Unable to process the payment. Please try again.'
+    const message = payment.statusMessage || 'Payment canceled. Please try again.'
     return res.redirect(url.format({pathname: "/checkout", query: {message}}));
   }
   const cart = parseJSON(req.cookies.cart);

@@ -69,6 +69,7 @@
 }
 @media (min-width: 768px) {
   .collapse.dont-collapse-sm {
+    margin-top: -.5rem;
     display: block;
     height: auto !important;
     visibility: visible;

@@ -2,6 +2,7 @@ const config = require("./config");
 const express = require("express");
 const faker = require("faker");
 const router = express.Router();
+const url = require("url");
 const {Monei, PaymentStatus} = require("@monei-js/node-sdk");
 const {generateRandomCart, getPaymentMethod, parseJSON} = require("./utils");
 
@@ -9,9 +10,9 @@ const monei = new Monei(config.monei.apiKey);
 
 router.get("/", (req, res) => {
   const cart = generateRandomCart();
-  res.clearCookie('cart');
-  res.clearCookie('details');
-  res.cookie('cart', JSON.stringify(cart), {maxAge: 900000});
+  res.clearCookie("cart");
+  res.clearCookie("details");
+  res.cookie("cart", JSON.stringify(cart), {maxAge: 900000});
   res.redirect(`/checkout`);
 });
 
@@ -29,7 +30,7 @@ router.post("/checkout", async (req, res) => {
   const orderId = faker.random.alpha({count: 8, upcase: true});
   const hostname = config.hostname || req.hostname;
 
-  const address = {line1, city, state, zip, country}
+  const address = {line1, city, state, zip, country};
 
   const payment = await monei.payments.create({
     amount: cart.totalAmount * 100,
@@ -49,7 +50,7 @@ router.post("/checkout", async (req, res) => {
     callbackUrl: `https://${hostname}/callback`
   });
 
-  res.cookie('details', JSON.stringify(req.body), {maxAge: 900000});
+  res.cookie("details", JSON.stringify(req.body), {maxAge: 900000});
 
   if (redirect === "true") {
     return res.redirect(payment.nextAction.redirectUrl);
@@ -71,7 +72,8 @@ router.get("/receipt", async (req, res) => {
   const paymentId = req.query.id;
   const payment = await monei.payments.get(paymentId);
   if (payment.status !== PaymentStatus.SUCCEEDED) {
-    return res.redirect(`/checkout?message=${payment.statusMessage}`);
+    const message = payment.statusMessage || 'Unable to process the payment. Please try again.'
+    return res.redirect(url.format({pathname: "/checkout", query: {message}}));
   }
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);

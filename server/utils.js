@@ -62,12 +62,12 @@ module.exports.getPaymentMethod = (payment) => {
 
   // Bizum
   if (bizum) {
-      return `Bizum - ${bizum.phoneNumber}`;
+    return `Bizum - ${bizum.phoneNumber}`;
   }
 
   // Paypal
   if (paypal) {
-      return `PayPal - ${paypal.orderId}`;
+    return `PayPal - ${paypal.orderId}`;
   }
   // Card
   if (card) {
@@ -83,4 +83,4 @@ module.exports.parseJSON = (string) => {
   } catch (error) {
     return undefined;
   }
-}
+};

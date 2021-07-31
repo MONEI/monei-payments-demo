@@ -43,7 +43,7 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
     window.location.assign(result.nextAction.redirectUrl);
   } catch (error) {
     console.log(error);
-    window.location.assign(window.location.href.replace("payment", "receipt"));
+    window.location.assign(`/receipt?id=${window.paymentId}`);
   }
 };
 

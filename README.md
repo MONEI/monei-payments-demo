@@ -6,7 +6,7 @@ This demo features a sample e-commerce store that uses [MONEI Components](https:
 
 ## Overview
 
-![MONEI Payments Demo Preview](public/preview.png)
+![MONEI Payments Demo Preview](public/images/preview.png)
 
 This demo provides an all-in-one example for integrating with MONEI on the web:
 

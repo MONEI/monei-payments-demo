@@ -13,7 +13,7 @@ This demo provides an all-in-one example for integrating with MONEI on the web:
 <!-- prettier-ignore -->
 |     | Features
 :---: | :---
-✨ | **Beautiful UI components for Credit Card, Bizum, PayPal, Apple Pay, Google Pay payments**. This demo uses pre-built MONEI components customized to fit the app design, including the [Card Input Component](https://docs.monei.com/docs/payment-methods/card/) which provides real-time validation, formatting, and autofill.
+✨ | **Beautiful UI components for Credit Card, Bizum, PayPal, Apple Pay, Google Pay payments**. This demo uses pre-built MONEI Components customized to fit the app design, including the [Card Input Component](https://docs.monei.com/docs/payment-methods/card/) which provides real-time validation, formatting, and autofill.
 🔐 | **Dynamic 3D Secure for Visa and Mastercard.** The app automatically handles the correct flow to complete card payments with 3D Secure, whether it’s required by the card.
 🚀 | **Built-in proxy for local HTTPS and webhooks.** Card payments require HTTPS and asynchronous payment methods with redirects rely on webhooks to complete transactions—[ngrok](https://ngrok.com/) is integrated so the app is served locally over HTTPS.
 🔧 | **Webhook signing**. We allow for [webhook signature verification](https://docs.monei.com/docs/verify-signature), which is a recommended security practice.
@@ -25,7 +25,7 @@ The frontend code for the demo is in the `public/` directory.
 
 The core logic of the MONEI integration is mostly contained within two files:
 
-1.  [`public/javascripts/payment.js`](public/javascript/payment.js) initializes and redners MONEI UI Components for different payment methods
+1.  [`public/javascripts/payment.js`](public/javascript/payment.js) initializes and renders [MONEI Components](https://docs.monei.com/docs/monei-js/reference/) for different payment methods
 2.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
 
 ## Getting Started with Node

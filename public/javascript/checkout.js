@@ -1,8 +1,10 @@
 const faker = window.faker;
 const generateInputTrigger = document.getElementById("generate");
+const checkoutForm = document.getElementById("checkout_form");
 
 const {name, address, internet} = faker;
 
+// Generate random form data
 generateInputTrigger.addEventListener("click", (e) => {
   e.preventDefault();
   document.getElementsByName("name")[0].value = `${name.firstName()} ${name.lastName()}`;
@@ -13,24 +15,19 @@ generateInputTrigger.addEventListener("click", (e) => {
   document.getElementsByName("zip")[0].value = `${address.zipCode()}`;
 });
 
-// Fetch all the forms we want to apply custom Bootstrap validation styles to
-const forms = document.querySelectorAll(".needs-validation");
-
-// Loop over them and prevent submission
-Array.prototype.slice.call(forms).forEach(function (form) {
-  form.addEventListener(
+// Add checkout form validation
+checkoutForm.addEventListener(
     "submit",
     function (event) {
-      form.classList.add("was-validated");
-      if (!form.checkValidity()) {
+      checkoutForm.classList.add("was-validated");
+      if (!checkoutForm.checkValidity()) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
-      const button = form.querySelector('button[type="submit"]');
+      const button = checkoutForm.querySelector('button[type="submit"]');
       button.classList.add("btn-loading");
       button.disabled = true;
     },
     false
   );
-});

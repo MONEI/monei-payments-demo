@@ -1,29 +1,23 @@
 const faker = require("faker");
 
 module.exports.generateRandomCart = () => {
-  const products = Array(3)
+  const lineItems = Array(3)
     .fill()
-    .map(() => ({
-      id: faker.random.uuid(),
-      name: faker.commerce.productName(),
-      description: faker.commerce.productAdjective(),
-      price: faker.random.number({
+    .map(() => {
+      const quantity = faker.random.number({min: 1, max: 3});
+      const price = faker.random.number({
         min: parseInt(process.env.MIN_PRICE || "10"),
         max: parseInt(process.env.MAX_PRICE || "25")
-      })
-    }));
-
-  const lineItems = products.map(({id, description, name, price}) => {
-    const quantity = faker.random.number({min: 1, max: 3});
-    return {
-      productId: id,
-      description,
-      name,
-      price,
-      quantity,
-      totalPrice: quantity * price
-    };
-  });
+      });
+      return {
+        productId: faker.random.uuid(),
+        name: faker.commerce.productName(),
+        description: faker.commerce.productAdjective(),
+        price,
+        quantity,
+        totalPrice: quantity * price
+      };
+    });
 
   return {
     lineItems,
@@ -57,14 +51,12 @@ module.exports.formatAddress = (address) => {
   return lines.join(" ");
 };
 
-module.exports.getPaymentMethod = (payment) => {
+module.exports.formatPaymentMethod = (payment) => {
   const {card, bizum, paypal, method} = payment.paymentMethod;
-
   // Bizum
   if (bizum) {
     return `Bizum - ${bizum.phoneNumber}`;
   }
-
   // Paypal
   if (paypal) {
     return `PayPal - ${paypal.orderId}`;
@@ -73,7 +65,6 @@ module.exports.getPaymentMethod = (payment) => {
   if (card) {
     return `${card.brand} - ${card.last4}`;
   }
-
   return method;
 };
 

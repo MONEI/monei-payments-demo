@@ -9,6 +9,7 @@ module.exports = {
     apiKey: process.env.MONEI_API_KEY
   },
 
+  // Custom hostname, if you are using custom domain
   hostname: process.env.HOSTNAME,
 
   // Server port.

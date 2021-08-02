@@ -45,13 +45,19 @@
     <div class="card-body">
       <div class="row mx-n2">
         <div class="col-lg mb-3 mb-lg-0 px-2">
-          <div class="payment-button" id="bizum"></div>
+          <div class="payment-button" id="bizum">
+            <!-- Bizum button will be rendered here -->
+          </div>
         </div>
         <div class="col-lg mb-3 mb-lg-0 px-2">
-          <div class="payment-button" id="paypal"></div>
+          <div class="payment-button" id="paypal">
+            <!-- Paypal button will be rendered here -->
+          </div>
         </div>
         <div class="col-lg px-2">
-          <div class="payment-button" id="payment_request"></div>
+          <div class="payment-button" id="payment_request">
+            <!-- Payment Request button will be rendered here -->
+          </div>
         </div>
       </div>
     </div>
@@ -72,7 +78,9 @@
       </div>
       <div class="form-group card-input">
         <label for="country">Credit Card</label>
-        <div id="card_input" class="form-control"></div>
+        <div id="card_input" class="form-control">
+          <!-- Card Input will be rendered here -->
+        </div>
         <div id="card_input_error" class="invalid-feedback"></div>
       </div>
       <button class="btn btn-primary btn-block" type="submit" disabled>
@@ -100,12 +108,15 @@
     </div>
   </div>
 </form>
-<div class="overlay d-none" id="loader">
+<div class="loader">
   <div class="spinner-border text-light"></div>
 </div>
+
+<!-- Hidden payment form needed to confirm Bizum payments -->
 <form method="POST" action="https://secure.monei.com/payments/{{payment.id}}/confirm" id="confirm_form">
   <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
 </form>
+
 <script>
   window.paymentId = "{{payment.id}}";
   window.amount = {{payment.amount}};

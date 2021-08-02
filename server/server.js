@@ -21,8 +21,11 @@ app.use(
   })
 );
 
+// Use handlebars template engine
 const hbs = exphbs.create({
   extname: ".hbs",
+
+  // Specify helpers that will be used inside views
   helpers: {
     currency: formatCurrency,
     address: formatAddress

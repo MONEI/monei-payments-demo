@@ -1,6 +1,6 @@
 # MONEI Payments Demo
 
-This demo features a sample e-commerce store that uses [MONEI Components](https://docs.monei.com/docs/monei-js-overview) and the [Payments API](https://docs.monei.com/api/#tag/Payments) to illustrate how to accept card paymentson the web.
+This demo features a sample e-commerce store that uses [MONEI Components](https://docs.monei.com/docs/monei-js-overview) and the [Payments API](https://docs.monei.com/api/#tag/Payments) to illustrate how to accept Credit Card, Bizum, PayPal, Apple Pay, Google Pay payments on the web.
 
 **You can see this demo app running in test mode on [payments-demo.monei.com](https://payments-demo.monei.com).**
 

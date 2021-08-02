@@ -1,6 +1,6 @@
 {
   "name": "MONEI Payments Demo",
-  "description": "Sample store accepting card payments on the web with MONEI Components and Payments API.",
+  "description": "Sample store accepting Credit Card, PayPal, Bizum, Apple Pay, Google Pay payments on the web with MONEI Components and Payments API.",
   "repository": "https://github.com/MONEI/monei-payments-demo",
   "logo": "https://assets.monei.com/images/icon.png",
   "keywords": [
@@ -25,15 +25,15 @@
     },
     "MIN_PRICE": {
       "description":
-      "Minimum price of the random product in cents",
+      "Minimum price of the random product in EUR",
       "required": false,
-      "value": "100"
+      "value": "10"
     },
     "MAX_PRICE": {
       "description":
-      "Maximum price of the random product in cents",
+      "Maximum price of the random product in EUR",
       "required": false,
-      "value": "2500"
+      "value": "25"
     }
   }
 }

@@ -6,14 +6,14 @@ This demo features a sample e-commerce store that uses [MONEI Components](https:
 
 ## Overview
 
-![MONEI Payments Demo Preview](/public/images/preview.png)
+![MONEI Payments Demo Preview](public/images/preview.jpg)
 
 This demo provides an all-in-one example for integrating with MONEI on the web:
 
 <!-- prettier-ignore -->
 |     | Features
 :---: | :---
-✨ | **Beautiful UI components for card payments**. This demo uses pre-built MONEI components customized to fit the app design, including the [Card In put Component](https://docs.monei.com/docs/monei-js-overview) which provides real-time validation, formatting, and autofill.
+✨ | **Beautiful UI components for Credit Card, Bizum, PayPal, Apple Pay, Google Pay payments**. This demo uses pre-built MONEI components customized to fit the app design, including the [Card Input Component](https://docs.monei.com/docs/payment-methods/card/) which provides real-time validation, formatting, and autofill.
 🔐 | **Dynamic 3D Secure for Visa and Mastercard.** The app automatically handles the correct flow to complete card payments with 3D Secure, whether it’s required by the card.
 🚀 | **Built-in proxy for local HTTPS and webhooks.** Card payments require HTTPS and asynchronous payment methods with redirects rely on webhooks to complete transactions—[ngrok](https://ngrok.com/) is integrated so the app is served locally over HTTPS.
 🔧 | **Webhook signing**. We allow for [webhook signature verification](https://docs.monei.com/docs/verify-signature), which is a recommended security practice.
@@ -23,11 +23,10 @@ This demo provides an all-in-one example for integrating with MONEI on the web:
 
 The frontend code for the demo is in the `public/` directory.
 
-The core logic of the MONEI integration is mostly contained within three files:
+The core logic of the MONEI integration is mostly contained within two files:
 
-1.  [`public/javascripts/payment-components.js`](public/javascript/payment-components.js) creates the payment experience on the frontend using [MONEI Components](https://docs.monei.com/docs/monei-js-overview).
-2.  [`public/javascripts/payment-modal.js`](public/javascript/payment-modal.js) creates the payment experience on the frontend using [MONEI Payment Modal](https://docs.monei.com/docs/use-payment-modal).
-3.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
+1.  [`public/javascripts/payment.js`](public/javascript/payment.js) initializes and redners MONEI UI Components for different payment methods
+2.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
 
 ## Getting Started with Node
 

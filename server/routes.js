@@ -43,7 +43,10 @@ router.get("/checkout", (req, res) => {
 router.post("/checkout", async (req, res) => {
   const {name, email, line1, city, state, zip, country, redirect} = req.body;
 
-  const cart = JSON.parse(req.cookies.cart);
+  const cart = parseJSON(req.cookies.cart);
+
+  // If there is no cart object in cookies, redirect the customer to the initial page to generate it.
+  if (!cart) res.redirect(`/`);
 
   // Order ID should be alphanumeric and cannot contain special characters
   const orderId = faker.random.alpha({count: 8, upcase: true});

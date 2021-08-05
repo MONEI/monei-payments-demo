@@ -53,10 +53,6 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
 const bizumButton = monei.Bizum({
   paymentId: window.paymentId,
 
-  // In addition to payment ID pass amount and currency as parameters
-  amount: window.amount,
-  currency: window.currency,
-
   // You can specify UI component language
   language: "en",
 
@@ -96,10 +92,6 @@ bizumButton.render("#bizum");
 const paypalButton = monei.PayPal({
   paymentId: window.paymentId,
 
-  // In addition to payment ID pass amount and currency as parameters
-  amount: window.amount,
-  currency: window.currency,
-
   // You can specify UI component language
   language: "en",
 
@@ -130,9 +122,6 @@ paypalButton.render("#paypal");
 // depending on the browser and operation system
 const paymentRequestButton = monei.PaymentRequest({
   paymentId: window.paymentId,
-  // In addition to payment ID pass amount and currency as parameters
-  amount: window.amount,
-  currency: window.currency,
 
   // You can specify UI component language
   language: "en",
@@ -157,6 +146,62 @@ const paymentRequestButton = monei.PaymentRequest({
 
 // Render Payment Request button into the container div
 paymentRequestButton.render("#payment_request");
+
+// Initialize Cofidis Widget
+// This component will render financed price and conditions for the provided amount
+const cofidisWidget = monei.CofidisWidget({
+  // Payment amount as integer (1000 = 10.00 EUR)
+  // you can also specify "amount" prop where 10 = 10 EUR
+  amountInt: window.amount,
+
+  // You can specify UI component language
+  language: "es",
+
+  style: {
+    base: {
+      color: "#212529"
+    },
+    link: {
+      color: "#8961a5"
+    }
+  },
+
+  onError(error) {
+    console.log(error);
+  }
+});
+
+// Render Cofidis Widget into the container div
+cofidisWidget.render("#cofidis_widget");
+
+// Initialize Cofidis payment button
+const cofidisButton = monei.Cofidis({
+  paymentId: window.paymentId,
+
+  // You can specify UI component language
+  language: "es",
+
+  // Specify button styles
+  style: {
+    height: 42
+  },
+
+  // Specify a callback when payment is submitted
+  onSubmit(result) {
+    console.log(result);
+    setLoading(true);
+    // At the moment Cofidis only supports redirect flow
+    // Redirect your customer to a provided url
+    window.location.assign(result.redirectUrl);
+  },
+
+  onError(error) {
+    console.log(error);
+  }
+});
+
+// Render Bizum button into the container div
+cofidisButton.render("#cofidis");
 
 // Initialize Card Input component
 const cardInput = monei.CardInput({

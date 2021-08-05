@@ -46,7 +46,7 @@ router.post("/checkout", async (req, res) => {
   const cart = parseJSON(req.cookies.cart);
 
   // If there is no cart object in cookies, redirect the customer to the initial page to generate it.
-  if (!cart) res.redirect(`/`);
+  if (!cart) return res.redirect(`/`);
 
   // Order ID should be alphanumeric and cannot contain special characters
   const orderId = faker.random.alpha({count: 8, upcase: true});
@@ -115,7 +115,7 @@ router.get("/payment", async (req, res) => {
   const payment = await monei.payments.get(paymentId);
 
   // If there is no cart object in cookies, redirect the customer to the initial page to generate it.
-  if (!cart) res.redirect(`/`);
+  if (!cart) return res.redirect(`/`);
 
   res.render("payment", {cart, details, payment});
 });
@@ -141,7 +141,7 @@ router.get("/receipt", async (req, res) => {
   const paymentMethod = formatPaymentMethod(payment);
 
   // If there is no cart object in cookies, redirect the customer to the initial page to generate it.
-  if (!cart) res.redirect(`/`);
+  if (!cart) return res.redirect(`/`);
 
   // Render a receipt page
   res.render("receipt", {payment, cart, details, paymentMethod});

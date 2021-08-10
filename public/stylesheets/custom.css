@@ -76,6 +76,7 @@ body.loading .loader {
   background: #e5e7eb;
   border-radius: 4px;
 }
+
 @media (min-width: 768px) {
   .collapse.dont-collapse-sm {
     margin-top: -.5rem;

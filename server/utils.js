@@ -4,10 +4,10 @@ module.exports.generateRandomCart = () => {
   const lineItems = Array(3)
     .fill()
     .map(() => {
-      const quantity = faker.random.number({min: 1, max: 3});
+      const quantity = faker.random.number({min: 1, max: 5});
       const price = faker.random.number({
         min: parseInt(process.env.MIN_PRICE || "10"),
-        max: parseInt(process.env.MAX_PRICE || "25")
+        max: parseInt(process.env.MAX_PRICE || "100")
       });
       return {
         productId: faker.random.uuid(),

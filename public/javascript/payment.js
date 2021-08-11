@@ -196,10 +196,10 @@ const cofidisButton = monei.Cofidis({
   },
 
   onLoad(isSupported) {
-    if (isSupported) {
+    if (!isSupported) {
       // Show Cofidis section only if it is supported
       // To pay with Cofidis payment amount should be <= 70 EUR and >=1000 EUR
-      cofidis.classList.remove('d-none');
+    cofidis.classList.add('d-none');
     }
   },
 

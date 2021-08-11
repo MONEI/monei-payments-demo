@@ -3,10 +3,14 @@ const express = require("express");
 const exphbs = require("express-handlebars");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const forceSSL = require('express-force-ssl');
 const path = require("path");
 const {formatCurrency, formatAddress} = require("./utils");
 const ngrok = config.ngrok.enabled ? require("ngrok") : null;
 const app = express();
+
+// Force the app to use secure https connection
+app.use(forceSSL);
 
 // Setup useful middleware.
 app.use(

@@ -75,6 +75,16 @@ body.loading .loader {
   height: 42px;
   background: #e5e7eb;
   border-radius: 4px;
+  flex: 1;
+}
+
+.payment-methods {
+  display: flex;
+  margin: 0 -0.6rem;
+}
+
+.payment-methods .payment-button {
+  margin: 0 0.6rem;
 }
 
 @media (min-width: 768px) {
@@ -83,5 +93,15 @@ body.loading .loader {
     display: block;
     height: auto !important;
     visibility: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-methods {
+    display: block;
+    margin: -1rem 0;
+  }
+  .payment-methods .payment-button {
+    margin: 1rem 0;
   }
 }

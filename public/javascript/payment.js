@@ -131,6 +131,13 @@ const paymentRequestButton = monei.PaymentRequest({
     height: 42
   },
 
+  onLoad(isSupported) {
+    if (!isSupported) {
+      // Hide payment request button if it is not supported
+      document.getElementById("payment_request").classList.add('d-none');
+    }
+  },
+
   // Specify a callback when payment is submitted
   onSubmit(result) {
     console.log(result);
@@ -146,6 +153,8 @@ const paymentRequestButton = monei.PaymentRequest({
 
 // Render Payment Request button into the container div
 paymentRequestButton.render("#payment_request");
+
+const cofidis = document.getElementById('cofidis');
 
 // Initialize Cofidis Widget
 // This component will render financed price and conditions for the provided amount
@@ -186,6 +195,14 @@ const cofidisButton = monei.Cofidis({
     height: 42
   },
 
+  onLoad(isSupported) {
+    if (isSupported) {
+      // Show Cofidis section only if it is supported
+      // To pay with Cofidis payment amount should be <= 70 EUR and >=1000 EUR
+      cofidis.classList.remove('d-none');
+    }
+  },
+
   // Specify a callback when payment is submitted
   onSubmit(result) {
     console.log(result);
@@ -201,7 +218,7 @@ const cofidisButton = monei.Cofidis({
 });
 
 // Render Bizum button into the container div
-cofidisButton.render("#cofidis");
+cofidisButton.render("#cofidis_button");
 
 // Initialize Card Input component
 const cardInput = monei.CardInput({

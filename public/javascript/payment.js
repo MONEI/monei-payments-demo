@@ -162,6 +162,7 @@ const cofidisWidget = monei.CofidisWidget({
   // Payment amount as integer (1000 = 10.00 EUR)
   // you can also specify "amount" prop where 10 = 10 EUR
   amountInt: window.amount,
+  accountId: window.accountId,
 
   // You can specify UI component language
   language: "es",

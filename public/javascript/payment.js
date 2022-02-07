@@ -134,7 +134,7 @@ const paymentRequestButton = monei.PaymentRequest({
   onLoad(isSupported) {
     if (!isSupported) {
       // Hide payment request button if it is not supported
-      document.getElementById("payment_request").classList.add('d-none');
+      document.getElementById("payment_request").classList.add("d-none");
     }
   },
 
@@ -154,7 +154,8 @@ const paymentRequestButton = monei.PaymentRequest({
 // Render Payment Request button into the container div
 paymentRequestButton.render("#payment_request");
 
-const cofidis = document.getElementById('cofidis');
+// Cofidis
+const cofidis = document.getElementById("cofidis");
 
 // Initialize Cofidis Widget
 // This component will render financed price and conditions for the provided amount
@@ -163,6 +164,9 @@ const cofidisWidget = monei.CofidisWidget({
   // you can also specify "amount" prop where 10 = 10 EUR
   amountInt: window.amount,
   accountId: window.accountId,
+
+  // Show cofidis logo
+  showLogo: true,
 
   // You can specify UI component language
   language: "es",
@@ -173,6 +177,9 @@ const cofidisWidget = monei.CofidisWidget({
     },
     link: {
       color: "#8961a5"
+    },
+    logo: {
+      marginRight: "40px"
     }
   },
 
@@ -200,7 +207,7 @@ const cofidisButton = monei.Cofidis({
     if (!isSupported) {
       // Show Cofidis section only if it is supported
       // To pay with Cofidis payment amount should be <= 70 EUR and >=1000 EUR
-    cofidis.classList.add('d-none');
+      cofidis.classList.add("d-none");
     }
   },
 
@@ -220,6 +227,78 @@ const cofidisButton = monei.Cofidis({
 
 // Render Bizum button into the container div
 cofidisButton.render("#cofidis_button");
+
+// Cofidis Loan
+
+const cofidisLoan = document.getElementById("cofidis_loan");
+
+// Initialize Cofidis Widget
+// This component will render financed price and conditions for the provided amount
+const cofidisLoanWidget = monei.CofidisLoanWidget({
+  // Payment amount as integer (1000 = 10.00 EUR)
+  // you can also specify "amount" prop where 10 = 10 EUR
+  amountInt: window.amount,
+  accountId: window.accountId,
+
+  // Show cofidis logo
+  showLogo: true,
+
+  // You can specify UI component language
+  language: "es",
+
+  style: {
+    base: {
+      color: "#212529"
+    },
+    link: {
+      color: "#8961a5"
+    }
+  },
+
+  onError(error) {
+    console.log(error);
+  }
+});
+
+// Render Cofidis Widget into the container div
+cofidisLoanWidget.render("#cofidis_loan_widget");
+
+// Initialize Cofidis payment button
+const cofidisLoanButton = monei.CofidisLoan({
+  paymentId: window.paymentId,
+
+  // You can specify UI component language
+  language: "es",
+
+  // Specify button styles
+  style: {
+    height: 42
+  },
+
+  onLoad(isSupported) {
+    if (!isSupported) {
+      // Show Cofidis section only if it is supported
+      // To pay with Cofidis payment amount should be <= 70 EUR and >=1000 EUR
+      cofidisLoan.classList.add("d-none");
+    }
+  },
+
+  // Specify a callback when payment is submitted
+  onSubmit(result) {
+    console.log(result);
+    setLoading(true);
+    // At the moment Cofidis only supports redirect flow
+    // Redirect your customer to a provided url
+    window.location.assign(result.redirectUrl);
+  },
+
+  onError(error) {
+    console.log(error);
+  }
+});
+
+// Render Bizum button into the container div
+cofidisLoanButton.render("#cofidis_loan_button");
 
 // Initialize Card Input component
 const cardInput = monei.CardInput({

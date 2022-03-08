@@ -230,11 +230,11 @@ cofidisButton.render("#cofidis_button");
 
 // Cofidis Loan
 
-const cofidisLoan = document.getElementById("cofidis_loan");
+const cofidisPay = document.getElementById("cofidis_loan");
 
 // Initialize Cofidis Widget
 // This component will render financed price and conditions for the provided amount
-const cofidisLoanWidget = monei.CofidisLoanWidget({
+const cofidisPayWidget = monei.CofidisPayWidget({
   // Payment amount as integer (1000 = 10.00 EUR)
   // you can also specify "amount" prop where 10 = 10 EUR
   amountInt: window.amount,
@@ -261,10 +261,10 @@ const cofidisLoanWidget = monei.CofidisLoanWidget({
 });
 
 // Render Cofidis Widget into the container div
-cofidisLoanWidget.render("#cofidis_loan_widget");
+cofidisPayWidget.render("#cofidis_loan_widget");
 
 // Initialize Cofidis payment button
-const cofidisLoanButton = monei.CofidisLoan({
+const cofidisPayButton = monei.CofidisPay({
   paymentId: window.paymentId,
 
   // You can specify UI component language
@@ -279,7 +279,7 @@ const cofidisLoanButton = monei.CofidisLoan({
     if (!isSupported) {
       // Show Cofidis section only if it is supported
       // To pay with Cofidis payment amount should be <= 70 EUR and >=1000 EUR
-      cofidisLoan.classList.add("d-none");
+      cofidisPay.classList.add("d-none");
     }
   },
 
@@ -298,7 +298,7 @@ const cofidisLoanButton = monei.CofidisLoan({
 });
 
 // Render Bizum button into the container div
-cofidisLoanButton.render("#cofidis_loan_button");
+cofidisPayButton.render("#cofidis_loan_button");
 
 // Initialize Card Input component
 const cardInput = monei.CardInput({

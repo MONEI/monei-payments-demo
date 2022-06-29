@@ -213,6 +213,21 @@
       <div class="form-group form-check">
         <input
           type="checkbox"
+          name="bizumDemo"
+          class="form-check-input"
+          value="true"
+          id="bizumDemo"
+          {{#if details.bizumDemo}}checked{{/if}}
+          onchange="toggleBizumDemo({{ details.bizumDemo }})"
+        />
+        <label class="form-check-label" for="bizumDemo">
+          Generate a checkout less than 5€, this will allow Bizum to be used. Cofidis won't be available.
+          Notice that Bizum has to be enabled in your account.
+        </label>
+      </div>
+      <div class="form-group form-check">
+        <input
+          type="checkbox"
           name="redirect"
           class="form-check-input"
           value="true"

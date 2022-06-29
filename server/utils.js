@@ -1,13 +1,14 @@
 const faker = require("faker");
 
-module.exports.generateRandomCart = () => {
-  const lineItems = Array(3)
+module.exports.generateRandomCart = (props = {}) => {
+  const {defaultPrice, numItems = 3, qty = {min: 1, max: 5}} = props
+  const lineItems = Array(numItems)
     .fill()
     .map(() => {
-      const quantity = faker.random.number({min: 1, max: 5});
+      const quantity = faker.random.number(qty);
       const price = faker.random.number({
-        min: parseInt(process.env.MIN_PRICE || "10"),
-        max: parseInt(process.env.MAX_PRICE || "100")
+        min: parseInt(defaultPrice ? defaultPrice.min : (process.env.MIN_PRICE || "10")),
+        max: parseInt(defaultPrice ? defaultPrice.max : (process.env.MAX_PRICE || "100"))
       });
       return {
         productId: faker.random.uuid(),

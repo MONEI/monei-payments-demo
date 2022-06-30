@@ -49,6 +49,7 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
   }
 };
 
+
 // Initialize Bizum payment button
 const bizumButton = monei.Bizum({
   paymentId: window.paymentId,
@@ -85,8 +86,12 @@ const bizumButton = monei.Bizum({
   }
 });
 
-// Render Bizum button into the container div
-bizumButton.render("#bizum");
+const cartTotal = document.querySelector('#order-total li:last-child strong:last-child').innerHTML.replace(/\n|\s|€/g, '');
+
+if (Number(cartTotal) <= 5) {
+// Render Bizum button into the container div only if cart total is 5 or less
+  bizumButton.render("#bizum");
+}
 
 // Initialize PayPal payment button
 const paypalButton = monei.PayPal({

@@ -31,3 +31,12 @@ checkoutForm.addEventListener(
     },
     false
   );
+
+function toggleBizumDemo(bizumDemo) {
+  if (!bizumDemo) {
+    window.open(window.location.origin + `?bizumDemo=1`, "_self");
+  } else {
+    window.open(window.location.origin, "_self");
+  }
+
+}

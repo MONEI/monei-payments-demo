@@ -213,6 +213,20 @@
       <div class="form-group form-check">
         <input
           type="checkbox"
+          name="bizumDemo"
+          class="form-check-input"
+          value="true"
+          id="bizumDemo"
+          {{#if details.bizumDemo}}checked{{/if}}
+          onchange="toggleBizumDemo({{ details.bizumDemo }})"
+        />
+        <label class="form-check-label" for="bizumDemo">
+          In test environment Bizum only supports transactions below 5 EUR. Generate a checkout less than 5€ to test Bizum.
+        </label>
+      </div>
+      <div class="form-group form-check">
+        <input
+          type="checkbox"
           name="redirect"
           class="form-check-input"
           value="true"

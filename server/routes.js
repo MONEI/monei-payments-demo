@@ -19,29 +19,32 @@ const monei = new Monei(config.monei.apiKey);
 
 // Generates a random cart and redirects a customer to the checkout page
 router.get("/", (req, res) => {
-  const cart = generateRandomCart();
+  const bizumDemo = req.query.bizumDemo === "1";
+  const cart = bizumDemo
+    ? generateRandomCart({defaultPrice: {min: 1, max: 5}, numItems: 1, qty: {min: 1, max: 1}})
+    : generateRandomCart();
 
   // For the purpose of this example we are using cookies to store cart information
   // in the real app you will use some sort of database for that.
   res.clearCookie("cart");
   res.clearCookie("details");
   res.cookie("cart", JSON.stringify(cart), {maxAge: 900000});
-
-  res.redirect(`/checkout`);
+  const url = bizumDemo ? "/checkout?bizumDemo=1" : "/checkout";
+  res.redirect(url);
 });
 
 // Shows initial checkout page, also shows error message if present
 router.get("/checkout", (req, res) => {
   const errorMessage = req.query.message;
   const cart = parseJSON(req.cookies.cart);
-  const details = parseJSON(req.cookies.details);
-
+  const details = parseJSON(req.cookies.details) || {};
+  details.bizumDemo = req.query.bizumDemo;
   res.render("checkout", {cart, details, errorMessage});
 });
 
 // Receives payload form the checkout form and creates a new payment
 router.post("/checkout", async (req, res) => {
-  const {name, email, line1, city, state, zip, country, redirect} = req.body;
+  const {name, email, line1, city, state, zip, country, bizumEnabled, redirect} = req.body;
 
   const cart = parseJSON(req.cookies.cart);
 

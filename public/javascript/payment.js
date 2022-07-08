@@ -91,6 +91,8 @@ const cartTotal = document.querySelector('#order-total li:last-child strong:last
 if (Number(cartTotal) <= 5) {
 // Render Bizum button into the container div only if cart total is 5 or less
   bizumButton.render("#bizum");
+} else {
+  document.querySelector(".bizum-container").style.display = "none";
 }
 
 // Initialize PayPal payment button

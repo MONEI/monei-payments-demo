@@ -68,7 +68,7 @@ if (ngrok) {
       if (err.code === "ECONNREFUSED") {
         console.log(`⚠️  Connection refused at ${err.address}:${err.port}`);
       } else {
-        console.log(`⚠️ Ngrok error: ${JSON.stringify(err)}`);
+        console.log(`⚠️ Ngrok error: ${err.message}`);
       }
       process.exit(1);
     });

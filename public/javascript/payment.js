@@ -41,8 +41,12 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
     // to update the order status
     console.log(result);
 
-    // Redirect your customer to the receipt page to check the payment status (server-side)
-    window.location.assign(`/receipt?id=${window.paymentId}`);
+    if (result.nextAction && result.nextAction.mustRedirect) {
+      window.location.assign(result.nextAction.redirectUrl);
+    } else {
+      // Redirect your customer to the receipt page to check the payment status (server-side)
+      window.location.assign(`/receipt?id=${window.paymentId}`);
+    }
   } catch (error) {
     console.log(error);
     window.location.assign(`/receipt?id=${window.paymentId}`);
@@ -65,19 +69,9 @@ const bizumButton = monei.Bizum({
   // Specify a callback when payment is submitted
   onSubmit(result) {
     console.log(result);
-
-    // At the moment Bizum does not support payment confirmation flow with monei.js
-    // To confirm Bizum payment you need to do a post request to
-    // "https://secure.monei.com/payments/{{payment.id}}/confirm" passing payment ID and payment token
-    // You can do it with by submitting a form (client-side) or by calling confirm API endpoint (server-side)
     if (result.token) {
       setLoading(true);
-      const field = document.createElement("input");
-      field.type = "hidden";
-      field.name = "paymentToken";
-      field.value = result.token;
-      confirmForm.appendChild(field);
-      confirmForm.submit();
+      moneiTokenHandler(result.token);
     }
   },
 

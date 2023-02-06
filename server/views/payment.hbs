@@ -44,9 +44,11 @@
   <div class="card mb-3">
     <div class="card-body">
       <div class="payment-methods">
+        {{#if showBizum}}
         <div class="payment-button" id="bizum">
           <!-- Bizum button will be rendered here -->
         </div>
+        {{/if}}
         <div class="payment-button" id="paypal">
           <!-- Paypal button will be rendered here -->
         </div>
@@ -105,11 +107,6 @@
 <div class="loader">
   <div class="spinner-border text-light"></div>
 </div>
-
-<!-- Hidden payment form needed to confirm Bizum payments -->
-<form method="POST" action="https://secure.monei.com/payments/{{payment.id}}/confirm" id="confirm_form">
-  <input type="text" name="paymentId" hidden value="{{payment.id}}" readOnly />
-</form>
 
 <script>
   window.paymentId = "{{payment.id}}";

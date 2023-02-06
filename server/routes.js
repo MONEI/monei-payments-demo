@@ -27,7 +27,7 @@ router.get("/", (req, res) => {
   // For the purpose of this example we are using cookies to store cart information
   // in the real app you will use some sort of database for that.
   res.clearCookie("cart");
-  res.clearCookie("details");
+  if (!bizumDemo) res.clearCookie("details");
   res.cookie("cart", JSON.stringify(cart), {maxAge: 900000});
   const url = bizumDemo ? "/checkout?bizumDemo=1" : "/checkout";
   res.redirect(url);
@@ -116,11 +116,12 @@ router.get("/payment", async (req, res) => {
   const cart = parseJSON(req.cookies.cart);
   const details = parseJSON(req.cookies.details);
   const payment = await monei.payments.get(paymentId);
+  const showBizum = cart.totalAmount < 5;
 
   // If there is no cart object in cookies, redirect the customer to the initial page to generate it.
   if (!cart) return res.redirect(`/`);
 
-  res.render("payment", {cart, details, payment});
+  res.render("payment", {cart, details, payment, showBizum});
 });
 
 // Checks the status of the payment after it was confirmed client-side.

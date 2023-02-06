@@ -54,39 +54,42 @@ const moneiTokenHandler = async (paymentToken, cardholderName) => {
 };
 
 
+const bizumButton = document.getElementById("bizum");
+if (bizumButton) {
 // Initialize Bizum payment button
-const bizumButton = monei.Bizum({
-  paymentId: window.paymentId,
+  const bizumButton = monei.Bizum({
+    paymentId: window.paymentId,
 
-  // You can specify UI component language
-  language: "en",
+    // You can specify UI component language
+    language: "en",
 
-  // Specify button styles
-  style: {
-    height: 42
-  },
+    // Specify button styles
+    style: {
+      height: 42
+    },
 
-  // Specify a callback when payment is submitted
-  onSubmit(result) {
-    console.log(result);
-    if (result.token) {
-      setLoading(true);
-      moneiTokenHandler(result.token);
+    onLoad(isSupported) {
+      if (!isSupported) {
+        // Hide payment request button if it is not supported
+        bizumButton.classList.add("d-none");
+      }
+    },
+
+    // Specify a callback when payment is submitted
+    onSubmit(result) {
+      console.log(result);
+      if (result.token) {
+        setLoading(true);
+        moneiTokenHandler(result.token);
+      }
+    },
+
+    onError(error) {
+      console.log(error);
     }
-  },
+  });
 
-  onError(error) {
-    console.log(error);
-  }
-});
-
-const cartTotal = document.querySelector('#order-total li:last-child strong:last-child').innerHTML.replace(/\n|\s|€/g, '');
-
-if (Number(cartTotal) <= 5) {
-// Render Bizum button into the container div only if cart total is 5 or less
   bizumButton.render("#bizum");
-} else {
-  document.querySelector(".bizum-container").style.display = "none";
 }
 
 // Initialize PayPal payment button

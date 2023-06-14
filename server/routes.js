@@ -21,7 +21,7 @@ const monei = new Monei(config.monei.apiKey);
 router.get("/", (req, res) => {
   const bizumDemo = req.query.bizumDemo === "1";
   const cart = bizumDemo
-    ? generateRandomCart({defaultPrice: {min: 1, max: 5}, numItems: 1, qty: {min: 1, max: 1}})
+    ? generateRandomCart({defaultPrice: {min: 1, max: 4}, numItems: 1, qty: {min: 1, max: 1}})
     : generateRandomCart();
 
   // For the purpose of this example we are using cookies to store cart information

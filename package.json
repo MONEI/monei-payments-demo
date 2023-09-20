@@ -3,7 +3,7 @@
   "description": "Sample store accepting card payments on the web with MONEI Components and Payments API.",
   "version": "1.0.0",
   "main": "index.js",
-  "homepage": "https://monei-payments-demo.herokuapp.com/",
+  "homepage": "https://payments-demo.monei.com/",
   "author": "MONEI <support@monei.com> (https://monei.com)",
   "license": "MIT",
   "contributors": [

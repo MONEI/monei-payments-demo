@@ -1,0 +1,135 @@
+---
+import {countryList, people} from '../lib/countries.js';
+
+const {theme, country} = Astro.props;
+const countries = countryList();
+const selected = countries.find((c) => c.code === country) ?? countries[0];
+
+const field = `w-full ${theme.page.radius} border ${theme.page.border} bg-white px-3 py-2 text-sm outline-none focus:border-current`;
+const label = `block text-xs font-medium ${theme.page.muted}`;
+
+const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
+---
+
+<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+  <div class="flex items-baseline justify-between gap-4">
+    <h2 class={`text-sm ${theme.page.heading}`}>Shipping address</h2>
+    <button
+      type="button"
+      id="fill-sample"
+      class="cursor-pointer text-xs underline"
+      style={`color: ${theme.page.accent}`}
+    >
+      Use a sample address
+    </button>
+  </div>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <label class="sm:col-span-2">
+      <span class={label}>Name</span>
+      <input class={`mt-1 ${field}`} name="name" autocomplete="name" required />
+    </label>
+    <label class="sm:col-span-2">
+      <span class={label}>Email</span>
+      <input class={`mt-1 ${field}`} type="email" name="email" autocomplete="email" required />
+    </label>
+    <label class="sm:col-span-2">
+      <span class={label}>Address</span>
+      <input class={`mt-1 ${field}`} name="line1" autocomplete="address-line1" required />
+    </label>
+    <label>
+      <span class={label}>Country</span>
+      <select class={`mt-1 ${field}`} name="country" id="country" autocomplete="country">
+        {
+          countries.map((c) => (
+            <option
+              value={c.code}
+              selected={c.code === selected.code}
+              data-example={c.example}
+              data-inputmode={c.inputmode}
+              data-pattern={c.pattern}
+              data-unserviceable={c.unserviceable ? 'true' : 'false'}
+            >
+              {c.name}
+            </option>
+          ))
+        }
+      </select>
+    </label>s
+    <label>
+      <span class={label}>Postcode</span>
+      <input
+        class={`mt-1 ${field}`}
+        name="zip"
+        id="zip"
+        autocomplete="postal-code"
+        inputmode={selected.inputmode}
+        placeholder={selected.example}
+        pattern={selected.pattern}
+        required
+      />
+      <span class="mt-1 hidden text-xs text-rose-600" id="zip-error"></span>
+    </label>s
+    <label class="sm:col-span-2">
+      <span class={label}>City</span>
+      <input class={`mt-1 ${field}`} name="city" autocomplete="address-level2" required />
+    </label>
+  </div>s
+  <p class={`mt-3 text-xs ${theme.page.muted}`} id="country-note" hidden>
+    We don't ship to this country yet — pick another to see shipping rates.
+  </p>
+</section>
+<script define:vars={{samples, PEOPLE: people()}}>
+  const country = document.getElementById('country');
+  const zip = document.getElementById('zip');
+  const zipError = document.getElementById('zip-error');
+  const note = document.getElementById('country-note');
+  const fill = document.getElementById('fill-sample');
+  const form = zip.closest('section');
+
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+  fill.addEventListener('click', () => {
+    const code = pick(Object.keys(samples));
+    const address = pick(samples[code]);
+    const person = pick(PEOPLE);
+
+    country.value = code;
+    // Before filling: the postcode field's pattern still belongs to the previously
+    // selected country, so a valid address would be marked invalid.
+    sync();
+
+    const set = (name, value) => {
+      const input = form.querySelector(`[name="${name}"]`);
+      if (input) input.value = value;
+    };
+    set('name', person.name);
+    set('email', person.email);
+    set('line1', address.line1);
+    set('city', address.city);
+    set('zip', address.zip);
+    validate();
+  });
+
+  const sync = () => {
+    const option = country.selectedOptions[0];
+    zip.placeholder = option.dataset.example ?? '';
+    zip.inputMode = option.dataset.inputmode ?? 'text';
+    zip.pattern = option.dataset.pattern ?? '';
+    note.hidden = option.dataset.unserviceable !== 'true';
+    validate();
+  };
+
+  const validate = () => {
+    const option = country.selectedOptions[0];
+    const bad = zip.value.trim() && !zip.checkValidity();
+    zipError.textContent = bad ? `Expected a postcode like ${option.dataset.example}` : '';
+    zipError.classList.toggle('hidden', !bad);
+  };
+
+  country.addEventListener('change', sync);
+  zip.addEventListener('blur', validate);
+  zip.addEventListener('input', () => {
+    if (!zipError.classList.contains('hidden')) validate();
+  });
+  sync();
+</script>

@@ -1,0 +1,61 @@
+---
+const {theme, bizumEnabled} = Astro.props;
+
+const CARDS = [
+  {number: '4444 4444 4444 4406', label: 'Visa · 3DS challenge'},
+  {number: '4444 4444 4444 4422', label: 'Visa · frictionless'},
+  {number: '5555 5555 5555 5524', label: 'Mastercard · no challenge'}
+];
+---
+
+<section class={`${theme.page.radius} border ${theme.page.border} ${theme.page.surface} p-5`}>
+  <h2 class={`text-sm ${theme.page.heading}`}>Paying in test mode</h2>
+  <p class={`mt-1 text-xs ${theme.page.muted}`}>
+    Any of these cards works. Expiry <strong>12/34</strong>, CVC <strong>123</strong>.
+  </p>
+  <ul class="mt-3 space-y-1.5">
+    {
+      CARDS.map((card) => (
+        <li class="flex items-center gap-2">
+          <button
+            type="button"
+            class="copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted"
+            data-copy={card.number.replace(/ /g, '')}
+            style={`color: ${theme.page.accent}`}
+          >
+            {card.number}
+          </button>
+          <span class={`text-xs ${theme.page.muted}`}>{card.label}</span>
+        </li>
+      ))
+    }
+    {
+      bizumEnabled && (
+        <li class="flex items-center gap-2">
+          <button
+            type="button"
+            class="copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted"
+            data-copy="+34500000000"
+            style={`color: ${theme.page.accent}`}
+          >
+            +34 500 000 000
+          </button>
+          <span class={`text-xs ${theme.page.muted}`}>Bizum · under €5 only</span>
+        </li>
+      )
+    }
+  </ul>
+  <p class={`mt-3 text-xs ${theme.page.muted}`}>
+    <a class="underline" href="https://docs.monei.com/testing/" rel="noopener"> Full list of test cards </a>
+  </p>
+</section>
+<script>
+  for (const button of document.querySelectorAll('.copy')) {
+    button.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      const original = button.textContent;
+      button.textContent = 'Copied';
+      setTimeout(() => (button.textContent = original), 1200);
+    });
+  }
+</script>

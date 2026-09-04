@@ -1,5 +1,6 @@
 import {PRODUCTS} from '../data/products.js';
 import {newSeed, seededCart} from './cart.js';
+import {normalizeCountry} from './countries.js';
 
 // The demo's whole state lives in the query string, so a link reproduces an exact
 // configuration. The URL is hand-editable, so every value is whitelisted and
@@ -85,7 +86,7 @@ export const parseConfig = (url) => {
     methods: subset(q.get('methods'), METHODS),
     shipping: bool(q.get('shipping'), DEFAULTS.shipping),
     billing: bool(q.get('billing'), DEFAULTS.billing),
-    country: q.get('country'), // validated in task 5 against the country list
+    country: normalizeCountry(q.get('country')),
     seed,
     seedGenerated: !validSeed,
     cart,

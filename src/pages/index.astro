@@ -2,6 +2,8 @@
 import StoreLayout from '../layouts/store.astro';
 import StoreHeader from '../components/store-header.astro';
 import CartSummary from '../components/cart-summary.astro';
+import AddressForm from '../components/address-form.astro';
+import TestCards from '../components/test-cards.astro';
 import ProductArt from '../components/product-art.astro';
 import {STORE} from '../data/store.js';
 import {PRODUCTS} from '../data/products.js';
@@ -56,12 +58,15 @@ const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
             ))
           }
         </ul>
+        <div class="mt-6">
+          <AddressForm theme={theme} country={config.country} />
+        </div>
       </section>
       <aside class="space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
-
+        <TestCards theme={theme} bizumEnabled={enabled?.includes('bizum') ?? true} />
         <p class={`text-xs ${theme.page.muted}`}>
-          Checkout lands in task 7. Payment methods on this account:
+          Payment methods on this account:
           {enabled ? ` ${enabled.join(', ')}.` : ' lookup unavailable — every method shown.'}
         </p>
       </aside>

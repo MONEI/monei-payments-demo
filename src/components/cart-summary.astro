@@ -1,0 +1,41 @@
+---
+import ProductArt from './product-art.astro';
+import {formatPrice} from '../lib/cart.js';
+
+const {theme, lines, total} = Astro.props;
+---
+
+<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+  <h2 class={`text-sm ${theme.page.heading}`}>Your order</h2>
+  <ul class="mt-4 space-y-4">
+    {
+      lines.map((line) => (
+        <li class="flex items-start gap-3">
+          <ProductArt art={line.art} class={`h-10 w-10 shrink-0 ${theme.page.muted}`} />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium">{line.name}</p>
+            <p class={`text-xs ${theme.page.muted}`}>
+              {line.quantity} × {formatPrice(line.price)}
+              {line.weight && ` · ${line.weight}`}
+            </p>
+          </div>
+          <p class="text-sm tabular-nums">{formatPrice(line.lineTotal)}</p>
+        </li>
+      ))
+    }
+  </ul>
+  <dl class={`mt-6 space-y-1.5 border-t ${theme.page.border} pt-4 text-sm`}>
+    <div class="flex justify-between">
+      <dt class={theme.page.muted}>Subtotal</dt>
+      <dd class="tabular-nums">{formatPrice(total)}</dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class={theme.page.muted}>Shipping</dt>
+      <dd class={theme.page.muted}>Calculated at checkout</dd>
+    </div>
+    <div class={`flex justify-between border-t ${theme.page.border} pt-3 font-medium`}>
+      <dt>Total</dt>
+      <dd class="tabular-nums">{formatPrice(total)}</dd>
+    </div>
+  </dl>
+</section>

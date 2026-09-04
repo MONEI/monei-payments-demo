@@ -3,22 +3,16 @@ import {PRODUCTS, productById} from '../data/products.js';
 const MIN_ITEMS = 2;
 const MAX_ITEMS = 3;
 
-// People buy several bags of coffee but one grinder, so quantity is drawn per
-// price band rather than uniformly. A flat draw produced baskets like 3 × a €68
-// grinder — arithmetically fine, but nobody shops like that, and an implausible
-// cart undercuts a demo people judge on looks.
+// Per price band, not uniform: people buy several bags of coffee but one grinder.
 const quantityWeights = (price) => {
-  if (price >= 4000) return [1]; // grinder, brewer, 1 kg sack
-  if (price >= 1500) return [1, 1, 2]; // 250 g / 500 g bags
-  return [1, 2, 2, 3]; // cups, filter papers
+  if (price >= 4000) return [1];
+  if (price >= 1500) return [1, 1, 2];
+  return [1, 2, 2, 3];
 };
 
-/**
- * xmur3 + mulberry32. Hand-rolled because the cart has to come out identical
- * for a given seed on every machine and Node version — `Math.random()` cannot
- * be seeded, and anything platform-dependent would make a shared link show the
- * recipient a different order than the sender saw.
- */
+// xmur3 + mulberry32. A seeded PRNG rather than Math.random() so the same seed
+// gives the same cart on every machine — a shared link has to show the recipient
+// what the sender saw.
 const seedToInt = (seed) => {
   let h = 1779033703 ^ seed.length;
   for (let i = 0; i < seed.length; i++) {
@@ -39,21 +33,13 @@ const rng = (seed) => {
   };
 };
 
-/** A URL-safe seed. Matches the `^[a-z0-9]{1,16}$` shape config.js validates. */
 export const newSeed = () => Math.random().toString(36).slice(2, 12);
 
-/**
- * The same seed always yields the same products and quantities.
- *
- * Note this is only the cart's STARTING state. Quantities are then editable in
- * the store, which is how a shopper reaches the under-€5 total Bizum needs in
- * test mode.
- */
+/** The cart's starting state. Quantities are editable from there. */
 export const seededCart = (seed) => {
   const next = rng(seed);
   const pool = [...PRODUCTS];
 
-  // Fisher-Yates, drawing from the seeded stream so the order is reproducible.
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(next() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -70,29 +56,25 @@ export const seededCart = (seed) => {
   });
 };
 
-/** Cart lines joined to the catalogue, with per-line totals. */
 export const cartLines = (items) =>
   items
     .map(({productId, quantity}) => {
       const product = productById(productId);
-      if (!product) return null; // Unknown id (edited URL) — drop the line.
+      if (!product) return null;
       return {...product, quantity, lineTotal: product.price * quantity};
     })
     .filter(Boolean);
 
-/** Goods total in cents. Shipping is added separately, from a signed quote. */
+/** Goods only, in cents. Shipping is added from a signed quote. */
 export const cartTotal = (items) => cartLines(items).reduce((sum, line) => sum + line.lineTotal, 0);
 
 export const formatPrice = (cents, currency = 'EUR', locale = 'en-IE') =>
   new Intl.NumberFormat(locale, {style: 'currency', currency}).format(cents / 100);
 
 /**
- * Order reference for a single payment attempt.
- *
- * Random per attempt, NOT derived from the seed: MONEI treats orderId as a
- * duplicate-payment guard, so a seed-derived one would let a shared link be
- * paid exactly once and reject every attempt after. Alphanumeric only, which
- * the API requires.
+ * Alphanumeric, as the API requires, and random per attempt rather than derived
+ * from the seed — MONEI uses orderId as a duplicate-payment guard, so a stable
+ * one would let a shared link be paid only once.
  */
 export const newOrderId = () => {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

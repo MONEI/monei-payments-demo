@@ -1,18 +1,11 @@
 import {PRODUCTS} from '../data/products.js';
 import {newSeed, seededCart} from './cart.js';
 
-/**
- * The demo's whole state lives in the query string. That is what lets sales send
- * a link that reproduces an exact configuration — same theme, same toggles, same
- * cart — with no cookies and no server-side session.
- *
- * Because the URL is public and hand-editable, every value here is whitelisted:
- * anything unrecognised falls back to its default rather than throwing, so a
- * mangled link still renders a working store.
- */
+// The demo's whole state lives in the query string, so a link reproduces an exact
+// configuration. The URL is hand-editable, so every value is whitelisted and
+// anything unrecognised falls back to its default rather than throwing.
 
-// EUR everywhere, deliberately not configurable: Bizum is EUR-only, the shipping
-// rates are quoted in EUR, and a currency toggle would silently break both.
+// Not configurable: Bizum is EUR-only and the shipping rates are quoted in EUR.
 export const CURRENCY = 'EUR';
 
 export const THEMES = ['aurora', 'monoline'];
@@ -38,13 +31,11 @@ const PRODUCT_IDS = new Set(PRODUCTS.map((p) => p.id));
 
 const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
 
-/** Absent → default. Anything else is read as a boolean, so `?shipping=0` works. */
 const bool = (value, fallback) => {
   if (value === null) return fallback;
   return !['0', 'false', 'no', 'off', ''].includes(value.toLowerCase());
 };
 
-/** Comma-separated, unknown entries dropped, order and duplicates normalised. */
 const subset = (value, allowed) => {
   if (!value) return [];
   const picked = value.split(',').map((s) => s.trim());
@@ -52,15 +43,9 @@ const subset = (value, allowed) => {
 };
 
 /**
- * `cart=ethiopia-guji:2,stoneware-cup:1`
- *
- * Present only once a shopper edits quantities — the seeded cart is the starting
- * point, and this overrides it so an edited basket survives a reload and can be
- * shared. That matters for Bizum: its under-€5 test-mode limit is reached by
- * lowering quantities, and without this the resulting state could not be sent to
- * anyone.
- *
- * Returns null when absent or unusable, which means "fall back to the seed".
+ * `cart=ethiopia-guji:2,stoneware-cup:1` — present only once quantities are
+ * edited, so an edited basket survives a reload and can be shared. Null means
+ * fall back to the seeded cart.
  */
 const parseCart = (value) => {
   if (!value) return null;
@@ -79,13 +64,9 @@ const parseCart = (value) => {
 export const serializeCart = (items) => items.map(({productId, quantity}) => `${productId}:${quantity}`).join(',');
 
 /**
- * Reads a validated config out of a URL. Never throws — every branch has a
- * fallback, because this runs on a request whose query string anyone can edit.
- *
- * `seedGenerated` tells the page whether it invented the seed, so it can write
- * the canonical URL back with replaceState (not a redirect: a 302 would risk a
- * loop if a generated seed ever failed its own validation, and would make a
- * plain `curl /` return an empty body).
+ * Never throws: every branch has a fallback. `seedGenerated` tells the page it
+ * invented the seed, so it can replaceState the canonical URL — a redirect would
+ * risk a loop and would leave `curl /` with an empty body.
  */
 export const parseConfig = (url) => {
   const q = url instanceof URL ? url.searchParams : new URL(url).searchParams;
@@ -113,11 +94,7 @@ export const parseConfig = (url) => {
   };
 };
 
-/**
- * Config → query string, omitting anything still at its default so a shared link
- * stays readable. `cart` is included only once edited; otherwise the seed alone
- * reproduces it.
- */
+/** Omits anything still at its default, so shared links stay short. */
 export const toQuery = (config) => {
   const q = new URLSearchParams();
   if (config.seed) q.set('seed', config.seed);

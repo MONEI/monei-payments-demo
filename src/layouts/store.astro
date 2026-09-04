@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+import {STORE} from '../data/store.js';
+
+const {theme, title} = Astro.props;
+const preview = new URL('/images/preview.jpg', Astro.site).href;
+---
+
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title ? `${title} — ${STORE.name}` : STORE.name}</title>
+    <meta name="description" content={STORE.description} />
+    <meta property="og:title" content={STORE.name} />
+    <meta property="og:description" content={STORE.description} />
+    <meta property="og:image" content={preview} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={preview} />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href={theme.card.fonts[0].cssSrc} />
+    <script is:inline src="https://js.monei.com/v3/monei.js"></script>
+  </head>
+  <body class={`min-h-full ${theme.page.body}`} style={`font-family: ${theme.page.fontFamily}`}>
+    <slot />
+  </body>
+</html>

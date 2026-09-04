@@ -3,12 +3,6 @@ import {DEFAULTS, parseConfig, toQuery} from './config.js';
 
 const at = (query) => parseConfig(new URL(`https://demo.test/${query}`));
 
-/**
- * The query string is the demo's only state, and sales send links built from it.
- * A whitelist bug here fails silently: the recipient sees a working store that is
- * not the configured one, and nobody can spot a param that reverted to default.
- * That is why these assertions exist even though the demo carries few tests.
- */
 describe('parseConfig', () => {
   it('falls back to defaults on a bare URL', () => {
     const c = at('');

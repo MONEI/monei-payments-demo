@@ -1,13 +1,6 @@
 /**
- * The shop's catalogue. Fixed, not generated — a seeded random subset of these
- * becomes the cart, so a shared link always shows the recipient the same order.
- *
- * Prices are in cents, the unit MONEI's API expects, so nothing has to be
- * converted before a payment is created.
- *
- * `art` names an inline SVG in src/components/product-art.astro rather than a
- * bitmap: it keeps the repo free of stock-photo licensing and stays crisp in
- * both themes.
+ * Prices are in cents, the unit the Payments API expects. `art` names an inline
+ * SVG in product-art.astro.
  */
 export const PRODUCTS = [
   {
@@ -67,9 +60,7 @@ export const PRODUCTS = [
     art: 'cup'
   },
   {
-    // Deliberately cheap: Bizum only accepts amounts under €5 in test mode, so
-    // the cart needs a way to fall below that without a special query param
-    // (the old demo used ?bizumDemo=1 to force a cheap cart).
+    // Bizum only accepts amounts under €5 in test mode.
     id: 'filter-papers',
     name: 'Filter Papers',
     detail: 'Unbleached, 100 sheets',

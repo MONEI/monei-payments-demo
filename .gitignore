@@ -5,3 +5,8 @@ node_modules
 .env
 .env.local
 /docs/plans
+
+# Astro
+dist/
+.astro/
+.vercel/

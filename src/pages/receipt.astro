@@ -1,0 +1,166 @@
+---
+import StoreLayout from '../layouts/store.astro';
+import StoreHeader from '../components/store-header.astro';
+import {formatPrice} from '../lib/cart.js';
+import {themeFor} from '../data/themes.js';
+import {monei} from '../lib/monei.js';
+import {parseConfig} from '../lib/config.js';
+
+const config = parseConfig(Astro.url);
+const theme = themeFor(config.theme);
+const id = Astro.url.searchParams.get('id');
+
+let payment = null;
+let lookupError = null;
+
+if (id && monei) {
+  try {
+    payment = await monei.payments.get(id);
+  } catch (error) {
+    lookupError = error.message ?? 'Could not load this payment';
+  }
+}
+
+// PENDING and AUTHORIZED are not failures: a 3D Secure return or a Bizum
+// challenge lands here before the provider has settled. Treating them as failed
+// is what made the old demo say "Payment canceled" on a working payment.
+const PENDING = ['PENDING', 'AUTHORIZED', 'PENDING_PROVIDER'];
+const state = !payment
+  ? 'unknown'
+  : payment.status === 'SUCCEEDED'
+    ? 'succeeded'
+    : PENDING.includes(payment.status)
+      ? 'pending'
+      : 'failed';
+
+const method = (() => {
+  const pm = payment?.paymentMethod;
+  if (!pm) return null;
+  if (pm.bizum) return `Bizum · ${pm.bizum.phoneNumber ?? ''}`.trim();
+  if (pm.paypal) return `PayPal · ${pm.paypal.orderId ?? ''}`.trim();
+  if (pm.card) return `${pm.card.brand ?? 'Card'} · ${pm.card.last4 ?? ''}`.trim();
+  return pm.method ?? null;
+})();
+
+const formatAddress = (details) => {
+  const a = details?.address;
+  if (!a) return null;
+  const parts = [a.line1, a.line2, [a.city, a.state, a.zip].filter(Boolean).join(', '), a.country];
+  return parts.filter(Boolean).join(' · ');
+};
+
+const card = `${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`;
+const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-sm font-medium`;
+---
+
+<StoreLayout theme={theme} title="Receipt">
+  <StoreHeader theme={theme} livemode={false} />
+  <main class="mx-auto max-w-xl px-6 py-12">
+    {
+      state === 'succeeded' && (
+        <>
+          <h1 class={`text-2xl ${theme.page.heading}`}>Thank you{payment.customer?.name ? `, ${payment.customer.name}` : ''}!</h1>
+          <p class={`mt-2 text-sm ${theme.page.muted}`}>
+            Order <strong>{payment.orderId}</strong> is confirmed.
+          </p>
+        </>
+      )
+    }
+    {
+      state === 'pending' && (
+        <>
+          <h1 class={`text-2xl ${theme.page.heading}`}>Payment processing</h1>
+          <p class={`mt-2 text-sm ${theme.page.muted}`}>
+            The provider has not settled this payment yet. This page refreshes every few
+            seconds — the webhook is what confirms it server-side.
+          </p>
+        </>
+      )
+    }
+    {
+      state === 'failed' && (
+        <>
+          <h1 class={`text-2xl ${theme.page.heading}`}>Payment not completed</h1>
+          <p class={`mt-2 text-sm ${theme.page.muted}`}>
+            {payment.statusMessage ?? 'The payment did not go through.'}
+          </p>
+        </>
+      )
+    }
+    {
+      state === 'unknown' && (
+        <>
+          <h1 class={`text-2xl ${theme.page.heading}`}>No payment to show</h1>
+          <p class={`mt-2 text-sm ${theme.page.muted}`}>
+            {lookupError ?? 'This link has no payment id.'}
+          </p>
+        </>
+      )
+    }
+    {
+      payment && (
+        <dl class={`mt-8 ${card} grid grid-cols-[9rem_1fr] gap-y-2 text-sm`}>
+          <dt class={theme.page.muted}>Order</dt>
+          <dd>{payment.orderId}</dd>
+          <dt class={theme.page.muted}>Amount</dt>
+          <dd class="tabular-nums">{formatPrice(payment.amount, payment.currency)}</dd>
+          <dt class={theme.page.muted}>Status</dt>
+          <dd>{payment.status}</dd>
+          {payment.customer?.name && (
+            <>
+              <dt class={theme.page.muted}>Name</dt>
+              <dd>{payment.customer.name}</dd>
+            </>
+          )}
+          {payment.customer?.email && (
+            <>
+              <dt class={theme.page.muted}>Email</dt>
+              <dd>{payment.customer.email}</dd>
+            </>
+          )}
+          {method && (
+            <>
+              <dt class={theme.page.muted}>Payment method</dt>
+              <dd>{method}</dd>
+            </>
+          )}
+          {formatAddress(payment.shippingDetails) && (
+            <>
+              <dt class={theme.page.muted}>Shipping address</dt>
+              <dd>{formatAddress(payment.shippingDetails)}</dd>
+            </>
+          )}
+          {formatAddress(payment.billingDetails) && (
+            <>
+              <dt class={theme.page.muted}>Billing address</dt>
+              <dd>{formatAddress(payment.billingDetails)}</dd>
+            </>
+          )}
+        </dl>
+      )
+    }
+    <div class="mt-8 space-y-3">
+      {
+        state === 'failed' && (
+          <a class={`${button} text-white`} style={`background: ${theme.page.accent}`} href="/?error=1">
+            Try again
+          </a>
+        )
+      }
+      <a class={`${button} border ${theme.page.border}`} href="/">Create another order</a>
+      <a
+        class={`${button} text-white`}
+        style={`background: ${theme.page.accent}`}
+        href="https://dashboard.monei.com/?action=signUp"
+        rel="noopener"
+      >
+        Create account
+      </a>
+    </div>
+    <p class={`mt-6 text-xs ${theme.page.muted}`}>
+      See the <a class="underline" href="https://docs.monei.com/" rel="noopener">documentation</a>
+      for integrating these payment methods into your own checkout.
+    </p>
+  </main>
+  {state === 'pending' && <script is:inline>setTimeout(() => location.reload(), 4000);</script>}
+</StoreLayout>

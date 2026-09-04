@@ -94,8 +94,8 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     const person = pick(PEOPLE);
 
     country.value = code;
-    // Before filling: the postcode field's pattern still belongs to the previously
-    // selected country, so a valid address would be marked invalid.
+    // The postcode field's pattern still belongs to the previous country, so a
+    // valid address would be flagged invalid without re-syncing first.
     sync();
 
     const set = (name, value) => {
@@ -108,6 +108,11 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     set('city', address.city);
     set('zip', address.zip);
     validate();
+
+    // Assigning .value fires no event, so anything listening for a change — the
+    // shipping lookup among it — would price a stale address.
+    country.dispatchEvent(new Event('change', {bubbles: true}));
+    zip.dispatchEvent(new Event('change', {bubbles: true}));
   });
 
   const sync = () => {

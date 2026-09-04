@@ -1,0 +1,61 @@
+---
+const {theme} = Astro.props;
+
+/**
+ * The SDK toggles `monei-component--focus|--invalid|--empty|--complete` on
+ * whichever element is handed to render(), so the border and ring styling below
+ * lives on the merchant's own box rather than inside the iframe.
+ */
+const part = `monei-part ${theme.page.radius} border ${theme.page.border} bg-white px-3 py-2`;
+const label = `block text-xs font-medium ${theme.page.muted}`;
+---
+
+<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+  <h2 class={`text-sm ${theme.page.heading}`}>Card details</h2>
+  <div class="mt-4 space-y-3">
+    <div>
+      <span class={label}>Card number</span>
+      <div class={`mt-1 ${part}`} id="card-number"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <span class={label}>Expiry</span>
+        <div class={`mt-1 ${part}`} id="card-expiry"></div>
+      </div>
+      <div>
+        <span class={label}>CVC</span>
+        <div class={`mt-1 ${part}`} id="card-cvc"></div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-5">
+    <h3 class={label}>Shipping</h3>
+    <div class="mt-2 space-y-1.5" id="shipping-options">
+      <p class={`text-xs ${theme.page.muted}`}>Enter an address to see rates.</p>
+    </div>
+  </div>
+  <p class="mt-4 text-xs text-rose-600" id="pay-error" hidden></p>
+  <button
+    type="button"
+    id="pay"
+    disabled
+    class={`${theme.page.radius} mt-4 w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50`}
+    style={`background: ${theme.page.accent}`}
+  >
+    Pay
+  </button>
+</section>
+<style>
+  .monei-part {
+    transition: border-color 120ms ease;
+  }
+  .monei-part.monei-component--focus {
+    border-color: currentColor;
+  }
+  .monei-part.monei-component--invalid {
+    border-color: var(--color-rose-500, #f43f5e);
+  }
+  .monei-part.monei-component--complete {
+    border-color: var(--color-emerald-500, #10b981);
+  }
+</style>

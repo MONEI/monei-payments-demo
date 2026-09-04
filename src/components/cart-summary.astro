@@ -31,11 +31,11 @@ const {theme, lines, total} = Astro.props;
     </div>
     <div class="flex justify-between">
       <dt class={theme.page.muted}>Shipping</dt>
-      <dd class={theme.page.muted}>Calculated at checkout</dd>
+      <dd class={`tabular-nums ${theme.page.muted}`} id="cart-shipping">—</dd>
     </div>
     <div class={`flex justify-between border-t ${theme.page.border} pt-3 font-medium`}>
       <dt>Total</dt>
-      <dd class="tabular-nums">{formatPrice(total)}</dd>
+      <dd class="tabular-nums" id="cart-total">{formatPrice(total)}</dd>
     </div>
   </dl>
 </section>

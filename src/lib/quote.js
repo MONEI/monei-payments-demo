@@ -40,6 +40,6 @@ export const verifyQuote = (encoded, sig) => {
   }
 
   if (!quote?.exp || quote.exp < Math.floor(Date.now() / 1000)) throw new Error('Shipping quote expired');
-  
+
   return quote;
 };

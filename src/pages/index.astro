@@ -4,6 +4,8 @@ import StoreHeader from '../components/store-header.astro';
 import CartSummary from '../components/cart-summary.astro';
 import AddressForm from '../components/address-form.astro';
 import TestCards from '../components/test-cards.astro';
+import CardForm from '../components/card-form.astro';
+import {accountId} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
 import {STORE} from '../data/store.js';
 import {PRODUCTS} from '../data/products.js';
@@ -23,11 +25,29 @@ const enabled = account?.methods ?? null;
 const inCart = new Set(config.cart.map((i) => i.productId));
 
 const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
+const failedPayment = Astro.url.searchParams.has('error');
+
+const clientConfig = {
+  accountId,
+  seed: config.seed,
+  currency: config.currency,
+  lang: config.lang,
+  goods: total,
+  cardStyle: theme.card.style,
+  cardFonts: theme.card.fonts
+};
 ---
 
 <StoreLayout theme={theme}>
   <StoreHeader theme={theme} livemode={account?.livemode ?? false} />
   <main class="mx-auto max-w-5xl px-6 py-12">
+    {
+      failedPayment && (
+        <p class={`${theme.page.radius} mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700`}>
+          That payment did not complete. Nothing was charged — try again below.
+        </p>
+      )
+    }
     <h1 class={`text-3xl ${theme.page.heading}`}>{STORE.blurb}</h1>
     <p class={`mt-2 max-w-xl text-sm ${theme.page.muted}`}>
       A working checkout built on MONEI Components. Nothing here charges a real card — pick a few bags and pay with a
@@ -58,8 +78,9 @@ const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
             ))
           }
         </ul>
-        <div class="mt-6">
+        <div class="mt-6 space-y-6">
           <AddressForm theme={theme} country={config.country} />
+          <CardForm theme={theme} />
         </div>
       </section>
       <aside class="space-y-4">
@@ -73,4 +94,8 @@ const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
     </div>
   </main>
   {canonicalQuery && <script is:inline set:html={`history.replaceState(null, '', '?${canonicalQuery}');`} />}
+  <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
+  <script>
+    import '../client/checkout.js';
+  </script>
 </StoreLayout>

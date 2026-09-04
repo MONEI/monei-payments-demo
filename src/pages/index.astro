@@ -2,14 +2,17 @@
 import '../styles/global.css';
 import ProductArt from '../components/product-art.astro';
 import {PRODUCTS} from '../data/products.js';
-import {seededCart, cartLines, cartTotal, formatPrice, newSeed} from '../lib/cart.js';
+import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
+import {parseConfig, toQuery} from '../lib/config.js';
 
-// Task 3 moves seed handling into the config model; this is enough to see the
-// catalogue and the seeded cart render.
-const seed = Astro.url.searchParams.get('seed') || newSeed();
-const cart = seededCart(seed);
-const lines = cartLines(cart);
-const total = cartTotal(cart);
+const config = parseConfig(Astro.url);
+const lines = cartLines(config.cart);
+const total = cartTotal(config.cart);
+
+// When the seed was invented for this request, hand the canonical query string
+// to the client so it can replaceState — putting a shareable URL in the address
+// bar without a redirect.
+const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
 ---
 
 <html lang="en">
@@ -22,9 +25,7 @@ const total = cartTotal(cart);
     <main class="mx-auto max-w-4xl px-6 py-16">
       <p class="text-xs font-medium tracking-widest text-stone-500 uppercase">Test mode</p>
       <h1 class="mt-2 text-3xl font-semibold tracking-tight">Coffee roastery</h1>
-      <p class="mt-2 text-stone-600">
-        Catalogue and seeded cart (task 2). Storefront proper lands in task 4.
-      </p>
+      <p class="mt-2 text-stone-600">Catalogue and seeded cart (task 2). Storefront proper lands in task 4.</p>
       <h2 class="mt-12 text-sm font-medium tracking-widest text-stone-500 uppercase">Catalogue</h2>
       <ul class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {
@@ -39,7 +40,8 @@ const total = cartTotal(cart);
         }
       </ul>
       <h2 class="mt-12 text-sm font-medium tracking-widest text-stone-500 uppercase">
-        Cart for seed <code class="font-mono normal-case">{seed}</code>
+        Cart for seed <code class="font-mono normal-case">{config.seed}</code>
+        {config.cartEdited && <span class="normal-case">(edited)</span>}
       </h2>
       <ul class="mt-4 divide-y divide-stone-200 border-y border-stone-200">
         {
@@ -56,10 +58,29 @@ const total = cartTotal(cart);
       </ul>
       <p class="mt-3 text-right text-sm font-medium tabular-nums">Total {formatPrice(total)}</p>
       <p class="mt-6 text-xs text-stone-500">
-        Reload to keep this cart, or <a class="underline" href="/">start a new one</a>. The same
-        seed always produces the same order, so a shared link shows the recipient exactly what the
-        sender saw.
+        Reload to keep this cart, or <a class="underline" href="/">start a new one</a>. The same seed always produces
+        the same order, so a shared link shows the recipient exactly what the sender saw.
+      </p>
+
+      <h2 class="mt-12 text-sm font-medium tracking-widest text-stone-500 uppercase">Config (task 3)</h2>
+      <dl class="mt-4 grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
+        <dt class="text-stone-500">theme</dt><dd>{config.theme}</dd>
+        <dt class="text-stone-500">layout</dt><dd>{config.layout}</dd>
+        <dt class="text-stone-500">flow</dt><dd>{config.flow}</dd>
+        <dt class="text-stone-500">lang</dt><dd>{config.lang}</dd>
+        <dt class="text-stone-500">currency</dt><dd>{config.currency}</dd>
+        <dt class="text-stone-500">country</dt><dd>{config.country ?? '—'}</dd>
+        <dt class="text-stone-500">methods</dt>
+        <dd>{config.methods.length ? config.methods.join(', ') : 'all the account allows'}</dd>
+        <dt class="text-stone-500">shipping</dt><dd>{String(config.shipping)}</dd>
+        <dt class="text-stone-500">billing</dt><dd>{String(config.billing)}</dd>
+      </dl>
+      <p class="mt-4 text-xs text-stone-500">
+        Try <a class="underline" href="/?theme=nonsense&methods=hack&seed=../../etc">a mangled link</a> — every unknown value
+        falls back to its default instead of erroring.
       </p>
     </main>
+
+    {canonicalQuery && <script is:inline set:html={`history.replaceState(null, '', '?${canonicalQuery}');`} />}
   </body>
 </html>

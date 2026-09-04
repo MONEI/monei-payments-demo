@@ -54,7 +54,7 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
           ))
         }
       </select>
-    </label>s
+    </label>
     <label>
       <span class={label}>Postcode</span>
       <input
@@ -68,12 +68,12 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
         required
       />
       <span class="mt-1 hidden text-xs text-rose-600" id="zip-error"></span>
-    </label>s
+    </label>
     <label class="sm:col-span-2">
       <span class={label}>City</span>
       <input class={`mt-1 ${field}`} name="city" autocomplete="address-level2" required />
     </label>
-  </div>s
+  </div>
   <p class={`mt-3 text-xs ${theme.page.muted}`} id="country-note" hidden>
     We don't ship to this country yet — pick another to see shipping rates.
   </p>

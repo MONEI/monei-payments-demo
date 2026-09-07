@@ -2,6 +2,8 @@ import {emit} from './events.js';
 
 const el = (id) => document.getElementById(id);
 
+const optionsKey = (options) => options.map((o) => `${o.id}:${o.amount}`).join('|');
+
 /**
  * Client-side navigation replaces the whole document body, so nothing here may be
  * captured once at module scope: every element reference and the card component
@@ -17,6 +19,10 @@ let shippingOut;
 let quote = null;
 let card = null;
 let complete = false;
+let paymentRequest = null;
+let walletQuote = null;
+let walletOpen = false;
+let walletOptionsKey = null;
 
 const readPage = () => {
   config = JSON.parse(el('demo-config').textContent);
@@ -27,6 +33,9 @@ const readPage = () => {
   shippingOut = el('cart-shipping');
   quote = null;
   complete = false;
+  walletQuote = null;
+  walletOpen = false;
+  walletOptionsKey = optionsKey(config.initialShippingOptions);
 };
 
 const money = (cents) =>
@@ -38,7 +47,7 @@ const setError = (message) => {
 };
 
 const setBusy = (busy) => {
-  payButton.disabled = busy || !complete || !quote;
+  payButton.disabled = busy || walletOpen || !complete || !quote;
   payButton.textContent = busy ? 'Processing…' : `Pay ${money(currentTotal())}`;
 };
 
@@ -69,14 +78,23 @@ const renderTotals = () => {
 
 const loadRates = async () => {
   const address = addressFromForm();
-  if (!address.country) return;
+
+  // A country alone is not enough to price Spain, where the postcode decides
+  // between mainland and the Canaries. Quoting the cheaper zone on a guess shows a
+  // total that moves once the shopper finishes typing.
+  if (!address.country || (config.zipZones.includes(address.country) && !/^\d{5}$/.test(address.zip))) {
+    quote = null;
+    shippingBox.innerHTML = `<p class="text-xs ${config.mutedClass}">Enter an address to see rates.</p>`;
+    renderTotals();
+    return;
+  }
 
   emit('POST /api/shipping-rates', {seed: config.seed, address});
 
   const response = await fetch('/api/shipping-rates', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
-    body: JSON.stringify({seed: config.seed, address})
+    body: JSON.stringify({seed: config.seed, cart: config.cart, address})
   });
   const data = await response.json();
   emit(`← ${response.status}`, data);
@@ -153,6 +171,146 @@ const mountCard = () => {
   card.render('#card-input');
 };
 
+/**
+ * The open sheet holds a total the server priced from the cart it saw. A cart
+ * change while it is open would make the sheet quote a price /api/payment then
+ * refuses, so the quantity controls go read-only for as long as it is open.
+ *
+ * Neither wallet reports a dismissal — Apple Pay wires no `oncancel`, and Google
+ * Pay swallows the `loadPaymentData` rejection under `requestShipping` — so this
+ * cannot be released on a close event. `pointerdown` anywhere in the document is
+ * the recovery: reaching the page at all means the sheet is no longer over it.
+ */
+const lockCart = (locked) => {
+  walletOpen = locked;
+  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = locked;
+  if (payButton) payButton.disabled = locked || !complete || !quote;
+
+  if (locked) document.addEventListener('pointerdown', unlockCart, {once: true, capture: true});
+  else document.removeEventListener('pointerdown', unlockCart, {capture: true});
+};
+
+const unlockCart = () => {
+  if (walletOpen) lockCart(false);
+};
+
+const walletRates = async (address) => {
+  emit('onShippingAddressChange', address);
+
+  const response = await fetch('/api/shipping-rates', {
+    method: 'POST',
+    headers: {'content-type': 'application/json'},
+    body: JSON.stringify({seed: config.seed, cart: config.cart, address})
+  });
+  const data = await response.json();
+  emit(`← ${response.status}`, data);
+
+  // The sheet has no error channel: `ShippingAddressChangeResult` is
+  // `{shippingOptions?, amount?}`. Throwing is what produces Apple Pay's
+  // `addressUnserviceable` and Google Pay's `SHIPPING_ADDRESS_UNSERVICEABLE`.
+  // It has to happen before anything is assigned — Google Pay's catch restores
+  // the selected option but keeps the mutated amount.
+  if (!response.ok) throw new Error(data.error ?? 'No rates for this address');
+
+  walletQuote = {quote: data.quote, sig: data.sig, optionId: data.shippingOptions[0].id};
+
+  // Returning `shippingOptions` makes the sheet rebuild its option list, which the
+  // shopper sees as a reload. The two response fields are independent, so the list
+  // is sent only when it differs from what the sheet already shows.
+  const sameOptions = walletOptionsKey === optionsKey(data.shippingOptions);
+  walletOptionsKey = optionsKey(data.shippingOptions);
+
+  return sameOptions ? {amount: data.amount} : {shippingOptions: data.shippingOptions, amount: data.amount};
+};
+
+const mountPaymentRequest = () => {
+  const container = el('payment-request');
+  if (!container) return;
+
+  const reason = el('express-reason');
+
+  paymentRequest = window.monei.PaymentRequest({
+    accountId: config.accountId,
+    amount: config.goods,
+    currency: config.currency,
+    sessionId: config.seed,
+    requestShipping: true,
+    requestBilling: true,
+    // Apple Pay reads `shippingMethods` when the sheet is constructed and Google
+    // Pay reads `shippingOptionParameters` at the same point, so an empty list
+    // here means the first sheet opens with no shipping at all.
+    shippingOptions: config.initialShippingOptions,
+    style: {borderRadius: config.walletRadius},
+
+    onShippingAddressChange: walletRates,
+
+    onShippingOptionChange: async (option) => {
+      emit('onShippingOptionChange', option);
+      walletQuote = walletQuote && {...walletQuote, optionId: option.id};
+      return {amount: config.goods + option.amount};
+    },
+
+    onBeforeOpen: () => {
+      lockCart(true);
+      return true;
+    },
+
+    onSubmit: async (result) => {
+      if (result.error || !result.token) {
+        lockCart(false);
+        return setError(result.error ?? 'The wallet did not return a card.');
+      }
+
+      // Dismissing the sheet fires no callback, so the lock is released here and
+      // by the watchdog rather than on a close event that does not exist.
+      lockCart(false);
+
+      if (!walletQuote) {
+        return setError('The wallet did not report a shipping address, so the order could not be priced.');
+      }
+
+      emit(`${result.paymentMethod}.onSubmit`, {
+        finalAmount: result.finalAmount,
+        shippingOption: result.shippingOption?.id,
+        token: `${result.token.slice(0, 12)}…`
+      });
+
+      const shipping = result.shippingDetails;
+      await submitPayment({
+        paymentToken: result.token,
+        optionId: result.shippingOption?.id ?? walletQuote.optionId,
+        quote: walletQuote.quote,
+        sig: walletQuote.sig,
+        // The sheet's own display total. Under `requestShipping` the token carries
+        // no amount, so this is a claim to check against the recomputed amount,
+        // never an amount to charge.
+        walletAmount: result.finalAmount,
+        customer: {name: shipping?.name, email: shipping?.email},
+        address: shipping?.address
+      });
+    },
+
+    onError: (error) => {
+      lockCart(false);
+      emit('PaymentRequest.onError', {message: error?.message ?? String(error)});
+    },
+
+    onLoad: (isSupported) => {
+      emit('PaymentRequest.onLoad', {isSupported});
+      if (isSupported) return;
+
+      container.hidden = true;
+      if (reason) {
+        reason.textContent =
+          'No wallet is available in this browser. Apple Pay needs Safari on Apple hardware; Google Pay needs a signed-in Chrome profile with a saved card.';
+        reason.hidden = false;
+      }
+    }
+  });
+
+  paymentRequest.render('#payment-request');
+};
+
 const pay = async () => {
   if (!quote) return setError('Choose a shipping option first.');
   setBusy(true);
@@ -173,7 +331,8 @@ const pay = async () => {
   }
 
   const optionId = shippingBox.querySelector('input[name="shipping"]:checked')?.value;
-  const body = {
+
+  await submitPayment({
     paymentToken: token,
     optionId,
     ...quote,
@@ -182,16 +341,22 @@ const pay = async () => {
       email: document.querySelector('[name="email"]')?.value
     },
     address: addressFromForm()
-  };
+  });
+};
 
-  emit('POST /api/payment', {optionId, amount: currentTotal()});
+/**
+ * Shared by the card form and the wallet sheet: both hold a token and a signed
+ * quote by this point, and both need the same `nextAction` branch.
+ */
+const submitPayment = async (body) => {
+  emit('POST /api/payment', {optionId: body.optionId, walletAmount: body.walletAmount});
 
   let data;
   try {
     const response = await fetch('/api/payment', {
       method: 'POST',
       headers: {'content-type': 'application/json'},
-      body: JSON.stringify(body)
+      body: JSON.stringify({...body, search: window.location.search})
     });
     data = await response.json();
     emit(`← ${response.status}`, data);
@@ -222,17 +387,19 @@ const start = async () => {
 
   // The previous page's iframes would otherwise linger, and a stale CardGroup
   // keeps its controller frame attached to a document that no longer exists.
-  if (card) {
+  for (const component of [card, paymentRequest]) {
     try {
-      await card.destroy();
+      await component?.destroy();
     } catch {
       // Already gone with the old document.
     }
-    card = null;
   }
+  card = null;
+  paymentRequest = null;
 
   readPage();
   mountCard();
+  mountPaymentRequest();
   loadRates();
 
   payButton.addEventListener('click', pay);

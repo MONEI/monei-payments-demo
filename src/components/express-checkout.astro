@@ -1,0 +1,12 @@
+---
+const {theme} = Astro.props;
+---
+
+<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`} id="express">
+  <h2 class={`text-sm ${theme.page.heading}`}>Express checkout</h2>
+  <p class={`mt-1 text-xs ${theme.page.muted}`}>
+    The wallet collects the address, so shipping is priced inside the sheet.
+  </p>
+  <div class="mt-4" id="payment-request"></div>
+  <p class={`mt-3 text-xs ${theme.page.muted}`} id="express-reason" hidden></p>
+</section>

@@ -15,12 +15,12 @@ const origin = () => {
 
 /**
  * Recomputes the amount rather than trusting the request. Wallet tokens carry no
- * amount, so a posted `finalAmount` is only a claim: goods come from the seed and
- * the fixed catalogue, shipping from the zone inside the signed quote.
+ * amount, so a posted `finalAmount` is only a claim: quantities come from the signed
+ * quote and prices from the fixed catalogue, shipping from the signed zone.
  */
 export const resolveAmount = ({quote, sig, optionId}) => {
   const verified = verifyQuote(quote, sig);
-  const goods = cartTotal(seededCart(verified.seed));
+  const goods = cartTotal(verified.cart ?? seededCart(verified.seed));
   const rate = rateFor(verified.zone, optionId);
   return {amount: goods + rate.amount, goods, rate, zone: verified.zone, seed: verified.seed};
 };
@@ -38,10 +38,15 @@ export const createPayment = async ({
   customer,
   billingDetails,
   shippingDetails,
-  sessionId
+  sessionId,
+  config
 }) => {
   const orderId = newOrderId();
   const base = origin();
+
+  // The provider returns the shopper to these URLs directly, so the demo's config
+  // survives the redirect only if it travels on them.
+  const state = config ? `&${config}` : '';
 
   return monei.payments.create({
     amount,
@@ -53,8 +58,8 @@ export const createPayment = async ({
     customer,
     billingDetails,
     shippingDetails,
-    completeUrl: `${base}/receipt`,
-    cancelUrl: `${base}/cancelled`,
+    completeUrl: `${base}/receipt?from=payment${state}`,
+    cancelUrl: `${base}/cancelled?from=payment${state}`,
     callbackUrl: `${base}/api/callback`
   });
 };

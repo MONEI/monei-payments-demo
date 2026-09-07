@@ -11,7 +11,7 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
 const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
 ---
 
-<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+<section id="address" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
   <div class="flex items-baseline justify-between gap-4">
     <h2 class={`text-sm ${theme.page.heading}`}>Shipping address</h2>
     <button

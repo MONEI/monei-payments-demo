@@ -56,7 +56,6 @@ export const matchZone = (address = {}) => {
   return ZONES[ZONES.length - 1];
 };
 
-/** Empty means the zone is not served — distinct from "rates not looked up yet". */
 export const ratesFor = (zone) => RATES[zone.id] ?? [];
 
 export const isServiceable = (zone) => ratesFor(zone).length > 0;
@@ -72,3 +71,20 @@ export const rateFor = (zoneId, optionId) => {
 };
 
 export const zoneIds = () => ZONES.map((z) => z.id);
+
+/** True when a postcode can move the country into a different zone. */
+export const zipDecidesZone = (country) => {
+  const code = String(country ?? '')
+    .trim()
+    .toUpperCase();
+  return ZONES.some((zone) => zone.match.zip !== undefined && countryMatches(zone.match.country, code));
+};
+
+/**
+ * Both wallets read the option list when the sheet is constructed, so an empty one
+ * opens a sheet that cannot price shipping at all.
+ */
+export const initialShippingOptions = (country) => {
+  const rates = ratesFor(matchZone({country}));
+  return rates.length > 0 ? rates : RATES.peninsula;
+};

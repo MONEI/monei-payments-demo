@@ -1,7 +1,19 @@
 import {describe, expect, it, vi} from 'vitest';
-import {isServiceable, matchZone, rateFor, ratesFor, zoneIds} from './shipping.js';
+import {
+  initialShippingOptions,
+  isServiceable,
+  matchZone,
+  rateFor,
+  ratesFor,
+  zipDecidesZone,
+  zoneIds
+} from './shipping.js';
 import {signQuote, verifyQuote} from './quote.js';
 import {parseConfig, toQuery} from './config.js';
+import {countryList} from './countries.js';
+import {cartTotal, seededCart} from './cart.js';
+import {PRODUCTS} from '../data/products.js';
+import {resolveAmount} from './payment.js';
 
 describe('matchZone with a redacted address', () => {
   /**
@@ -108,6 +120,94 @@ describe('rates', () => {
 
   it('allows a legitimately free option only when the table says so', () => {
     expect(rateFor('peninsula', 'pickup').amount).toBe(0);
+  });
+});
+
+/**
+ * Both wallets read the option list once, when the sheet is constructed. An empty
+ * list opens a sheet with no shipping row, and the first address change cannot add
+ * one — so the seed must be non-empty for every country the rail can select,
+ * including the ones we refuse to ship to.
+ */
+describe('initialShippingOptions', () => {
+  it('never seeds a wallet sheet with an empty list', () => {
+    for (const country of [...countryList().map((c) => c.code), '', undefined, 'ZZ']) {
+      expect(initialShippingOptions(country).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('seeds the real rates when the country is one we serve', () => {
+    expect(initialShippingOptions('ES')).toEqual(ratesFor(matchZone({country: 'ES'})));
+  });
+
+  it('falls back rather than seeding the unserviceable zone', () => {
+    expect(isServiceable(matchZone({country: 'GB'}))).toBe(false);
+    expect(initialShippingOptions('GB').length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The country select defaults to ES, so before the shopper types anything the page
+ * had enough to quote and showed €4.99 — the mainland rate for an address nobody
+ * had given, and €10 under the Canary rate it might turn out to be.
+ */
+describe('zipDecidesZone', () => {
+  it('flags the countries a postcode can re-zone', () => {
+    expect(zipDecidesZone('ES')).toBe(true);
+    expect(zipDecidesZone('es')).toBe(true);
+    expect(zipDecidesZone(' ES ')).toBe(true);
+  });
+
+  it('leaves countries with a single zone quotable from the country alone', () => {
+    for (const country of ['PT', 'US', 'FR', 'GB']) expect(zipDecidesZone(country)).toBe(false);
+  });
+
+  it('tolerates a missing country', () => {
+    for (const value of ['', null, undefined]) expect(zipDecidesZone(value)).toBe(false);
+  });
+
+  it('agrees with the zone table it is derived from', () => {
+    const canary = matchZone({country: 'ES', zip: '38001'});
+    const mainland = matchZone({country: 'ES', zip: '28014'});
+    expect(canary.id).not.toBe(mainland.id);
+    expect(zipDecidesZone('ES')).toBe(true);
+  });
+});
+
+/**
+ * Quantities became editable after the quote format was designed, and for a while
+ * the signature covered only the seed — so the page priced the edited basket while
+ * the server priced the seeded one and silently charged that instead. A €55 gap on
+ * the demo cart, in the server's favour, with nothing to show it happened.
+ */
+describe('resolveAmount prices the basket that was quoted', () => {
+  const quoteFor = (cart) => signQuote({seed: 'abc123', cart, zone: 'peninsula', rates: ratesFor({id: 'peninsula'})});
+
+  it('uses the signed cart, not a cart re-derived from the seed', () => {
+    const edited = [{productId: PRODUCTS[0].id, quantity: 7}];
+    const {quote, sig} = quoteFor(edited);
+    const resolved = resolveAmount({quote, sig, optionId: 'standard'});
+
+    expect(resolved.goods).toBe(PRODUCTS[0].price * 7);
+    expect(resolved.goods).not.toBe(cartTotal(seededCart('abc123')));
+    expect(resolved.amount).toBe(resolved.goods + 499);
+  });
+
+  it('still prices the seeded cart when the quote carries none', () => {
+    const {quote, sig} = quoteFor(undefined);
+    expect(resolveAmount({quote, sig, optionId: 'standard'}).goods).toBe(cartTotal(seededCart('abc123')));
+  });
+
+  it('cannot be replayed against a bigger basket, because the cart is signed', () => {
+    const {quote, sig} = quoteFor([{productId: PRODUCTS[0].id, quantity: 1}]);
+    const tampered = Buffer.from(
+      JSON.stringify({
+        ...JSON.parse(Buffer.from(quote, 'base64url').toString('utf8')),
+        cart: [{productId: PRODUCTS[0].id, quantity: 99}]
+      })
+    ).toString('base64url');
+
+    expect(() => resolveAmount({quote: tampered, sig, optionId: 'standard'})).toThrow(/Invalid shipping quote/);
   });
 });
 

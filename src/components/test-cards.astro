@@ -51,12 +51,21 @@ const CARDS = [
   </p>
 </section>
 <script>
-  for (const button of document.querySelectorAll('.copy')) {
-    button.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(button.dataset.copy);
-      const original = button.textContent;
-      button.textContent = 'Copied';
-      setTimeout(() => (button.textContent = original), 1200);
-    });
-  }
+  // A module is evaluated once and survives client-side navigation, so the buttons
+  // of every later render need wiring on the event rather than at import time.
+  const wire = () => {
+    for (const button of document.querySelectorAll('.copy')) {
+      if (button.dataset.wired === 'true') continue;
+      button.dataset.wired = 'true';
+
+      button.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => (button.textContent = original), 1200);
+      });
+    }
+  };
+
+  document.addEventListener('astro:page-load', wire);
 </script>

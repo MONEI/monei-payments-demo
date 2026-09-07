@@ -47,7 +47,7 @@ const subset = (value, allowed) => {
  * edited, so an edited basket survives a reload and can be shared. Null means
  * fall back to the seeded cart.
  */
-const parseCart = (value) => {
+export const parseCart = (value) => {
   if (!value) return null;
   const items = [];
   for (const entry of value.split(',')) {

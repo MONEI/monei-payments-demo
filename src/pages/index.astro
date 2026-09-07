@@ -5,12 +5,15 @@ import CartSummary from '../components/cart-summary.astro';
 import AddressForm from '../components/address-form.astro';
 import TestCards from '../components/test-cards.astro';
 import CardForm from '../components/card-form.astro';
+import ExpressCheckout from '../components/express-checkout.astro';
 import Rail from '../components/rail.astro';
 import {accountId} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
 import {PRODUCTS} from '../data/products.js';
 import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
-import {parseConfig, toQuery} from '../lib/config.js';
+import {parseConfig, serializeCart, toQuery} from '../lib/config.js';
+import {initialShippingOptions, zipDecidesZone} from '../lib/shipping.js';
+import {countryList} from '../lib/countries.js';
 import {themeFor} from '../data/themes.js';
 import {fetchAccountMethods} from '../lib/monei.js';
 
@@ -32,15 +35,22 @@ const clientConfig = {
   seed: config.seed,
   currency: config.currency,
   goods: total,
+  cart: serializeCart(config.cart),
   cardUi: theme.cardUi,
   cardStyle: theme.card.style,
-  cardFonts: theme.card.fonts
+  cardFonts: theme.card.fonts,
+  walletRadius: theme.card.style.base.borderRadius,
+  initialShippingOptions: initialShippingOptions(config.country),
+  zipZones: countryList()
+    .map((c) => c.code)
+    .filter(zipDecidesZone),
+  mutedClass: theme.page.muted
 };
 ---
 
 <StoreLayout theme={theme}>
   <Rail theme={theme} config={config} enabled={enabled} />
-  <StoreHeader theme={theme} livemode={account?.livemode ?? false} />
+  <StoreHeader theme={theme} livemode={account?.livemode ?? false} config={config} />
   <main class="mx-auto max-w-5xl px-6 py-12">
     {
       failedPayment && (
@@ -87,6 +97,7 @@ const clientConfig = {
           }
         </ul>
         <div class="mt-6 space-y-6">
+          <ExpressCheckout theme={theme} />
           <AddressForm theme={theme} country={config.country} />
           <CardForm theme={theme} />
         </div>

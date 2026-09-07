@@ -9,17 +9,16 @@ const secret = () => env.QUOTE_SECRET || env.MONEI_API_KEY || '';
 const digest = (payload) => createHmac('sha256', secret()).update(payload).digest('base64url');
 
 /**
- * Shipping costs money, and the zone that decides how much is derived from an
- * address only the browser has. Signing the server's decision means the amount
- * can be recomputed later from data the client cannot alter.
+ * Signing the server's zone decision means the amount can be recomputed later from
+ * data the client cannot alter.
  *
- * `optionId` is intentionally outside the signature: the shopper picks a shipping
- * option after the quote is issued, and the server validates it against the signed
- * `rates` list, so choosing a cheaper listed option is a real choice rather than
- * tampering. `seed` is inside, so a quote cannot be replayed against a bigger cart.
+ * `optionId` sits outside the signature: the shopper picks an option after the quote
+ * is issued, and the server validates it against the signed `rates`, so choosing a
+ * cheaper listed option is a real choice rather than tampering. `cart` sits inside,
+ * because quantities are editable and the seed alone does not identify the basket.
  */
-export const signQuote = ({seed, zone, rates}) => {
-  const quote = {seed, zone, rates, exp: Math.floor(Date.now() / 1000) + TTL_SECONDS};
+export const signQuote = ({seed, cart, zone, rates}) => {
+  const quote = {seed, cart, zone, rates, exp: Math.floor(Date.now() / 1000) + TTL_SECONDS};
   const encoded = Buffer.from(JSON.stringify(quote)).toString('base64url');
   return {quote: encoded, sig: digest(encoded)};
 };

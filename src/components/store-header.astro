@@ -1,12 +1,14 @@
 ---
 import {STORE} from '../data/store.js';
+import {toQuery} from '../lib/config.js';
 
-const {theme, livemode} = Astro.props;
+const {theme, livemode, config} = Astro.props;
+const home = config ? `/?${toQuery(config)}` : '/';
 ---
 
 <header class={`border-b ${theme.page.border} ${theme.page.surface}`}>
   <div class="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
-    <a href="/" class={`text-lg ${theme.page.heading}`}>{STORE.name}</a>
+    <a href={home} class={`text-lg ${theme.page.heading}`}>{STORE.name}</a>
     {
       !livemode && (
         <span

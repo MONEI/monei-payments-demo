@@ -1,5 +1,5 @@
 import {monei} from '../../lib/monei.js';
-import {CURRENCY} from '../../lib/config.js';
+import {CURRENCY, parseConfig, toQuery} from '../../lib/config.js';
 import {createPayment, resolveAmount} from '../../lib/payment.js';
 
 export const prerender = false;
@@ -17,8 +17,12 @@ export const POST = async ({request}) => {
     return json({error: 'Invalid JSON'}, 400);
   }
 
-  const {paymentToken, quote, sig, optionId, walletAmount, customer, address} = body ?? {};
+  const {paymentToken, quote, sig, optionId, walletAmount, customer, address, search} = body ?? {};
   if (!paymentToken) return json({error: 'Missing paymentToken'}, 400);
+
+  // Reparsed rather than forwarded: `search` is the client's query string, and it
+  // ends up in a provider-facing redirect URL, so only whitelisted params may pass.
+  const config = toQuery(parseConfig(new URL(`http://x/?${String(search ?? '').replace(/^\?/, '')}`)));
 
   let resolved;
   try {
@@ -45,7 +49,8 @@ export const POST = async ({request}) => {
       sessionId: resolved.seed,
       customer,
       billingDetails: details,
-      shippingDetails: details
+      shippingDetails: details,
+      config
     });
 
     return json({

@@ -90,7 +90,7 @@ const loadRates = async () => {
     .join('');
 
   for (const input of shippingBox.querySelectorAll('input')) input.addEventListener('change', renderTotals);
-  
+
   renderTotals();
 };
 

@@ -1,1 +1,58 @@
 @import 'tailwindcss';
+
+/* The settings rail. `hidden` cannot be transitioned, so panels.js removes it
+   before opening and restores it once the closing transition has finished. */
+.rail-body {
+  width: 0;
+  opacity: 0;
+  /* `visibility` rather than `display` so the panel keeps a layout box to
+     animate from, while still being skipped by assistive tech when closed. */
+  visibility: hidden;
+  transition:
+    width 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease,
+    visibility 0ms linear 220ms;
+}
+
+#rail[data-open='true'] .rail-body {
+  width: 18rem;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    width 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease 60ms,
+    visibility 0ms linear;
+}
+
+#rail-chevron {
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+#rail[data-open='true'] #rail-chevron {
+  transform: rotate(180deg);
+}
+
+/* Card part containers. The SDK toggles these on the merchant's own mount box. */
+.monei-part {
+  transition: border-color 120ms ease;
+}
+
+.monei-part.monei-component--focus {
+  border-color: currentColor;
+}
+
+.monei-part.monei-component--invalid {
+  border-color: var(--color-rose-500);
+}
+
+.monei-part.monei-component--complete {
+  border-color: var(--color-emerald-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-body,
+  #rail-chevron,
+  .monei-part {
+    transition-duration: 0ms;
+  }
+}

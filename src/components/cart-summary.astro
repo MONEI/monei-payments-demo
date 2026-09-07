@@ -14,10 +14,28 @@ const {theme, lines, total} = Astro.props;
           <ProductArt art={line.art} class={`h-10 w-10 shrink-0 ${theme.page.muted}`} />
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium">{line.name}</p>
-            <p class={`text-xs ${theme.page.muted}`}>
-              {line.quantity} × {formatPrice(line.price)}
-              {line.weight && ` · ${line.weight}`}
-            </p>
+            <p class={`text-xs ${theme.page.muted}`}>{formatPrice(line.price)} each</p>
+            <div class="mt-1.5 flex items-center gap-1.5">
+              <button
+                type="button"
+                class={`${theme.page.radius} cursor-pointer border ${theme.page.border} px-1.5 leading-none`}
+                data-cart-step={line.id}
+                data-delta="-1"
+                aria-label={`One fewer ${line.name}`}
+              >
+                −
+              </button>
+              <span class="min-w-4 text-center text-xs tabular-nums">{line.quantity}</span>
+              <button
+                type="button"
+                class={`${theme.page.radius} cursor-pointer border ${theme.page.border} px-1.5 leading-none`}
+                data-cart-step={line.id}
+                data-delta="1"
+                aria-label={`One more ${line.name}`}
+              >
+                +
+              </button>
+            </div>
           </div>
           <p class="text-sm tabular-nums">{formatPrice(line.lineTotal)}</p>
         </li>

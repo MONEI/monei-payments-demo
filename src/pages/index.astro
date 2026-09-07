@@ -5,6 +5,7 @@ import CartSummary from '../components/cart-summary.astro';
 import AddressForm from '../components/address-form.astro';
 import TestCards from '../components/test-cards.astro';
 import CardForm from '../components/card-form.astro';
+import Rail from '../components/rail.astro';
 import {accountId} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
 import {STORE} from '../data/store.js';
@@ -39,6 +40,7 @@ const clientConfig = {
 ---
 
 <StoreLayout theme={theme}>
+  <Rail theme={theme} config={config} enabled={enabled} />
   <StoreHeader theme={theme} livemode={account?.livemode ?? false} />
   <main class="mx-auto max-w-5xl px-6 py-12">
     {
@@ -69,11 +71,13 @@ const clientConfig = {
                     {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
                   </p>
                 </div>
-                {inCart.has(product.id) && (
-                  <span class="self-start text-xs font-medium" style={`color: ${theme.page.accent}`}>
-                    In order
-                  </span>
-                )}
+                <button
+                  type="button"
+                  class={`${theme.page.radius} h-7 shrink-0 cursor-pointer self-start border ${theme.page.border} px-2 text-xs font-medium`}
+                  data-cart-add={product.id}
+                >
+                  {inCart.has(product.id) ? 'Add another' : 'Add'}
+                </button>
               </li>
             ))
           }
@@ -95,7 +99,12 @@ const clientConfig = {
   </main>
   {canonicalQuery && <script is:inline set:html={`history.replaceState(null, '', '?${canonicalQuery}');`} />}
   <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
+  <script id="demo-cart" type="application/json" set:html={JSON.stringify(config.cart)} />
   <script>
     import '../client/checkout.js';
+    import '../client/panels.js';
+    import {initCartUi} from '../client/cart-ui.js';
+
+    initCartUi(JSON.parse(document.getElementById('demo-cart').textContent));
   </script>
 </StoreLayout>

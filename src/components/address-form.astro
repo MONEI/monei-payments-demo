@@ -79,62 +79,71 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
   </p>
 </section>
 <script define:vars={{samples, PEOPLE: people()}}>
-  const country = document.getElementById('country');
-  const zip = document.getElementById('zip');
-  const zipError = document.getElementById('zip-error');
-  const note = document.getElementById('country-note');
-  const fill = document.getElementById('fill-sample');
-  const form = zip.closest('section');
-
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-  fill.addEventListener('click', () => {
-    const code = pick(Object.keys(samples));
-    const address = pick(samples[code]);
-    const person = pick(PEOPLE);
+  // Client-side navigation replaces the body, so these elements and their
+  // listeners belong to one render and have to be found again on the next.
+  const wire = () => {
+    const country = document.getElementById('country');
+    const zip = document.getElementById('zip');
+    const zipError = document.getElementById('zip-error');
+    const note = document.getElementById('country-note');
+    const fill = document.getElementById('fill-sample');
+    if (!country || !zip || !fill || fill.dataset.wired === 'true') return;
+    fill.dataset.wired = 'true';
+    const form = zip.closest('section');
 
-    country.value = code;
-    // The postcode field's pattern still belongs to the previous country, so a
-    // valid address would be flagged invalid without re-syncing first.
-    sync();
+    fill.addEventListener('click', () => {
+      const code = pick(Object.keys(samples));
+      const address = pick(samples[code]);
+      const person = pick(PEOPLE);
 
-    const set = (name, value) => {
-      const input = form.querySelector(`[name="${name}"]`);
-      if (input) input.value = value;
+      country.value = code;
+      // The postcode field's pattern still belongs to the previous country, so a
+      // valid address would be flagged invalid without re-syncing first.
+      sync();
+
+      const set = (name, value) => {
+        const input = form.querySelector(`[name="${name}"]`);
+        if (input) input.value = value;
+      };
+      set('name', person.name);
+      set('email', person.email);
+      set('line1', address.line1);
+      set('city', address.city);
+      set('zip', address.zip);
+      validate();
+
+      // Assigning .value fires no event, so anything listening for a change — the
+      // shipping lookup among it — would price a stale address.
+      country.dispatchEvent(new Event('change', {bubbles: true}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+
+    const sync = () => {
+      const option = country.selectedOptions[0];
+      zip.placeholder = option.dataset.example ?? '';
+      zip.inputMode = option.dataset.inputmode ?? 'text';
+      zip.pattern = option.dataset.pattern ?? '';
+      note.hidden = option.dataset.unserviceable !== 'true';
+      validate();
     };
-    set('name', person.name);
-    set('email', person.email);
-    set('line1', address.line1);
-    set('city', address.city);
-    set('zip', address.zip);
-    validate();
 
-    // Assigning .value fires no event, so anything listening for a change — the
-    // shipping lookup among it — would price a stale address.
-    country.dispatchEvent(new Event('change', {bubbles: true}));
-    zip.dispatchEvent(new Event('change', {bubbles: true}));
-  });
+    const validate = () => {
+      const option = country.selectedOptions[0];
+      const bad = zip.value.trim() && !zip.checkValidity();
+      zipError.textContent = bad ? `Expected a postcode like ${option.dataset.example}` : '';
+      zipError.classList.toggle('hidden', !bad);
+    };
 
-  const sync = () => {
-    const option = country.selectedOptions[0];
-    zip.placeholder = option.dataset.example ?? '';
-    zip.inputMode = option.dataset.inputmode ?? 'text';
-    zip.pattern = option.dataset.pattern ?? '';
-    note.hidden = option.dataset.unserviceable !== 'true';
-    validate();
+    country.addEventListener('change', sync);
+    zip.addEventListener('blur', validate);
+    zip.addEventListener('input', () => {
+      if (!zipError.classList.contains('hidden')) validate();
+    });
+    sync();
   };
 
-  const validate = () => {
-    const option = country.selectedOptions[0];
-    const bad = zip.value.trim() && !zip.checkValidity();
-    zipError.textContent = bad ? `Expected a postcode like ${option.dataset.example}` : '';
-    zipError.classList.toggle('hidden', !bad);
-  };
-
-  country.addEventListener('change', sync);
-  zip.addEventListener('blur', validate);
-  zip.addEventListener('input', () => {
-    if (!zipError.classList.contains('hidden')) validate();
-  });
-  sync();
+  document.addEventListener('astro:page-load', wire);
+  wire();
 </script>

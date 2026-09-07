@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import {ClientRouter} from 'astro:transitions';
 import {STORE} from '../data/store.js';
 
 const {theme, title} = Astro.props;
@@ -21,6 +22,7 @@ const preview = new URL('/images/preview.jpg', Astro.site).href;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href={theme.card.fonts[0].cssSrc} />
     <script is:inline src="https://js.monei.com/v3/monei.js"></script>
+    <ClientRouter />
   </head>
   <body class={`min-h-full ${theme.page.body}`} style={`font-family: ${theme.page.fontFamily}`}>
     <slot />

@@ -1,5 +1,5 @@
 ---
-import {LANGUAGES, THEMES} from '../lib/config.js';
+import {THEMES} from '../lib/config.js';
 import {THEME_DATA} from '../data/themes.js';
 
 const {theme, config, enabled} = Astro.props;
@@ -16,28 +16,34 @@ const row = `flex items-center justify-between gap-3 text-sm`;
 const hint = `text-[11px] ${theme.page.muted}`;
 ---
 
-<aside id="rail" data-open="false" class="fixed top-0 left-0 z-40 flex h-full">
+<aside
+  id="rail"
+  data-open={String(config.panel)}
+  class="fixed top-0 left-0 z-40 flex h-full"
+  style={`--rail-accent: ${theme.page.accent}`}
+>
   <div id="rail-body" class={`rail-body overflow-y-auto ${theme.page.surface} border-r ${theme.page.border}`}>
-    <div class="w-72 px-4 py-4">
-      <p class={`text-xs font-medium tracking-widest uppercase ${theme.page.muted}`}>Customize this demo</p>
+    <div class="px-4 py-4">
+      <p class={`text-xs font-medium tracking-widest uppercase ${theme.page.muted}`}>Demo settings</p>
       <section class="mt-4">
         <h3 class={`text-xs font-medium ${theme.page.muted}`}>Theme</h3>
         <div class="mt-2 space-y-1.5">
           {
             THEMES.map((name) => (
-              <label class={row}>
+              <label class={`${row} cursor-pointer`}>
                 <span class="flex items-center gap-2">
                   <input
                     type="radio"
+                    class="cursor-pointer"
                     name="theme"
                     value={name}
                     checked={config.theme === name}
                     disabled={!THEME_DATA[name]}
                     data-param="theme"
                   />
-                  {name}
+                  {THEME_DATA[name]?.label ?? name}
                 </span>
-                {!THEME_DATA[name] && <span class={hint}>not built yet</span>}
+                <span class="spinner" aria-hidden="true" />
               </label>
             ))
           }
@@ -54,10 +60,11 @@ const hint = `text-[11px] ${theme.page.muted}`;
             Object.entries(METHOD_LABELS).map(([id, label]) => {
               const onAccount = enabled === null || enabled.includes(id);
               return (
-                <label class={row}>
+                <label class={`${row} ${onAccount ? 'cursor-pointer' : ''}`}>
                   <span class="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      class={onAccount ? 'cursor-pointer' : ''}
                       value={id}
                       checked={onAccount && (config.methods.length === 0 || config.methods.includes(id))}
                       disabled={!onAccount}
@@ -65,7 +72,11 @@ const hint = `text-[11px] ${theme.page.muted}`;
                     />
                     {label}
                   </span>
-                  {!onAccount && <span class={hint}>not on this account</span>}
+                  {onAccount ? (
+                    <span class="spinner" aria-hidden="true" />
+                  ) : (
+                    <span class={hint}>not on this account</span>
+                  )}
                 </label>
               );
             })
@@ -81,27 +92,9 @@ const hint = `text-[11px] ${theme.page.muted}`;
           <div class="flex justify-between"><dt>United Kingdom</dt><dd>not served</dd></div>
         </dl>
       </section>
-      <details class={`mt-5 border-t ${theme.page.border} pt-4`}>
-        <summary class={`cursor-pointer text-xs font-medium ${theme.page.muted}`}>Advanced</summary>
-        <div class="mt-3">
-          <label class="block">
-            <span class={`text-xs ${theme.page.muted}`}>Language</span>
-            <select
-              class={`mt-1 w-full ${theme.page.radius} border ${theme.page.border} bg-white px-2 py-1.5 text-sm`}
-              data-param="lang"
-            >
-              {
-                LANGUAGES.map((code) => (
-                  <option value={code} selected={config.lang === code}>
-                    {code}
-                  </option>
-                ))
-              }
-            </select>
-          </label>
-        </div>
-      </details>
-      <p class={`mt-5 ${hint}`}>Every setting lives in the URL, so this link reproduces it.</p>
+      <p class={`mt-5 border-t ${theme.page.border} pt-4 ${hint}`}>
+        Every setting lives in the URL, so this link reproduces it.
+      </p>
     </div>
   </div>
   <button
@@ -109,7 +102,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
     id="rail-toggle"
     class="cursor-pointer self-center rounded-r-lg py-5 pr-1 pl-0.5 text-white shadow-md"
     style={`background: ${theme.page.accent}`}
-    aria-expanded="false"
+    aria-expanded={String(config.panel)}
     aria-controls="rail-body"
     aria-label="Customize this demo"
     title="Customize this demo"

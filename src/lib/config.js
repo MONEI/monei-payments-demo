@@ -13,7 +13,6 @@ export const THEMES = ['aurora', 'monoline'];
 export const LAYOUTS = ['stacked', 'grid'];
 export const FLOWS = ['components', 'redirect'];
 export const METHODS = ['card', 'applePay', 'googlePay', 'paypal', 'bizum'];
-export const LANGUAGES = ['en', 'es', 'ca', 'pt', 'de', 'it', 'fr', 'nl'];
 
 export const DEFAULTS = {
   theme: 'aurora',
@@ -23,8 +22,8 @@ export const DEFAULTS = {
   shipping: true, // requestShipping
   billing: true, // requestBilling — PaymentRequest only, never PayPal
   country: 'ES',
-  lang: 'en', // passed through as each component's `language`
-  flow: 'components'
+  flow: 'components',
+  panel: false // settings rail open; server-rendered so it cannot flash closed
 };
 
 const SEED_RE = /^[a-z0-9]{1,16}$/;
@@ -82,10 +81,10 @@ export const parseConfig = (url) => {
     theme: oneOf(q.get('theme'), THEMES, DEFAULTS.theme),
     layout: oneOf(q.get('layout'), LAYOUTS, DEFAULTS.layout),
     flow: oneOf(q.get('flow'), FLOWS, DEFAULTS.flow),
-    lang: oneOf(q.get('lang'), LANGUAGES, DEFAULTS.lang),
     methods: subset(q.get('methods'), METHODS),
     shipping: bool(q.get('shipping'), DEFAULTS.shipping),
     billing: bool(q.get('billing'), DEFAULTS.billing),
+    panel: bool(q.get('panel'), DEFAULTS.panel),
     country: normalizeCountry(q.get('country')),
     seed,
     seedGenerated: !validSeed,
@@ -102,7 +101,6 @@ export const toQuery = (config) => {
   if (config.theme !== DEFAULTS.theme) q.set('theme', config.theme);
   if (config.layout !== DEFAULTS.layout) q.set('layout', config.layout);
   if (config.flow !== DEFAULTS.flow) q.set('flow', config.flow);
-  if (config.lang !== DEFAULTS.lang) q.set('lang', config.lang);
   if (config.methods?.length) q.set('methods', config.methods.join(','));
   if (config.shipping !== DEFAULTS.shipping) q.set('shipping', '0');
   if (config.billing !== DEFAULTS.billing) q.set('billing', '0');

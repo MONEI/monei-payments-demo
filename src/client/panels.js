@@ -1,44 +1,62 @@
-const rail = document.getElementById('rail');
-const toggle = document.getElementById('rail-toggle');
-
-const setOpen = (open) => {
-  rail.dataset.open = String(open);
-  toggle.setAttribute('aria-expanded', String(open));
-};
-
-toggle.addEventListener('click', () => setOpen(rail.dataset.open !== 'true'));
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && rail.dataset.open === 'true') setOpen(false);
-});
+import {navigate} from 'astro:transitions/client';
 
 /**
- * Theme and language change what the server renders, so they navigate. Cart and
- * shipping are handled in place elsewhere.
+ * The rail's open state lives in the URL so the server renders it already open.
+ * Restoring it client-side made it flash closed on every navigation, since the
+ * fresh markup starts at zero width until JS corrects it.
  */
-const navigateWith = (param, value) => {
+const isOpen = () => new URLSearchParams(location.search).get('panel') === '1';
+
+const setOpen = (open) => {
+  const rail = document.getElementById('rail');
+  rail.dataset.open = String(open);
+  document.getElementById('rail-toggle').setAttribute('aria-expanded', String(open));
+
   const url = new URL(location.href);
-  url.searchParams.set(param, value);
-  location.assign(url);
+  if (open) url.searchParams.set('panel', '1');
+  else url.searchParams.delete('panel');
+  history.replaceState(null, '', url);
 };
 
-for (const input of document.querySelectorAll('[data-param]')) {
-  input.addEventListener('change', () => navigateWith(input.dataset.param, input.value));
-}
+const go = (mutate) => {
+  const url = new URL(location.href);
+  mutate(url.searchParams);
+  navigate(url.toString());
+};
 
-const methodInputs = [...document.querySelectorAll('[data-method]')];
+const wire = () => {
+  const rail = document.getElementById('rail');
+  const toggle = document.getElementById('rail-toggle');
+  if (!rail || !toggle || rail.dataset.wired === 'true') return;
+  rail.dataset.wired = 'true';
 
-for (const input of methodInputs) {
-  input.addEventListener('change', () => {
-    const chosen = methodInputs.filter((i) => i.checked && !i.disabled).map((i) => i.value);
-    const url = new URL(location.href);
-    // Every available method checked is the default, so the param comes off and
-    // the shared link stays short.
-    const available = methodInputs.filter((i) => !i.disabled);
-    if (chosen.length === available.length) url.searchParams.delete('methods');
-    else url.searchParams.set('methods', chosen.join(','));
-    location.assign(url);
-  });
-}
+  toggle.addEventListener('click', () => setOpen(rail.dataset.open !== 'true'));
 
-export const openRail = () => setOpen(true);
+  for (const input of rail.querySelectorAll('[data-param]')) {
+    input.addEventListener('change', () => {
+      input.closest('label')?.classList.add('is-pending');
+      go((q) => q.set(input.dataset.param, input.value));
+    });
+  }
+
+  const methods = [...rail.querySelectorAll('[data-method]')].filter((i) => !i.disabled);
+  for (const input of methods) {
+    input.addEventListener('change', () => {
+      input.closest('label')?.classList.add('is-pending');
+      const chosen = methods.filter((i) => i.checked).map((i) => i.value);
+      go((q) => {
+        // All available methods checked is the default, so the param comes off
+        // and the shared link stays short.
+        if (chosen.length === methods.length) q.delete('methods');
+        else q.set('methods', chosen.join(','));
+      });
+    });
+  }
+};
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && isOpen()) setOpen(false);
+});
+
+document.addEventListener('astro:page-load', wire);
+wire();

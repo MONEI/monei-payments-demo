@@ -8,7 +8,6 @@ import CardForm from '../components/card-form.astro';
 import Rail from '../components/rail.astro';
 import {accountId} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
-import {STORE} from '../data/store.js';
 import {PRODUCTS} from '../data/products.js';
 import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
 import {parseConfig, toQuery} from '../lib/config.js';
@@ -32,8 +31,8 @@ const clientConfig = {
   accountId,
   seed: config.seed,
   currency: config.currency,
-  lang: config.lang,
   goods: total,
+  cardUi: theme.cardUi,
   cardStyle: theme.card.style,
   cardFonts: theme.card.fonts
 };
@@ -50,34 +49,39 @@ const clientConfig = {
         </p>
       )
     }
-    <h1 class={`text-3xl ${theme.page.heading}`}>{STORE.blurb}</h1>
-    <p class={`mt-2 max-w-xl text-sm ${theme.page.muted}`}>
-      A working checkout built on MONEI Components. Nothing here charges a real card — pick a few bags and pay with a
-      test card to see the whole flow.
+    <p class={`text-sm ${theme.page.muted}`}>
+      A working checkout built on MONEI Components. Nothing charges a real card.
     </p>
-    <div class="mt-10 grid gap-10 lg:grid-cols-[1fr_20rem]">
+    <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
       <section>
         <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
         <ul class="mt-4 grid gap-4 sm:grid-cols-2">
           {
             PRODUCTS.map((product) => (
-              <li class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex gap-4 p-4`}>
-                <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium">{product.name}</p>
-                  <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
-                  <p class="mt-2 text-sm tabular-nums">
-                    {formatPrice(product.price)}
-                    {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
-                  </p>
+              <li
+                class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
+              >
+                <div class="flex gap-4">
+                  <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium">{product.name}</p>
+                    <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
+                    <p class="mt-2 text-sm tabular-nums">
+                      {formatPrice(product.price)}
+                      {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  class={`${theme.page.radius} h-7 shrink-0 cursor-pointer self-start border ${theme.page.border} px-2 text-xs font-medium`}
-                  data-cart-add={product.id}
-                >
-                  {inCart.has(product.id) ? 'Add another' : 'Add'}
-                </button>
+                <div class="mt-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
+                    data-cart-add={product.id}
+                  >
+                    {inCart.has(product.id) ? 'Add another' : 'Add'}
+                  </button>
+                  <span class="spinner" aria-hidden="true" />
+                </div>
               </li>
             ))
           }
@@ -90,10 +94,6 @@ const clientConfig = {
       <aside class="space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
         <TestCards theme={theme} bizumEnabled={enabled?.includes('bizum') ?? true} />
-        <p class={`text-xs ${theme.page.muted}`}>
-          Payment methods on this account:
-          {enabled ? ` ${enabled.join(', ')}.` : ' lookup unavailable — every method shown.'}
-        </p>
       </aside>
     </div>
   </main>
@@ -105,6 +105,9 @@ const clientConfig = {
     import '../client/panels.js';
     import {initCartUi} from '../client/cart-ui.js';
 
-    initCartUi(JSON.parse(document.getElementById('demo-cart').textContent));
+    document.addEventListener('astro:page-load', () => {
+      const cart = document.getElementById('demo-cart');
+      if (cart) initCartUi(JSON.parse(cart.textContent));
+    });
   </script>
 </StoreLayout>

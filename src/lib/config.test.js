@@ -9,7 +9,6 @@ describe('parseConfig', () => {
     expect(c.theme).toBe(DEFAULTS.theme);
     expect(c.layout).toBe(DEFAULTS.layout);
     expect(c.flow).toBe(DEFAULTS.flow);
-    expect(c.lang).toBe(DEFAULTS.lang);
     expect(c.shipping).toBe(true);
     expect(c.billing).toBe(true);
     expect(c.currency).toBe('EUR');
@@ -36,24 +35,30 @@ describe('parseConfig', () => {
   });
 
   it('ignores unknown values for every enum param', () => {
-    const c = at('?theme=nonsense&layout=hack&flow=whatever&lang=xx');
+    const c = at('?theme=nonsense&layout=hack&flow=whatever');
     expect(c.theme).toBe(DEFAULTS.theme);
     expect(c.layout).toBe(DEFAULTS.layout);
     expect(c.flow).toBe(DEFAULTS.flow);
-    expect(c.lang).toBe(DEFAULTS.lang);
   });
 
   it('accepts known enum values', () => {
-    const c = at('?theme=monoline&layout=grid&flow=redirect&lang=es');
+    const c = at('?theme=monoline&layout=grid&flow=redirect');
     expect(c.theme).toBe('monoline');
     expect(c.layout).toBe('grid');
     expect(c.flow).toBe('redirect');
-    expect(c.lang).toBe('es');
   });
 
   it('drops unknown payment methods but keeps known ones', () => {
     expect(at('?methods=card,hack,bizum').methods).toEqual(['card', 'bizum']);
     expect(at('?methods=hack').methods).toEqual([]);
+  });
+
+  it('keeps the rail closed unless panel=1, and never puts it in a shared link', () => {
+    expect(at('').panel).toBe(false);
+    expect(at('?panel=1').panel).toBe(true);
+    expect(at('?panel=0').panel).toBe(false);
+    // UI state, not configuration — a sales link should not force it open.
+    expect(toQuery(at('?seed=abc123&panel=1'))).toBe('seed=abc123');
   });
 
   it('reads booleans as off only for explicit falsey spellings', () => {

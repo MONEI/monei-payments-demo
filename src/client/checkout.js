@@ -1,17 +1,33 @@
 import {emit} from './events.js';
 
-const config = JSON.parse(document.getElementById('demo-config').textContent);
-
 const el = (id) => document.getElementById(id);
-const payButton = el('pay');
-const payError = el('pay-error');
-const shippingBox = el('shipping-options');
-const totalOut = el('cart-total');
-const shippingOut = el('cart-shipping');
+
+/**
+ * Client-side navigation replaces the whole document body, so nothing here may be
+ * captured once at module scope: every element reference and the card component
+ * itself belong to one page render and are rebuilt on the next.
+ */
+let config;
+let payButton;
+let payError;
+let shippingBox;
+let totalOut;
+let shippingOut;
 
 let quote = null;
-let group = null;
+let card = null;
 let complete = false;
+
+const readPage = () => {
+  config = JSON.parse(el('demo-config').textContent);
+  payButton = el('pay');
+  payError = el('pay-error');
+  shippingBox = el('shipping-options');
+  totalOut = el('cart-total');
+  shippingOut = el('cart-shipping');
+  quote = null;
+  complete = false;
+};
 
 const money = (cents) =>
   new Intl.NumberFormat('en-IE', {style: 'currency', currency: config.currency}).format(cents / 100);
@@ -47,9 +63,7 @@ const renderTotals = () => {
   if (shippingOut) shippingOut.textContent = selected ? money(Number(selected.dataset.amount)) : '—';
   if (totalOut) totalOut.textContent = money(currentTotal());
 
-  // The token is stamped with the group's amount, and the payment is refused if
-  // the two disagree — so the group has to follow the shipping selection.
-  group?.updateProps({amount: currentTotal()});
+  card?.updateProps({amount: currentTotal()});
   setBusy(false);
 };
 
@@ -94,27 +108,49 @@ const loadRates = async () => {
   renderTotals();
 };
 
+const cardProps = () => ({
+  accountId: config.accountId,
+  amount: currentTotal(),
+  currency: config.currency,
+  sessionId: config.seed,
+  style: config.cardStyle,
+  fonts: config.cardFonts,
+  onError: (error) => setError(error?.message ?? String(error))
+});
+
+/**
+ * Both components tokenize through `submit()`, so only the mount differs — and
+ * how readiness is reported. `CardGroup.onChange` gives an aggregate `complete`
+ * across its three frames; `CardInput.onChange` has no equivalent, so the button
+ * stays enabled and an incomplete card surfaces as a submit error instead.
+ */
 const mountCard = () => {
   const monei = window.monei;
-  group = monei.CardGroup({
-    accountId: config.accountId,
-    amount: currentTotal(),
-    currency: config.currency,
-    language: config.lang,
-    sessionId: config.seed,
-    style: config.cardStyle,
-    fonts: config.cardFonts,
-    onChange: (event) => {
-      complete = event.complete;
-      setError(event.error);
-      setBusy(false);
-    },
-    onError: (error) => setError(error?.message ?? String(error))
-  });
 
-  monei.CardNumber({group, placeholder: '1234 1234 1234 1234'}).render('#card-number');
-  monei.CardExpiry({group, placeholder: 'MM/YY'}).render('#card-expiry');
-  monei.CardCvc({group, placeholder: 'CVC'}).render('#card-cvc');
+  if (config.cardUi === 'parts') {
+    card = monei.CardGroup({
+      ...cardProps(),
+      onChange: (event) => {
+        complete = event.complete;
+        setError(event.error);
+        setBusy(false);
+      }
+    });
+    monei.CardNumber({group: card, placeholder: '1234 1234 1234 1234'}).render('#card-number');
+    monei.CardExpiry({group: card, placeholder: 'MM/YY'}).render('#card-expiry');
+    monei.CardCvc({group: card, placeholder: 'CVC'}).render('#card-cvc');
+    return;
+  }
+
+  complete = true;
+  card = monei.CardInput({
+    ...cardProps(),
+    onChange: (event) => {
+      setError(event.isTouched ? event.error : null);
+      setBusy(false);
+    }
+  });
+  card.render('#card-input');
 };
 
 const pay = async () => {
@@ -124,10 +160,13 @@ const pay = async () => {
 
   let token;
   try {
-    const result = await group.submit();
+    const result = await card.submit();
     if (result.error) throw new Error(result.error);
     token = result.token;
-    emit('group.submit()', {paymentMethod: result.paymentMethod, token: `${token.slice(0, 12)}…`});
+    emit(`${config.cardUi === 'parts' ? 'CardGroup' : 'CardInput'}.submit()`, {
+      paymentMethod: result.paymentMethod,
+      token: `${token.slice(0, 12)}…`
+    });
   } catch (error) {
     setBusy(false);
     return setError(error.message ?? 'Could not read the card.');
@@ -176,9 +215,26 @@ const pay = async () => {
   window.location.assign(`/receipt?id=${encodeURIComponent(data.id)}`);
 };
 
-const start = () => {
+const start = async () => {
+  const button = el('pay');
+  if (!button || button.dataset.wired === 'true') return;
+  button.dataset.wired = 'true';
+
+  // The previous page's iframes would otherwise linger, and a stale CardGroup
+  // keeps its controller frame attached to a document that no longer exists.
+  if (card) {
+    try {
+      await card.destroy();
+    } catch {
+      // Already gone with the old document.
+    }
+    card = null;
+  }
+
+  readPage();
   mountCard();
   loadRates();
+
   payButton.addEventListener('click', pay);
   for (const name of ['country', 'zip']) {
     const input = document.querySelector(`[name="${name}"]`);
@@ -187,5 +243,8 @@ const start = () => {
   }
 };
 
-if (window.monei) start();
-else window.addEventListener('load', start, {once: true});
+// Fires on the first load as well as after every client-side navigation.
+document.addEventListener('astro:page-load', () => {
+  if (window.monei) start();
+  else window.addEventListener('load', start, {once: true});
+});

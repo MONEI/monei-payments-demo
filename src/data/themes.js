@@ -4,12 +4,14 @@
  * API — the iframes set those on themselves from `style.base` — so theming has to
  * go through these props.
  *
- * `page` drives this store's own markup and nothing else.
+ * `page` drives this store's own markup and nothing else. `cardUi` picks which
+ * card component the theme mounts: one iframe, or three the merchant places.
  */
 export const THEME_DATA = {
   aurora: {
     label: 'Aurora',
     tagline: 'Modern, soft, generous whitespace',
+    cardUi: 'input',
     page: {
       body: 'bg-[#fbfaff] text-[#241c33]',
       accent: '#6d4aff',
@@ -36,6 +38,44 @@ export const THEME_DATA = {
         }
       },
       fonts: [{cssSrc: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap'}]
+    }
+  },
+
+  monoline: {
+    label: 'Monoline',
+    tagline: 'Editorial, sharp corners, serif',
+    cardUi: 'parts',
+    page: {
+      body: 'bg-[#f7f6f3] text-[#14110f]',
+      accent: '#14110f',
+      muted: 'text-[#6f6a63]',
+      surface: 'bg-white',
+      border: 'border-[#ddd8d0]',
+      radius: 'rounded-none',
+      heading: 'font-medium tracking-tight',
+      fontFamily: '"Instrument Serif", ui-serif, Georgia, serif'
+    },
+    card: {
+      style: {
+        base: {
+          color: '#14110f',
+          fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+          fontSize: '15px',
+          borderRadius: '0'
+        },
+        input: {
+          '::placeholder': {color: '#a8a29a'}
+        },
+        invalid: {
+          color: '#a61b3c'
+        }
+      },
+      fonts: [
+        {
+          cssSrc:
+            'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap'
+        }
+      ]
     }
   }
 };

@@ -1,3 +1,5 @@
+import {countryByCode} from './countries.js';
+
 const MAX_ZIP_LENGTH = 12;
 
 /**
@@ -71,6 +73,13 @@ export const rateFor = (zoneId, optionId) => {
 };
 
 export const zoneIds = () => ZONES.map((z) => z.id);
+
+/** Wallet sheets do not render `SHIPPING_ADDRESS_UNSERVICEABLE`, so the page says it. */
+export const unserviceableNames = () =>
+  ZONES.filter((zone) => ratesFor(zone).length === 0)
+    .flatMap((zone) => (Array.isArray(zone.match.country) ? zone.match.country : [zone.match.country]))
+    .filter(Boolean)
+    .map((code) => countryByCode(code)?.name ?? code);
 
 /** True when a postcode can move the country into a different zone. */
 export const zipDecidesZone = (country) => {

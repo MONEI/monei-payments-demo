@@ -2,8 +2,6 @@ import {emit} from './events.js';
 
 const el = (id) => document.getElementById(id);
 
-const optionsKey = (options) => options.map((o) => `${o.id}:${o.amount}`).join('|');
-
 /**
  * Client-side navigation replaces the whole document body, so nothing here may be
  * captured once at module scope: every element reference and the card component
@@ -12,6 +10,7 @@ const optionsKey = (options) => options.map((o) => `${o.id}:${o.amount}`).join('
 let config;
 let payButton;
 let payError;
+let expressError;
 let shippingBox;
 let totalOut;
 let shippingOut;
@@ -22,12 +21,13 @@ let complete = false;
 let paymentRequest = null;
 let walletQuote = null;
 let walletOpen = false;
-let walletOptionsKey = null;
+let walletUnserviceable = false;
 
 const readPage = () => {
   config = JSON.parse(el('demo-config').textContent);
   payButton = el('pay');
   payError = el('pay-error');
+  expressError = el('express-error');
   shippingBox = el('shipping-options');
   totalOut = el('cart-total');
   shippingOut = el('cart-shipping');
@@ -35,7 +35,7 @@ const readPage = () => {
   complete = false;
   walletQuote = null;
   walletOpen = false;
-  walletOptionsKey = optionsKey(config.initialShippingOptions);
+  walletUnserviceable = false;
 };
 
 const money = (cents) =>
@@ -44,6 +44,14 @@ const money = (cents) =>
 const setError = (message) => {
   payError.textContent = message ?? '';
   payError.hidden = !message;
+};
+
+// The wallet button sits in its own section, and the card form's error line is two
+// sections below it — far enough that a message there reads as unrelated.
+const setExpressError = (message) => {
+  if (!expressError) return;
+  expressError.textContent = message ?? '';
+  expressError.hidden = !message;
 };
 
 const setBusy = (busy) => {
@@ -102,7 +110,7 @@ const loadRates = async () => {
   if (!response.ok) {
     quote = null;
     shippingBox.innerHTML = `<p class="text-xs text-rose-600">${
-      data.error === 'unserviceable' ? "We don't ship to this country yet." : 'Could not load shipping rates.'
+      data.error === 'unserviceable' ? "This shop doesn't ship to that country." : 'Could not load shipping rates.'
     }</p>`;
     renderTotals();
     return;
@@ -208,19 +216,20 @@ const walletRates = async (address) => {
   // The sheet has no error channel: `ShippingAddressChangeResult` is
   // `{shippingOptions?, amount?}`. Throwing is what produces Apple Pay's
   // `addressUnserviceable` and Google Pay's `SHIPPING_ADDRESS_UNSERVICEABLE`.
-  // It has to happen before anything is assigned — Google Pay's catch restores
-  // the selected option but keeps the mutated amount.
-  if (!response.ok) throw new Error(data.error ?? 'No rates for this address');
+  //
+  // Clearing the quote first is what actually blocks the payment: the sheet stays
+  // open and submittable after the error, and a kept quote would let `onSubmit`
+  // pay for the last serviceable address instead.
+  if (!response.ok) {
+    walletQuote = null;
+    walletUnserviceable = data.error === 'unserviceable';
+    throw new Error(data.error ?? 'No rates for this address');
+  }
 
+  walletUnserviceable = false;
   walletQuote = {quote: data.quote, sig: data.sig, optionId: data.shippingOptions[0].id};
 
-  // Returning `shippingOptions` makes the sheet rebuild its option list, which the
-  // shopper sees as a reload. The two response fields are independent, so the list
-  // is sent only when it differs from what the sheet already shows.
-  const sameOptions = walletOptionsKey === optionsKey(data.shippingOptions);
-  walletOptionsKey = optionsKey(data.shippingOptions);
-
-  return sameOptions ? {amount: data.amount} : {shippingOptions: data.shippingOptions, amount: data.amount};
+  return {shippingOptions: data.shippingOptions, amount: data.amount};
 };
 
 const mountPaymentRequest = () => {
@@ -251,6 +260,7 @@ const mountPaymentRequest = () => {
     },
 
     onBeforeOpen: () => {
+      setExpressError(null);
       lockCart(true);
       return true;
     },
@@ -258,7 +268,7 @@ const mountPaymentRequest = () => {
     onSubmit: async (result) => {
       if (result.error || !result.token) {
         lockCart(false);
-        return setError(result.error ?? 'The wallet did not return a card.');
+        return setExpressError(result.error ?? 'The wallet did not return a card.');
       }
 
       // Dismissing the sheet fires no callback, so the lock is released here and
@@ -266,7 +276,11 @@ const mountPaymentRequest = () => {
       lockCart(false);
 
       if (!walletQuote) {
-        return setError('The wallet did not report a shipping address, so the order could not be priced.');
+        return setExpressError(
+          walletUnserviceable
+            ? "This shop doesn't ship to that address, so the order was not placed. Nothing was charged."
+            : 'The wallet did not report a shipping address, so the order could not be priced.'
+        );
       }
 
       emit(`${result.paymentMethod}.onSubmit`, {
@@ -293,6 +307,7 @@ const mountPaymentRequest = () => {
     onError: (error) => {
       lockCart(false);
       emit('PaymentRequest.onError', {message: error?.message ?? String(error)});
+      setExpressError(error?.message ?? 'The wallet could not complete this payment.');
     },
 
     onLoad: (isSupported) => {

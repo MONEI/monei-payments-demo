@@ -1,5 +1,5 @@
 ---
-const {theme, bizumEnabled} = Astro.props;
+const {theme, bizumEnabled, paypalEnabled} = Astro.props;
 
 const CARDS = [
   {number: '4444 4444 4444 4422', label: 'Visa · frictionless'},
@@ -7,6 +7,13 @@ const CARDS = [
   {number: '4444 4444 4444 4406', label: 'Visa · 3DS challenge'},
   {number: '5555 5555 5555 5565', label: 'Mastercard · 3DS challenge'}
 ];
+
+const PAYPAL = [
+  {value: 'paypal-personal@monei.net', label: 'sandbox buyer'},
+  {value: 'monei12345', label: 'password'}
+];
+
+const copyButton = `copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted`;
 ---
 
 <section class={`${theme.page.radius} border ${theme.page.border} ${theme.page.surface} p-5`}>
@@ -20,7 +27,7 @@ const CARDS = [
         <li class="flex items-center gap-2">
           <button
             type="button"
-            class="copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted"
+            class={copyButton}
             data-copy={card.number.replace(/ /g, '')}
             style={`color: ${theme.page.accent}`}
           >
@@ -33,12 +40,7 @@ const CARDS = [
     {
       bizumEnabled && (
         <li class="flex items-center gap-2">
-          <button
-            type="button"
-            class="copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted"
-            data-copy="+34500000000"
-            style={`color: ${theme.page.accent}`}
-          >
+          <button type="button" class={copyButton} data-copy="+34500000000" style={`color: ${theme.page.accent}`}>
             +34 500 000 000
           </button>
           <span class={`text-xs ${theme.page.muted}`}>Bizum · under €5 only</span>
@@ -46,6 +48,23 @@ const CARDS = [
       )
     }
   </ul>
+  {
+    paypalEnabled && (
+      <div class={`mt-4 border-t ${theme.page.border} pt-3`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>PayPal sandbox</h3>
+        <ul class="mt-2 space-y-1.5">
+          {PAYPAL.map((entry) => (
+            <li class="flex items-center gap-2">
+              <button type="button" class={copyButton} data-copy={entry.value} style={`color: ${theme.page.accent}`}>
+                {entry.value}
+              </button>
+              <span class={`text-xs ${theme.page.muted}`}>{entry.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
   <p class={`mt-3 text-xs ${theme.page.muted}`}>
     <a class="underline" href="https://docs.monei.com/testing/" rel="noopener"> Full list of test cards </a>
   </p>

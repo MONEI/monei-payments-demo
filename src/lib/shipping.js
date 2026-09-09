@@ -60,6 +60,9 @@ export const matchZone = (address = {}) => {
 
 export const ratesFor = (zone) => RATES[zone.id] ?? [];
 
+/** PayPal rejects an order patch whose option list contains a `PICKUP` entry. */
+export const shippableRatesFor = (zone) => ratesFor(zone).filter((rate) => rate.type !== 'PICKUP');
+
 export const isServiceable = (zone) => ratesFor(zone).length > 0;
 
 /**
@@ -94,6 +97,6 @@ export const zipDecidesZone = (country) => {
  * opens a sheet that cannot price shipping at all.
  */
 export const initialShippingOptions = (country) => {
-  const rates = ratesFor(matchZone({country}));
-  return rates.length > 0 ? rates : RATES.peninsula;
+  const rates = shippableRatesFor(matchZone({country}));
+  return rates.length > 0 ? rates : shippableRatesFor({id: 'peninsula'});
 };

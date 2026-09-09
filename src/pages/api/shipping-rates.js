@@ -1,5 +1,5 @@
 import {cartTotal, seededCart} from '../../lib/cart.js';
-import {isServiceable, matchZone, ratesFor} from '../../lib/shipping.js';
+import {isServiceable, matchZone, ratesFor, shippableRatesFor} from '../../lib/shipping.js';
 import {signQuote} from '../../lib/quote.js';
 import {parseCart} from '../../lib/config.js';
 
@@ -27,13 +27,13 @@ export const POST = async ({request}) => {
     return json({error: 'Invalid JSON'}, 400);
   }
 
-  const {seed, cart, address} = body ?? {};
+  const {seed, cart, address, wallet} = body ?? {};
   if (typeof seed !== 'string' || !/^[a-z0-9]{1,16}$/.test(seed)) {
     return json({error: 'Invalid seed'}, 400);
   }
 
   const zone = matchZone(address ?? {});
-  const rates = ratesFor(zone);
+  const rates = wallet ? shippableRatesFor(zone) : ratesFor(zone);
 
   if (!isServiceable(zone)) {
     return json({error: 'unserviceable', zone: zone.id, label: zone.label}, 422);

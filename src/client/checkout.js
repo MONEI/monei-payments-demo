@@ -19,6 +19,7 @@ let quote = null;
 let card = null;
 let complete = false;
 let paymentRequest = null;
+let payPal = null;
 let walletQuote = null;
 let walletOpen = false;
 let walletUnserviceable = false;
@@ -208,7 +209,7 @@ const walletRates = async (address) => {
   const response = await fetch('/api/shipping-rates', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
-    body: JSON.stringify({seed: config.seed, cart: config.cart, address})
+    body: JSON.stringify({seed: config.seed, cart: config.cart, address, wallet: true})
   });
   const data = await response.json();
   emit(`← ${response.status}`, data);
@@ -230,6 +231,49 @@ const walletRates = async (address) => {
   walletQuote = {quote: data.quote, sig: data.sig, optionId: data.shippingOptions[0].id};
 
   return {shippingOptions: data.shippingOptions, amount: data.amount};
+};
+
+/**
+ * Shared by both express components: PaymentRequest and PayPal hand `onSubmit` the
+ * same shape, and the quote they must be charged against is the one the last
+ * shipping callback signed.
+ */
+const walletSubmit = async (result) => {
+  if (result.error || !result.token) {
+    lockCart(false);
+    return setExpressError(result.error ?? 'The wallet did not return a payment method.');
+  }
+
+  // Dismissing the sheet fires no callback, so the lock is released here and by the
+  // watchdog rather than on a close event that does not exist.
+  lockCart(false);
+
+  if (!walletQuote) {
+    return setExpressError(
+      walletUnserviceable
+        ? "This shop doesn't ship to that address, so the order was not placed. Nothing was charged."
+        : 'The wallet did not report a shipping address, so the order could not be priced.'
+    );
+  }
+
+  emit(`${result.paymentMethod}.onSubmit`, {
+    finalAmount: result.finalAmount,
+    shippingOption: result.shippingOption?.id,
+    token: `${result.token.slice(0, 12)}…`
+  });
+
+  const shipping = result.shippingDetails;
+  await submitPayment({
+    paymentToken: result.token,
+    optionId: result.shippingOption?.id ?? walletQuote.optionId,
+    quote: walletQuote.quote,
+    sig: walletQuote.sig,
+    // The wallet's own display total. A claim to check against the recomputed
+    // amount, never an amount to charge.
+    walletAmount: result.finalAmount,
+    customer: {name: shipping?.name, email: shipping?.email},
+    address: shipping?.address
+  });
 };
 
 const mountPaymentRequest = () => {
@@ -265,44 +309,7 @@ const mountPaymentRequest = () => {
       return true;
     },
 
-    onSubmit: async (result) => {
-      if (result.error || !result.token) {
-        lockCart(false);
-        return setExpressError(result.error ?? 'The wallet did not return a card.');
-      }
-
-      // Dismissing the sheet fires no callback, so the lock is released here and
-      // by the watchdog rather than on a close event that does not exist.
-      lockCart(false);
-
-      if (!walletQuote) {
-        return setExpressError(
-          walletUnserviceable
-            ? "This shop doesn't ship to that address, so the order was not placed. Nothing was charged."
-            : 'The wallet did not report a shipping address, so the order could not be priced.'
-        );
-      }
-
-      emit(`${result.paymentMethod}.onSubmit`, {
-        finalAmount: result.finalAmount,
-        shippingOption: result.shippingOption?.id,
-        token: `${result.token.slice(0, 12)}…`
-      });
-
-      const shipping = result.shippingDetails;
-      await submitPayment({
-        paymentToken: result.token,
-        optionId: result.shippingOption?.id ?? walletQuote.optionId,
-        quote: walletQuote.quote,
-        sig: walletQuote.sig,
-        // The sheet's own display total. Under `requestShipping` the token carries
-        // no amount, so this is a claim to check against the recomputed amount,
-        // never an amount to charge.
-        walletAmount: result.finalAmount,
-        customer: {name: shipping?.name, email: shipping?.email},
-        address: shipping?.address
-      });
-    },
+    onSubmit: walletSubmit,
 
     onError: (error) => {
       lockCart(false);
@@ -324,6 +331,65 @@ const mountPaymentRequest = () => {
   });
 
   paymentRequest.render('#payment-request');
+};
+
+/**
+ * `createOrder` reads `amount` and `shippingOptions` off the props closure when the
+ * buyer clicks, not when the button renders — and the server only omits the token's
+ * amount when `shippingOptions` is non-empty (`getPaymentToken/utils.ts:119`). An
+ * empty list therefore pins the pre-shipping amount on the token, and the buyer
+ * changing shipping inside PayPal then fails the payment with E206. So the button
+ * is never rendered without options.
+ */
+const mountPayPal = () => {
+  const container = el('paypal');
+  if (!container || !config.initialShippingOptions.length) return;
+
+  payPal = window.monei.PayPal({
+    accountId: config.accountId,
+    // The order is created with its first shipping option already selected, so the
+    // total has to include that option or PayPal is handed an order whose amount and
+    // selected option disagree.
+    amount: config.goods + config.initialShippingOptions[0].amount,
+    currency: config.currency,
+    sessionId: config.seed,
+    requestShipping: true,
+    shippingOptions: config.initialShippingOptions,
+    // PayPal's own `Buttons()` validates this and rejects a CSS string, unlike the
+    // other components which parse it.
+    style: {height: 45, borderRadius: Number.parseInt(config.walletRadius, 10) || 0},
+
+    onShippingAddressChange: walletRates,
+
+    onShippingOptionChange: async (option) => {
+      emit('PayPal.onShippingOptionChange', option);
+      walletQuote = walletQuote && {...walletQuote, optionId: option.id};
+      return {amount: config.goods + option.amount};
+    },
+
+    onBeforeOpen: () => {
+      setExpressError(null);
+      lockCart(true);
+      return true;
+    },
+
+    onSubmit: walletSubmit,
+
+    onError: (error) => {
+      lockCart(false);
+      emit('PayPal.onError', {message: error?.message ?? String(error)});
+      setExpressError(error?.message ?? 'PayPal could not complete this payment.');
+    },
+
+    // Reports `false` reliably but `true` optimistically — it fires before
+    // `Buttons().render()` is attempted, so a later failure surfaces via onError.
+    onLoad: (isSupported) => {
+      emit('PayPal.onLoad', {isSupported});
+      if (!isSupported) container.hidden = true;
+    }
+  });
+
+  payPal.render('#paypal');
 };
 
 const pay = async () => {
@@ -402,7 +468,7 @@ const start = async () => {
 
   // The previous page's iframes would otherwise linger, and a stale CardGroup
   // keeps its controller frame attached to a document that no longer exists.
-  for (const component of [card, paymentRequest]) {
+  for (const component of [card, paymentRequest, payPal]) {
     try {
       await component?.destroy();
     } catch {
@@ -411,10 +477,14 @@ const start = async () => {
   }
   card = null;
   paymentRequest = null;
+  payPal = null;
 
   readPage();
   mountCard();
   mountPaymentRequest();
+  // PayPal express stays unmounted while `order.patch` cannot be made to work: the
+  // buyer reaches the popup but can never complete the payment.
+  // mountPayPal();
   loadRates();
 
   payButton.addEventListener('click', pay);

@@ -104,7 +104,8 @@ const clientConfig = {
       </section>
       <aside class="space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
-        <TestCards theme={theme} bizumEnabled={enabled?.includes('bizum') ?? true} />
+        {/* PayPal express is disabled while `order.patch` cannot be made to work. */}
+        <TestCards theme={theme} bizumEnabled={enabled?.includes('bizum') ?? true} paypalEnabled={false} />
       </aside>
     </div>
   </main>

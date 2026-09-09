@@ -5,6 +5,7 @@ import {
   matchZone,
   rateFor,
   ratesFor,
+  shippableRatesFor,
   zipDecidesZone,
   zoneIds
 } from './shipping.js';
@@ -137,12 +138,37 @@ describe('initialShippingOptions', () => {
   });
 
   it('seeds the real rates when the country is one we serve', () => {
-    expect(initialShippingOptions('ES')).toEqual(ratesFor(matchZone({country: 'ES'})));
+    expect(initialShippingOptions('ES')).toEqual(shippableRatesFor(matchZone({country: 'ES'})));
   });
 
   it('falls back rather than seeding the unserviceable zone', () => {
     expect(isServiceable(matchZone({country: 'GB'}))).toBe(false);
     expect(initialShippingOptions('GB').length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A wallet is choosing where to ship, so "collect in store" does not belong in the
+ * list — and PayPal refuses the whole order patch when a `PICKUP` entry is present,
+ * which surfaces to the buyer as "doesn't ship to this location".
+ */
+describe('shippableRatesFor', () => {
+  it('drops pickup from the zone that offers it', () => {
+    const zone = matchZone({country: 'ES', zip: '28014'});
+    expect(ratesFor(zone).some((r) => r.type === 'PICKUP')).toBe(true);
+    expect(shippableRatesFor(zone).some((r) => r.type === 'PICKUP')).toBe(false);
+  });
+
+  it('leaves the shipping options untouched', () => {
+    for (const address of [{country: 'ES', zip: '28014'}, {country: 'ES', zip: '38001'}, {country: 'US'}]) {
+      const zone = matchZone(address);
+      expect(shippableRatesFor(zone)).toEqual(ratesFor(zone).filter((r) => r.type !== 'PICKUP'));
+      expect(shippableRatesFor(zone).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps pickup available to the card form, which is not choosing an address', () => {
+    expect(rateFor('peninsula', 'pickup').amount).toBe(0);
   });
 });
 

@@ -1,4 +1,4 @@
-import {navigate} from 'astro:transitions/client';
+import {go} from './nav.js';
 import {emit} from './events.js';
 
 /**
@@ -20,13 +20,18 @@ const readCart = () => {
 
 const CHANGED = 'monei-demo-cart-changed';
 
+const lockPayment = (locked) => {
+  for (const id of ['payment-request', 'paypal', 'bizum']) {
+    document.getElementById(id)?.classList.toggle('is-busy', locked);
+  }
+  const pay = document.getElementById('pay');
+  if (pay && locked) pay.disabled = true;
+};
+
 const writeCart = (lines, changedId) => {
   const url = new URL(location.href);
-  if (lines.length) {
-    url.searchParams.set('cart', lines.map((l) => `${l.productId}:${l.quantity}`).join(','));
-  } else {
-    url.searchParams.delete('cart');
-  }
+  // An empty value, not a deleted param: an absent `cart` means "seed a new basket".
+  url.searchParams.set('cart', lines.map((l) => `${l.productId}:${l.quantity}`).join(','));
   emit('cart', lines);
   // The server render cannot know which line the shopper touched, so it is handed
   // across the navigation. Empty when the line is gone: only the total can react.
@@ -34,7 +39,7 @@ const writeCart = (lines, changedId) => {
   // Totals, shipping zone and the pay amount are all rendered server-side, so the
   // page is re-fetched. `history: 'replace'` keeps stepping a quantity from
   // filling the back stack.
-  navigate(url.toString(), {history: 'replace'});
+  return go(url.toString(), {history: 'replace', preserveScroll: true});
 };
 
 /** Marks whatever changed so CSS can animate it, then forgets it. */
@@ -66,7 +71,7 @@ export const initCartUi = (initialLines) => {
     } else if (delta > 0) {
       lines = [...lines, {productId, quantity: 1}];
     }
-    writeCart(lines, stillPresent ? productId : null);
+    return writeCart(lines, stillPresent ? productId : null);
   };
 
   const buttons = [...document.querySelectorAll('[data-cart-add], [data-cart-step]')];
@@ -83,12 +88,20 @@ export const initCartUi = (initialLines) => {
       if (pending) return;
       pending = true;
       for (const other of buttons) other.disabled = true;
+      // The express buttons pay the amount the current quote priced, and that quote
+      // is about to be replaced by the server render.
+      lockPayment(true);
 
       // The cart row for a stepper, the button's wrapper for a product card —
       // whichever also contains the spinner.
       const scope = button.closest('[data-cart-line]') ?? button.parentElement;
       scope?.classList.add('is-pending');
-      change(id, delta);
+      if (!change(id, delta)) {
+        pending = false;
+        scope?.classList.remove('is-pending');
+        for (const other of buttons) other.disabled = false;
+        lockPayment(false);
+      }
     });
   }
 };

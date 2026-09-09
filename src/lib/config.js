@@ -12,7 +12,10 @@ export const CURRENCY = 'EUR';
 export const THEMES = ['aurora', 'monoline'];
 export const LAYOUTS = ['stacked', 'grid'];
 export const FLOWS = ['components', 'redirect'];
-export const METHODS = ['card', 'applePay', 'googlePay', 'paypal', 'bizum'];
+export const TABS = ['client', 'server', 'events'];
+// One entry for both wallets: `PaymentRequest` renders a single button and picks
+// Apple Pay or Google Pay from the browser, with no prop to constrain the choice.
+export const METHODS = ['card', 'wallet', 'paypal', 'bizum'];
 
 export const DEFAULTS = {
   theme: 'aurora',
@@ -23,7 +26,9 @@ export const DEFAULTS = {
   billing: true, // requestBilling — PaymentRequest only, never PayPal
   country: 'ES',
   flow: 'components',
-  panel: false // settings rail open; server-rendered so it cannot flash closed
+  panel: false, // settings rail open; server-rendered so it cannot flash closed
+  code: false, // code rail open, same reason
+  tab: 'client' // selected code-rail tab; a cart change is a server render
 };
 
 const SEED_RE = /^[a-z0-9]{1,16}$/;
@@ -45,10 +50,12 @@ const subset = (value, allowed) => {
 /**
  * `cart=ethiopia-guji:2,stoneware-cup:1` — present only once quantities are
  * edited, so an edited basket survives a reload and can be shared. Null means
- * fall back to the seeded cart.
+ * fall back to the seeded cart; `cart=` with no value is an emptied basket, which
+ * is not the same thing.
  */
 export const parseCart = (value) => {
-  if (!value) return null;
+  if (value === null || value === undefined) return null;
+  if (value === '') return [];
   const items = [];
   for (const entry of value.split(',')) {
     const [id, rawQty] = entry.split(':');
@@ -58,6 +65,8 @@ export const parseCart = (value) => {
     if (items.some((i) => i.productId === id)) continue; // ignore repeats
     items.push({productId: id, quantity});
   }
+  // Nothing survived validation, so the param was garbage rather than an emptied
+  // basket: fall back to the seed instead of showing an empty shop.
   return items.length ? items : null;
 };
 
@@ -75,7 +84,8 @@ export const parseConfig = (url) => {
   const validSeed = rawSeed && SEED_RE.test(rawSeed) ? rawSeed : null;
   const seed = validSeed ?? newSeed();
 
-  const cart = parseCart(q.get('cart')) ?? seededCart(seed);
+  const parsedCart = parseCart(q.get('cart'));
+  const cart = parsedCart ?? seededCart(seed);
 
   return {
     theme: oneOf(q.get('theme'), THEMES, DEFAULTS.theme),
@@ -85,11 +95,13 @@ export const parseConfig = (url) => {
     shipping: bool(q.get('shipping'), DEFAULTS.shipping),
     billing: bool(q.get('billing'), DEFAULTS.billing),
     panel: bool(q.get('panel'), DEFAULTS.panel),
+    code: bool(q.get('code'), DEFAULTS.code),
+    tab: oneOf(q.get('tab'), TABS, DEFAULTS.tab),
     country: normalizeCountry(q.get('country')),
     seed,
     seedGenerated: !validSeed,
     cart,
-    cartEdited: Boolean(parseCart(q.get('cart'))),
+    cartEdited: parsedCart !== null,
     currency: CURRENCY
   };
 };

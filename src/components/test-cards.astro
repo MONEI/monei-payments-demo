@@ -1,5 +1,5 @@
 ---
-const {theme, bizumEnabled, paypalEnabled} = Astro.props;
+const {theme, paypalEnabled} = Astro.props;
 
 const CARDS = [
   {number: '4444 4444 4444 4422', label: 'Visa · frictionless'},
@@ -37,16 +37,12 @@ const copyButton = `copy cursor-pointer font-mono text-xs tabular-nums underline
         </li>
       ))
     }
-    {
-      bizumEnabled && (
-        <li class="flex items-center gap-2">
-          <button type="button" class={copyButton} data-copy="+34500000000" style={`color: ${theme.page.accent}`}>
-            +34 500 000 000
-          </button>
-          <span class={`text-xs ${theme.page.muted}`}>Bizum · under €5 only</span>
-        </li>
-      )
-    }
+    <li class="flex items-center gap-2" id="bizum-test" hidden>
+      <button type="button" class={copyButton} data-copy="+34500000000" style={`color: ${theme.page.accent}`}>
+        +34 500 000 000
+      </button>
+      <span class={`text-xs ${theme.page.muted}`}>Bizum</span>
+    </li>
   </ul>
   {
     paypalEnabled && (

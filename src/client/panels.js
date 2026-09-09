@@ -1,4 +1,4 @@
-import {navigate} from 'astro:transitions/client';
+import {go as navigateOnce} from './nav.js';
 
 /**
  * The rail's open state lives in the URL so the server renders it already open.
@@ -15,13 +15,13 @@ const setOpen = (open) => {
   const url = new URL(location.href);
   if (open) url.searchParams.set('panel', '1');
   else url.searchParams.delete('panel');
-  history.replaceState(null, '', url);
+  history.replaceState(history.state, '', url);
 };
 
 const go = (mutate) => {
   const url = new URL(location.href);
   mutate(url.searchParams);
-  navigate(url.toString());
+  return navigateOnce(url.toString());
 };
 
 const wire = () => {
@@ -34,22 +34,23 @@ const wire = () => {
 
   for (const input of rail.querySelectorAll('[data-param]')) {
     input.addEventListener('change', () => {
-      input.closest('label')?.classList.add('is-pending');
-      go((q) => q.set(input.dataset.param, input.value));
+      if (go((q) => q.set(input.dataset.param, input.value))) {
+        input.closest('label')?.classList.add('is-pending');
+      }
     });
   }
 
   const methods = [...rail.querySelectorAll('[data-method]')].filter((i) => !i.disabled);
   for (const input of methods) {
     input.addEventListener('change', () => {
-      input.closest('label')?.classList.add('is-pending');
       const chosen = methods.filter((i) => i.checked).map((i) => i.value);
-      go((q) => {
+      const started = go((q) => {
         // All available methods checked is the default, so the param comes off
         // and the shared link stays short.
         if (chosen.length === methods.length) q.delete('methods');
         else q.set('methods', chosen.join(','));
       });
+      if (started) input.closest('label')?.classList.add('is-pending');
     });
   }
 };

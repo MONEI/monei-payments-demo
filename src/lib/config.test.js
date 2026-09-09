@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {DEFAULTS, parseConfig, toQuery} from './config.js';
+import {DEFAULTS, METHODS, parseConfig, toQuery} from './config.js';
 
 const at = (query) => parseConfig(new URL(`https://demo.test/${query}`));
 
@@ -53,12 +53,33 @@ describe('parseConfig', () => {
     expect(at('?methods=hack').methods).toEqual([]);
   });
 
+  /**
+   * `PaymentRequest` renders one button and picks Apple Pay or Google Pay from the
+   * browser, with no prop to constrain it — so the two wallets cannot be selected
+   * apart, and the individual ids are not accepted.
+   */
+  it('exposes the wallets as one selectable method', () => {
+    expect(METHODS).toContain('wallet');
+    expect(METHODS).not.toContain('applePay');
+    expect(METHODS).not.toContain('googlePay');
+    expect(at('?methods=applePay').methods).toEqual([]);
+    expect(at('?methods=card,wallet').methods).toEqual(['card', 'wallet']);
+  });
+
   it('keeps the rail closed unless panel=1, and never puts it in a shared link', () => {
     expect(at('').panel).toBe(false);
     expect(at('?panel=1').panel).toBe(true);
     expect(at('?panel=0').panel).toBe(false);
     // UI state, not configuration — a sales link should not force it open.
     expect(toQuery(at('?seed=abc123&panel=1'))).toBe('seed=abc123');
+  });
+
+  it('tracks the two rails independently, and shares neither', () => {
+    expect(at('?code=1').code).toBe(true);
+    expect(at('?code=1').panel).toBe(false);
+    expect(at('?panel=1').code).toBe(false);
+    expect(at('?panel=1&code=1')).toMatchObject({panel: true, code: true});
+    expect(toQuery(at('?seed=abc123&code=1'))).toBe('seed=abc123');
   });
 
   it('reads booleans as off only for explicit falsey spellings', () => {

@@ -6,6 +6,7 @@ import AddressForm from '../components/address-form.astro';
 import TestCards from '../components/test-cards.astro';
 import CardForm from '../components/card-form.astro';
 import ExpressCheckout from '../components/express-checkout.astro';
+import CodePanel from '../components/code-panel.astro';
 import Rail from '../components/rail.astro';
 import {accountId} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
@@ -36,6 +37,8 @@ const clientConfig = {
   currency: config.currency,
   goods: total,
   cart: serializeCart(config.cart),
+  // Empty means every method the account allows, so the client treats it as "all".
+  methods: config.methods,
   cardUi: theme.cardUi,
   cardStyle: theme.card.style,
   cardFonts: theme.card.fonts,
@@ -50,6 +53,7 @@ const clientConfig = {
 
 <StoreLayout theme={theme}>
   <Rail theme={theme} config={config} enabled={enabled} />
+  <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
   <StoreHeader theme={theme} livemode={account?.livemode ?? false} config={config} />
   <main class="mx-auto max-w-5xl px-6 py-12">
     {
@@ -105,16 +109,17 @@ const clientConfig = {
       <aside class="space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
         {/* PayPal express is disabled while `order.patch` cannot be made to work. */}
-        <TestCards theme={theme} bizumEnabled={enabled?.includes('bizum') ?? true} paypalEnabled={false} />
+        <TestCards theme={theme} paypalEnabled={false} />
       </aside>
     </div>
   </main>
-  {canonicalQuery && <script is:inline set:html={`history.replaceState(null, '', '?${canonicalQuery}');`} />}
+  {canonicalQuery && <script is:inline set:html={`history.replaceState(history.state, '', '?${canonicalQuery}');`} />}
   <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
   <script id="demo-cart" type="application/json" set:html={JSON.stringify(config.cart)} />
   <script>
     import '../client/checkout.js';
     import '../client/panels.js';
+    import '../client/code-panel.js';
     import {initCartUi} from '../client/cart-ui.js';
 
     document.addEventListener('astro:page-load', () => {

@@ -60,6 +60,9 @@ export const matchZone = (address = {}) => {
 
 export const ratesFor = (zone) => RATES[zone.id] ?? [];
 
+/** The rate table itself, so a printed copy of it cannot drift from the live one. */
+export const ZONE_TABLE = () => RATES;
+
 /** PayPal rejects an order patch whose option list contains a `PICKUP` entry. */
 export const shippableRatesFor = (zone) => ratesFor(zone).filter((rate) => rate.type !== 'PICKUP');
 

@@ -6,14 +6,19 @@ const {theme, config, enabled} = Astro.props;
 
 const METHOD_LABELS = {
   card: 'Card',
-  applePay: 'Apple Pay',
-  googlePay: 'Google Pay',
+  wallet: 'Google Pay / Apple Pay',
   paypal: 'PayPal',
   bizum: 'Bizum'
 };
 
-// Reasons a method is unavailable regardless of the account's own configuration.
 const UNAVAILABLE = {paypal: 'temporarily unavailable'};
+
+// `/client-payment-methods` answers per caller, so a row starts optimistic and the
+// browser corrects it once the component reports whether it loaded.
+const REASON = {bizum: 'Spain only'};
+
+// The account reports the two wallets separately; the single row stands for either.
+const ACCOUNT_IDS = {wallet: ['applePay', 'googlePay']};
 
 const row = `flex items-center justify-between gap-3 text-sm`;
 const hint = `text-[11px] ${theme.page.muted}`;
@@ -61,7 +66,9 @@ const hint = `text-[11px] ${theme.page.muted}`;
         <div class="mt-2 space-y-1.5">
           {
             Object.entries(METHOD_LABELS).map(([id, label]) => {
-              const onAccount = (enabled === null || enabled.includes(id)) && !UNAVAILABLE[id];
+              const ids = ACCOUNT_IDS[id] ?? [id];
+              const onAccount =
+                (enabled === null || ids.some((i) => enabled.includes(i)) || REASON[id]) && !UNAVAILABLE[id];
               return (
                 <label class={`${row} ${onAccount ? 'cursor-pointer' : ''}`}>
                   <span class="flex items-center gap-2">
@@ -76,7 +83,12 @@ const hint = `text-[11px] ${theme.page.muted}`;
                     {label}
                   </span>
                   {onAccount ? (
-                    <span class="spinner" aria-hidden="true" />
+                    <>
+                      <span class="spinner" aria-hidden="true" />
+                      <span class={`${hint} hidden`} data-reason={id}>
+                        {REASON[id]}
+                      </span>
+                    </>
                   ) : (
                     <span class={hint}>{UNAVAILABLE[id] ?? 'not on this account'}</span>
                   )}

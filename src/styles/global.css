@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
-.rail-body {
+.rail-body,
+.code-body {
   width: 0;
   opacity: 0;
   /* Vertical scrolling only. `overflow-y: auto` alone makes the element a scroll
@@ -21,12 +22,16 @@
   width: 18rem;
 }
 
+.code-body > * {
+  width: 30rem;
+}
+
 #rail input {
   accent-color: var(--rail-accent);
 }
 
-#rail[data-open='true'] .rail-body {
-  width: 18rem;
+#rail[data-open='true'] .rail-body,
+#code-rail[data-open='true'] .code-body {
   opacity: 1;
   visibility: visible;
   transition:
@@ -35,8 +40,29 @@
     visibility 0ms linear;
 }
 
-#rail-chevron {
+#rail[data-open='true'] .rail-body {
+  width: 18rem;
+}
+
+#code-rail[data-open='true'] .code-body {
+  width: 30rem;
+}
+
+/* The code rail opens from the right, so its chevron starts pointing the other way. */
+#code-rail[data-open='true'] #code-chevron {
+  transform: rotate(180deg);
+}
+
+#rail-chevron,
+#code-chevron {
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Two fixed rails do not fit a phone; the storefront is what matters there. */
+@media (max-width: 48rem) {
+  #code-rail {
+    display: none;
+  }
 }
 
 /* A theme change is a server render, so the control that triggered it shows the
@@ -112,9 +138,18 @@
   border-color: var(--color-emerald-500);
 }
 
+/* A wallet button cannot be greyed out from here — it lives in a cross-origin frame
+   — so the whole mount box is taken out of reach instead. */
+.is-busy {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rail-body,
+  .code-body,
   #rail-chevron,
+  #code-chevron,
   .monei-part {
     transition-duration: 0ms;
   }

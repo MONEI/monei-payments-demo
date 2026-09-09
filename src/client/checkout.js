@@ -20,9 +20,11 @@ let card = null;
 let complete = false;
 let paymentRequest = null;
 let payPal = null;
+let bizum = null;
 let walletQuote = null;
 let walletOpen = false;
 let walletUnserviceable = false;
+let pricing = false;
 
 const readPage = () => {
   config = JSON.parse(el('demo-config').textContent);
@@ -37,6 +39,7 @@ const readPage = () => {
   walletQuote = null;
   walletOpen = false;
   walletUnserviceable = false;
+  pricing = false;
 };
 
 const money = (cents) =>
@@ -56,8 +59,26 @@ const setExpressError = (message) => {
 };
 
 const setBusy = (busy) => {
-  payButton.disabled = busy || walletOpen || !complete || !quote;
+  payButton.disabled = busy || pricing || walletOpen || !complete || !quote;
   payButton.textContent = busy ? 'Processing…' : `Pay ${money(currentTotal())}`;
+};
+
+/**
+ * Every express button pays the amount the last quote priced, so none of them may
+ * be reachable while that quote is being replaced.
+ */
+const setPricing = (busy) => {
+  pricing = busy;
+  el('shipping-spinner')?.classList.toggle('is-pending', busy);
+
+  for (const container of ['payment-request', 'paypal', 'bizum']) {
+    const node = el(container);
+    if (node) node.classList.toggle('is-busy', busy);
+  }
+  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) {
+    control.disabled = busy || walletOpen;
+  }
+  if (payButton) setBusy(false);
 };
 
 const currentTotal = () => {
@@ -76,12 +97,49 @@ const addressFromForm = () => {
   };
 };
 
+const updateAmount = (component) => {
+  // Rejects asynchronously once the component's frame is gone, so the promise has
+  // to be caught rather than the call wrapped.
+  Promise.resolve(component?.updateProps({amount: currentTotal()})).catch(() => {});
+};
+
+/**
+ * In test mode the Bizum outcome is decided by the total, so it is reported by the
+ * amount and by the shipping choice — the two places that move it, and neither is
+ * near the button.
+ */
+const BIZUM_BANDS = [
+  {max: 500, text: null},
+  {max: 1000, text: 'Over €5, so Bizum will decline. Collect in store to drop the total.'},
+  {max: 1500, text: 'Over €10, so Bizum approves through a redirect.'},
+  {max: Infinity, text: 'Over €15, so Bizum rejects the test phone number.'}
+];
+
+const renderBizumBand = () => {
+  const supported = Boolean(el('bizum-row') && !el('bizum-row').hidden);
+  const {text} = BIZUM_BANDS.find((band) => currentTotal() < band.max);
+  const hasRates = Boolean(shippingBox?.querySelector('input[name="shipping"]'));
+
+  for (const [id, show] of [
+    ['bizum-band', true],
+    ['bizum-band-shipping', hasRates]
+  ]) {
+    const node = el(id);
+    if (!node) continue;
+    node.textContent = text ?? '';
+    node.hidden = !supported || !text || !show;
+  }
+};
+
 const renderTotals = () => {
   const selected = shippingBox?.querySelector('input[name="shipping"]:checked');
   if (shippingOut) shippingOut.textContent = selected ? money(Number(selected.dataset.amount)) : '—';
   if (totalOut) totalOut.textContent = money(currentTotal());
 
-  card?.updateProps({amount: currentTotal()});
+  // A navigation can destroy these between the listener firing and this running.
+  updateAmount(card);
+  updateAmount(bizum);
+  renderBizumBand();
   setBusy(false);
 };
 
@@ -98,20 +156,31 @@ const loadRates = async () => {
     return;
   }
 
-  emit('POST /api/shipping-rates', {seed: config.seed, address});
+  emit('POST /api/shipping-rates', {seed: config.seed, cart: config.cart, address});
+  setPricing(true);
 
-  const response = await fetch('/api/shipping-rates', {
-    method: 'POST',
-    headers: {'content-type': 'application/json'},
-    body: JSON.stringify({seed: config.seed, cart: config.cart, address})
-  });
-  const data = await response.json();
+  let response;
+  let data;
+  try {
+    response = await fetch('/api/shipping-rates', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({seed: config.seed, cart: config.cart, address})
+    });
+    data = await response.json();
+  } finally {
+    setPricing(false);
+  }
   emit(`← ${response.status}`, data);
 
   if (!response.ok) {
     quote = null;
+    const message = {
+      unserviceable: "This shop doesn't ship to that country.",
+      empty: 'Add something to the cart first.'
+    };
     shippingBox.innerHTML = `<p class="text-xs text-rose-600">${
-      data.error === 'unserviceable' ? "This shop doesn't ship to that country." : 'Could not load shipping rates.'
+      message[data.error] ?? 'Could not load shipping rates.'
     }</p>`;
     renderTotals();
     return;
@@ -153,6 +222,13 @@ const cardProps = () => ({
  */
 const mountCard = () => {
   const monei = window.monei;
+
+  if (!hasSomethingToBuy() || !methodAllowed('card')) {
+    const fields = el('card-fields');
+    if (fields) fields.hidden = true;
+    if (payButton) payButton.hidden = true;
+    return;
+  }
 
   if (config.cardUi === 'parts') {
     card = monei.CardGroup({
@@ -203,6 +279,27 @@ const unlockCart = () => {
   if (walletOpen) lockCart(false);
 };
 
+/**
+ * The rail is rendered on the server, but `/client-payment-methods` answers per
+ * caller — so a method the server could not see may still work here, and vice
+ * versa. The component's own `onLoad` is the only authority.
+ */
+const methodAllowed = (id) => config.methods.length === 0 || config.methods.includes(id);
+
+// `validateComponentProps` tests `accountId && amount && currency` for truthiness, so
+// every component throws on a zero amount rather than rendering a disabled state.
+const hasSomethingToBuy = () => config.goods > 0;
+
+const setMethodSupported = (id, isSupported) => {
+  const input = document.querySelector(`[data-method="${id}"]`);
+  if (!input) return;
+
+  input.disabled = !isSupported;
+  input.classList.toggle('cursor-pointer', isSupported);
+  input.closest('label')?.classList.toggle('cursor-pointer', isSupported);
+  document.querySelector(`[data-reason="${id}"]`)?.classList.toggle('hidden', isSupported);
+};
+
 const walletRates = async (address) => {
   emit('onShippingAddressChange', address);
 
@@ -249,6 +346,10 @@ const walletSubmit = async (result) => {
   lockCart(false);
 
   if (!walletQuote) {
+    emit('approved, not created', {
+      reason: walletUnserviceable ? 'unserviceable address' : 'no shipping quote',
+      paymentMethod: result.paymentMethod
+    });
     return setExpressError(
       walletUnserviceable
         ? "This shop doesn't ship to that address, so the order was not placed. Nothing was charged."
@@ -279,6 +380,11 @@ const walletSubmit = async (result) => {
 const mountPaymentRequest = () => {
   const container = el('payment-request');
   if (!container) return;
+
+  if (!hasSomethingToBuy() || !methodAllowed('wallet')) {
+    container.hidden = true;
+    return;
+  }
 
   const reason = el('express-reason');
 
@@ -319,6 +425,7 @@ const mountPaymentRequest = () => {
 
     onLoad: (isSupported) => {
       emit('PaymentRequest.onLoad', {isSupported});
+      setMethodSupported('wallet', isSupported);
       if (isSupported) return;
 
       container.hidden = true;
@@ -334,6 +441,69 @@ const mountPaymentRequest = () => {
 };
 
 /**
+ * Bizum collects no address of its own, so it pays for whatever the page's form and
+ * shipping selection already priced — the card path's quote, not a wallet one. In
+ * test mode the provider rejects anything at or above €5.
+ */
+const mountBizum = () => {
+  const container = el('bizum');
+  if (!container || !hasSomethingToBuy() || !methodAllowed('bizum')) return;
+
+  bizum = window.monei.Bizum({
+    accountId: config.accountId,
+    amount: currentTotal(),
+    currency: config.currency,
+    sessionId: config.seed,
+    style: {height: 45, borderRadius: config.walletRadius},
+
+    onBeforeOpen: () => {
+      setError(null);
+      if (!quote) {
+        setError('Enter a shipping address first, so the order can be priced.');
+        return false;
+      }
+      return true;
+    },
+
+    onSubmit: async (result) => {
+      if (result.error || !result.token) {
+        return setError(result.error ?? 'Bizum did not return a payment.');
+      }
+
+      emit('Bizum.onSubmit', {amount: currentTotal(), token: `${result.token.slice(0, 12)}…`});
+
+      await submitPayment({
+        paymentToken: result.token,
+        optionId: shippingBox.querySelector('input[name="shipping"]:checked')?.value,
+        ...quote,
+        customer: {
+          name: document.querySelector('[name="name"]')?.value,
+          email: document.querySelector('[name="email"]')?.value
+        },
+        address: addressFromForm()
+      });
+    },
+
+    onError: (error) => {
+      emit('Bizum.onError', {message: error?.message ?? String(error)});
+      setError(error?.message ?? 'Bizum could not complete this payment.');
+    },
+
+    onLoad: (isSupported) => {
+      emit('Bizum.onLoad', {isSupported});
+      setMethodSupported('bizum', isSupported);
+      for (const id of ['bizum-row', 'bizum-test']) {
+        const node = el(id);
+        if (node) node.hidden = !isSupported;
+      }
+      renderBizumBand();
+    }
+  });
+
+  bizum.render('#bizum');
+};
+
+/**
  * `createOrder` reads `amount` and `shippingOptions` off the props closure when the
  * buyer clicks, not when the button renders — and the server only omits the token's
  * amount when `shippingOptions` is non-empty (`getPaymentToken/utils.ts:119`). An
@@ -343,7 +513,8 @@ const mountPaymentRequest = () => {
  */
 const mountPayPal = () => {
   const container = el('paypal');
-  if (!container || !config.initialShippingOptions.length) return;
+  if (!container || !hasSomethingToBuy() || !methodAllowed('paypal')) return;
+  if (!config.initialShippingOptions.length) return;
 
   payPal = window.monei.PayPal({
     accountId: config.accountId,
@@ -468,7 +639,7 @@ const start = async () => {
 
   // The previous page's iframes would otherwise linger, and a stale CardGroup
   // keeps its controller frame attached to a document that no longer exists.
-  for (const component of [card, paymentRequest, payPal]) {
+  for (const component of [card, paymentRequest, payPal, bizum]) {
     try {
       await component?.destroy();
     } catch {
@@ -478,10 +649,12 @@ const start = async () => {
   card = null;
   paymentRequest = null;
   payPal = null;
+  bizum = null;
 
   readPage();
   mountCard();
   mountPaymentRequest();
+  mountBizum();
   // PayPal express stays unmounted while `order.patch` cannot be made to work: the
   // buyer reaches the popup but can never complete the payment.
   // mountPayPal();

@@ -43,6 +43,8 @@ export const POST = async ({request}) => {
   // param before being signed into the quote.
   const items = parseCart(typeof cart === 'string' ? cart : null) ?? seededCart(seed);
   const goods = cartTotal(items);
+  if (goods <= 0) return json({error: 'empty'}, 422);
+
   const {quote, sig} = signQuote({seed, cart: items, zone: zone.id, rates});
 
   return json({

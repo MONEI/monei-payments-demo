@@ -1,5 +1,7 @@
 ---
-const {theme} = Astro.props;
+const {theme, flow} = Astro.props;
+
+const redirect = flow === 'redirect';
 
 /**
  * The SDK toggles `monei-component--focus|--invalid|--empty|--complete` on
@@ -11,7 +13,7 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
 ---
 
 <section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
-  <div id="card-fields">
+  <div id="card-fields" hidden={redirect}>
     <h2 class={`text-sm ${theme.page.heading}`}>Card details</h2>
     {
       theme.cardUi === 'parts' ? (
@@ -39,6 +41,16 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
       )
     }
   </div>
+  {
+    redirect && (
+      <div>
+        <h2 class={`text-sm ${theme.page.heading}`}>Hosted payment page</h2>
+        <p class={`mt-1 text-xs ${theme.page.muted}`}>
+          The payment is created here and the shopper finishes on MONEI's own page, so no card data touches this site.
+        </p>
+      </div>
+    )
+  }
   <div class="mt-5">
     <h3 class={`${label} flex items-center gap-2`}>
       Shipping
@@ -57,7 +69,7 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
     class={`${theme.page.radius} mt-4 w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50`}
     style={`background: ${theme.page.accent}`}
   >
-    Pay
+    {redirect ? 'Continue to payment' : 'Pay'}
   </button>
   <div id="bizum-row" hidden>
     <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`}>

@@ -60,7 +60,8 @@ const setExpressError = (message) => {
 
 const setBusy = (busy) => {
   payButton.disabled = busy || pricing || walletOpen || !complete || !quote;
-  payButton.textContent = busy ? 'Processing…' : `Pay ${money(currentTotal())}`;
+  const idle = isRedirectFlow() ? `Continue to payment · ${money(currentTotal())}` : `Pay ${money(currentTotal())}`;
+  payButton.textContent = busy ? 'Processing…' : idle;
 };
 
 /**
@@ -223,6 +224,13 @@ const cardProps = () => ({
 const mountCard = () => {
   const monei = window.monei;
 
+  // The hosted page collects the card itself, so there is nothing to mount and the
+  // button is ready the moment a quote exists.
+  if (isRedirectFlow()) {
+    complete = true;
+    return;
+  }
+
   if (!hasSomethingToBuy() || !methodAllowed('card')) {
     const fields = el('card-fields');
     if (fields) fields.hidden = true;
@@ -289,6 +297,10 @@ const methodAllowed = (id) => config.methods.length === 0 || config.methods.incl
 // `validateComponentProps` tests `accountId && amount && currency` for truthiness, so
 // every component throws on a zero amount rather than rendering a disabled state.
 const hasSomethingToBuy = () => config.goods > 0;
+
+// The hosted page runs its own checkout, so the express components have nothing to
+// contribute to it.
+const isRedirectFlow = () => config.flow === 'redirect';
 
 const setMethodSupported = (id, isSupported) => {
   const input = document.querySelector(`[data-method="${id}"]`);
@@ -381,7 +393,7 @@ const mountPaymentRequest = () => {
   const container = el('payment-request');
   if (!container) return;
 
-  if (!hasSomethingToBuy() || !methodAllowed('wallet')) {
+  if (isRedirectFlow() || !hasSomethingToBuy() || !methodAllowed('wallet')) {
     container.hidden = true;
     return;
   }
@@ -447,7 +459,7 @@ const mountPaymentRequest = () => {
  */
 const mountBizum = () => {
   const container = el('bizum');
-  if (!container || !hasSomethingToBuy() || !methodAllowed('bizum')) return;
+  if (!container || isRedirectFlow() || !hasSomethingToBuy() || !methodAllowed('bizum')) return;
 
   bizum = window.monei.Bizum({
     accountId: config.accountId,
@@ -513,7 +525,7 @@ const mountBizum = () => {
  */
 const mountPayPal = () => {
   const container = el('paypal');
-  if (!container || !hasSomethingToBuy() || !methodAllowed('paypal')) return;
+  if (!container || isRedirectFlow() || !hasSomethingToBuy() || !methodAllowed('paypal')) return;
   if (!config.initialShippingOptions.length) return;
 
   payPal = window.monei.PayPal({
@@ -563,8 +575,42 @@ const mountPayPal = () => {
   payPal.render('#paypal');
 };
 
+const payByRedirect = async () => {
+  setBusy(true);
+  setError(null);
+
+  const optionId = shippingBox.querySelector('input[name="shipping"]:checked')?.value;
+  emit('POST /api/redirect-payment', {optionId, amount: currentTotal()});
+
+  try {
+    const response = await fetch('/api/redirect-payment', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({
+        optionId,
+        ...quote,
+        customer: {
+          name: document.querySelector('[name="name"]')?.value,
+          email: document.querySelector('[name="email"]')?.value
+        },
+        address: addressFromForm(),
+        search: window.location.search
+      })
+    });
+    const data = await response.json();
+    emit(`← ${response.status}`, data);
+    if (!response.ok) throw new Error(data.error ?? 'Payment could not be created');
+    window.location.assign(data.redirectUrl);
+  } catch (error) {
+    setBusy(false);
+    setError(`${error.message}. Nothing was charged — you can try again.`);
+  }
+};
+
 const pay = async () => {
   if (!quote) return setError('Choose a shipping option first.');
+  if (isRedirectFlow()) return payByRedirect();
+
   setBusy(true);
   setError(null);
 

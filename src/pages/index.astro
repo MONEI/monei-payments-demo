@@ -39,6 +39,7 @@ const clientConfig = {
   cart: serializeCart(config.cart),
   // Empty means every method the account allows, so the client treats it as "all".
   methods: config.methods,
+  flow: config.flow,
   cardUi: theme.cardUi,
   cardStyle: theme.card.style,
   cardFonts: theme.card.fonts,
@@ -101,9 +102,9 @@ const clientConfig = {
           }
         </ul>
         <div class="mt-6 space-y-6">
-          <ExpressCheckout theme={theme} />
+          <ExpressCheckout theme={theme} flow={config.flow} />
           <AddressForm theme={theme} country={config.country} />
-          <CardForm theme={theme} />
+          <CardForm theme={theme} flow={config.flow} />
         </div>
       </section>
       <aside class="space-y-4">

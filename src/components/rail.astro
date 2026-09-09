@@ -1,8 +1,12 @@
 ---
-import {THEMES} from '../lib/config.js';
+import {FLOWS, THEMES} from '../lib/config.js';
 import {THEME_DATA} from '../data/themes.js';
 
 const {theme, config, enabled} = Astro.props;
+
+const FLOW_LABELS = {components: 'Components', redirect: 'Hosted page'};
+
+const redirect = config.flow === 'redirect';
 
 const METHOD_LABELS = {
   card: 'Card',
@@ -35,6 +39,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
       <p class={`text-xs font-medium tracking-widest uppercase ${theme.page.muted}`}>Demo settings</p>
       <section class="mt-4">
         <h3 class={`text-xs font-medium ${theme.page.muted}`}>Theme</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>MONEI's page has its own styling.</p>}
         <div class="mt-2 space-y-1.5">
           {
             THEMES.map((name) => (
@@ -46,7 +51,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                     name="theme"
                     value={name}
                     checked={config.theme === name}
-                    disabled={!THEME_DATA[name]}
+                    disabled={!THEME_DATA[name] || redirect}
                     data-param="theme"
                   />
                   {THEME_DATA[name]?.label ?? name}
@@ -56,6 +61,36 @@ const hint = `text-[11px] ${theme.page.muted}`;
             ))
           }
         </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Checkout flow</h3>
+        <div class="mt-2 space-y-1.5">
+          {
+            FLOWS.map((name) => (
+              <label class={`${row} cursor-pointer`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class="cursor-pointer"
+                    name="flow"
+                    value={name}
+                    checked={config.flow === name}
+                    data-param="flow"
+                  />
+                  {FLOW_LABELS[name]}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+        {
+          redirect && (
+            <p class={`mt-2 ${hint}`}>
+              The hosted page collects the card, so the card layout and the express buttons do not apply.
+            </p>
+          )
+        }
       </section>
       <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
         <h3 class={`text-xs font-medium ${theme.page.muted}`}>Cart</h3>
@@ -68,7 +103,9 @@ const hint = `text-[11px] ${theme.page.muted}`;
             Object.entries(METHOD_LABELS).map(([id, label]) => {
               const ids = ACCOUNT_IDS[id] ?? [id];
               const onAccount =
-                (enabled === null || ids.some((i) => enabled.includes(i)) || REASON[id]) && !UNAVAILABLE[id];
+                (enabled === null || ids.some((i) => enabled.includes(i)) || REASON[id]) &&
+                !UNAVAILABLE[id] &&
+                !redirect;
               return (
                 <label class={`${row} ${onAccount ? 'cursor-pointer' : ''}`}>
                   <span class="flex items-center gap-2">
@@ -90,7 +127,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       </span>
                     </>
                   ) : (
-                    <span class={hint}>{UNAVAILABLE[id] ?? 'not on this account'}</span>
+                    <span class={hint}>{redirect ? 'hosted page' : (UNAVAILABLE[id] ?? 'not on this account')}</span>
                   )}
                 </label>
               );

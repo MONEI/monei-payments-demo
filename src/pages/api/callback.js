@@ -20,10 +20,9 @@ export const POST = async ({request}) => {
   }
 
   try {
-    // v3 returns an event envelope; v1 returned the payment itself.
-    const event = monei.verifySignature(raw, signature);
-    const payment = event.object ?? event;
-    console.log(`Callback ${event.type ?? 'payment'} — ${payment.id} is ${payment.status}`);
+    // A payment `callbackUrl` sends the Payment itself, not an event envelope.
+    const payment = monei.verifySignature(raw, signature);
+    console.log(`Callback — ${payment.id} is ${payment.status}`);
   } catch (error) {
     console.error('Callback signature verification failed', error.message);
     return new Response('Invalid signature', {status: 401});

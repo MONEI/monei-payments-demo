@@ -55,7 +55,7 @@ const clientConfig = {
 <StoreLayout theme={theme}>
   <Rail theme={theme} config={config} enabled={enabled} />
   <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
-  <StoreHeader theme={theme} livemode={account?.livemode ?? false} config={config} />
+  <StoreHeader theme={theme} config={config} />
   <main class="mx-auto max-w-5xl px-6 py-12">
     {
       failedPayment && (

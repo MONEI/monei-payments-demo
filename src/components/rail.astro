@@ -15,7 +15,7 @@ const METHOD_LABELS = {
   bizum: 'Bizum'
 };
 
-const UNAVAILABLE = {paypal: 'temporarily unavailable'};
+const UNAVAILABLE = {paypal: 'Temporarily unavailable'};
 
 // `/client-payment-methods` answers per caller, so a row starts optimistic and the
 // browser corrects it once the component reports whether it loaded.
@@ -127,7 +127,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       </span>
                     </>
                   ) : (
-                    <span class={hint}>{redirect ? 'hosted page' : (UNAVAILABLE[id] ?? 'not on this account')}</span>
+                    <span class={hint}>{redirect ? 'Hosted page' : (UNAVAILABLE[id] ?? 'Not on this account')}</span>
                   )}
                 </label>
               );
@@ -142,7 +142,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
           <div class="flex justify-between"><dt>Mainland ES</dt><dd>€4.99</dd></div>
           <div class="flex justify-between"><dt>Canary Is. (35…, 38…)</dt><dd>€14.99</dd></div>
           <div class="flex justify-between"><dt>International</dt><dd>€19.99</dd></div>
-          <div class="flex justify-between"><dt>United Kingdom</dt><dd>not served</dd></div>
+          <div class="flex justify-between"><dt>United Kingdom</dt><dd>Not served</dd></div>
         </dl>
       </section>
       <p class={`mt-5 border-t ${theme.page.border} pt-4 ${hint}`}>

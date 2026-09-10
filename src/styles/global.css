@@ -58,10 +58,40 @@
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Two fixed rails do not fit a phone; the storefront is what matters there. */
+/* Closed, the toggle sits outside the panel as its only visible handle. Open, it
+   overlays the panel's inner edge — a full-width panel would otherwise carry it off
+   the viewport, leaving no way to close it. */
+#rail[data-open='true'] #rail-toggle,
+#code-rail[data-open='true'] #code-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#rail[data-open='true'] #rail-toggle {
+  right: 0;
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+#code-rail[data-open='true'] #code-toggle {
+  left: 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* The open toggle overlays the panel, so the content it covers is pushed clear. */
+#rail[data-open='true'] .rail-body > * {
+  padding-right: 2.25rem;
+}
+
+#code-rail[data-open='true'] .code-body > * {
+  padding-left: 2.25rem;
+}
+
+/* The rail is wider than a phone, so on one it covers the page instead. */
 @media (max-width: 48rem) {
-  #code-rail {
-    display: none;
+  #code-rail[data-open='true'] .code-body,
+  .code-body > * {
+    width: 100vw;
   }
 }
 

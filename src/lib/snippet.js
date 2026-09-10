@@ -27,6 +27,7 @@ export const clientSnippet = ({
   goods,
   cardUi
 }) => `<script src="https://js.monei.com/v3/monei.js"></script>
+<script type="module">
 
 const accountId = '${accountId ?? 'YOUR_ACCOUNT_ID'}';
 const currency = '${currency}';
@@ -67,6 +68,8 @@ monei.PaymentRequest({
     if (!isSupported) hideExpressCheckout();
   }
 }).render('#payment-request');
+
+</script>
 `;
 
 export const serverSnippet = ({currency}) => `import {Monei} from '@monei-js/node-sdk';

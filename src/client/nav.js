@@ -1,23 +1,16 @@
 import {navigate} from 'astro:transitions/client';
 
-/**
- * Astro's router leaves `current` null while a transition is in flight, so a second
- * `navigate()` started before the first settles throws inside `moveToLocation`. The
- * rail and the cart can both trigger one, and a re-render re-runs their wiring.
- */
+// Astro's router leaves `current` null mid-transition, so a `navigate()` started
+// before the last one settles throws in `moveToLocation`. `astro:after-swap` still
+// counts as mid-transition, so the flag clears on `astro:page-load`.
 let navigating = false;
 
-// `astro:after-swap` fires while the router is still mid-transition, so releasing
-// there lets a second navigation start too early and hit the same null `current`.
 document.addEventListener('astro:page-load', () => {
   navigating = false;
 });
 
-/**
- * The router scrolls to the top on every navigation and only restores a position
- * when going back, so a cart change made halfway down the page throws the shopper
- * back to the header. `preserveScroll` puts them where they were.
- */
+// The router scrolls to the top on every navigation and restores a position only
+// when going back, so `preserveScroll` covers cart changes made down the page.
 export const go = (url, options = {}) => {
   if (navigating) return false;
   navigating = true;
@@ -27,8 +20,7 @@ export const go = (url, options = {}) => {
 
   navigate(url, navOptions);
   if (preserveScroll) {
-    // The router scrolls to the top after this event, so the restore has to wait
-    // for the frame after it rather than run inside the handler.
+    // The scroll to the top happens after this event, so the restore waits a frame.
     document.addEventListener('astro:page-load', () => requestAnimationFrame(() => window.scrollTo(scrollX, scrollY)), {
       once: true
     });

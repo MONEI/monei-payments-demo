@@ -1,6 +1,6 @@
 # MONEI Payments Demo
 
-This demo features a sample e-commerce store that uses [MONEI Components](https://docs.monei.com/docs/monei-js-overview) and the [Payments API](https://docs.monei.com/api/#tag/Payments) to illustrate how to accept Credit Card, Bizum, PayPal, Apple Pay, Google Pay payments on the web.
+This demo features a sample e-commerce store that uses [MONEI Components](https://docs.monei.com/docs/monei-js-overview) and the [Payments API](https://docs.monei.com/api/#tag/Payments) to illustrate how to accept Credit Card, Bizum, PayPal, Apple Pay and Google Pay payments on the web.
 
 **You can see this demo app running in test mode on [payments-demo.monei.com](https://payments-demo.monei.com).**
 
@@ -13,49 +13,70 @@ This demo provides an all-in-one example for integrating with MONEI on the web:
 <!-- prettier-ignore -->
 |     | Features
 :---: | :---
-✨ | **Beautiful UI components for Credit Card, Bizum, 4xcard by Cofidis, PayPal, Apple Pay, Google Pay payments**. This demo uses pre-built MONEI Components customized to fit the app design, including the [Card Input Component](https://docs.monei.com/docs/payment-methods/card/) which provides real-time validation, formatting, and autofill.
-🔐 | **Dynamic 3D Secure for Visa and Mastercard.** The app automatically handles the correct flow to complete card payments with 3D Secure, whether it’s required by the card.
-🚀 | **Built-in proxy for local HTTPS and webhooks.** Card payments require HTTPS and asynchronous payment methods with redirects rely on webhooks to complete transactions—[ngrok](https://ngrok.com/) is integrated so the app is served locally over HTTPS.
-🔧 | **Webhook signing**. We allow for [webhook signature verification](https://docs.monei.com/docs/verify-signature), which is a recommended security practice.
-📱 | **Responsive design**. The checkout experience works on all screen sizes.
+✨ | **Pre-built components for Credit Card, Bizum, PayPal, Apple Pay and Google Pay.** Card entry comes in two shapes — a single [Card Input](https://docs.monei.com/docs/payment-methods/card/) or separate number/expiry/CVC fields — both with real-time validation, formatting and autofill.
+🔐 | **Dynamic 3D Secure for Visa and Mastercard.** The app handles the challenge flow when the card requires it.
+🧾 | **Server-side pricing.** The browser never sends an amount. Shipping quotes are signed and the total is recomputed before the payment is created, so a tampered request is rejected rather than charged.
+🔧 | **Webhook signing.** Payment results are verified with [signature verification](https://docs.monei.com/docs/verify-signature), a recommended security practice.
+🎛️ | **Live configuration.** Theme, checkout flow, payment methods and cart all live in the URL, so any state you reach can be shared as a link.
+📱 | **Responsive design.** The checkout works on all screen sizes.
 
-## Payments Integration with MONEI Components
+## How the integration is put together
 
-The frontend code for the demo is in the `public/` directory.
+The demo runs on [Astro](https://astro.build) with server-side rendering. There is no client framework — the payment code is plain JavaScript, the same as you would write in a PHP, Shopify or jQuery store.
 
-The core logic of the MONEI integration is mostly contained within two files:
+Two directories carry the integration:
 
-1.  [`public/javascripts/payment.js`](public/javascript/payment.js) initializes and renders [MONEI Components](https://docs.monei.com/docs/monei-js/reference/) for different payment methods
-2.  [`server/routes.js`](server/routes.js) defines the routes on the backend that create MONEI payments and receive payment results with the callback.
+1. [`src/client/checkout.js`](src/client/checkout.js) mounts [MONEI Components](https://docs.monei.com/docs/monei-js/reference/) for each payment method and handles the browser side of the flow.
+2. [`src/pages/api/`](src/pages/api/) holds the server routes:
+   - `payment.js` — turns a payment token into a payment
+   - `redirect-payment.js` — the same call without a token, which returns a hosted payment page instead
+   - `shipping-rates.js` — prices an address and issues a signed quote
+   - `callback.js` — receives and verifies the webhook
 
-## Getting Started with Node
+The amount is decided in [`src/lib/payment.js`](src/lib/payment.js), never in the browser.
 
-You’ll need the following:
+## Getting started
 
-- [Node.js](http://nodejs.org) >=10.0.0
-- Modern browser that supports ES6.
-- MONEI account to accept payments ([sign up](https://dashboard.monei.com/?action=signUp) for free).
+You will need:
 
-### Running the Node Server
+- [Node.js](http://nodejs.org) >= 20.11
+- A MONEI account ([sign up](https://dashboard.monei.com/?action=signUp) for free)
+- [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), to expose the local server over HTTPS
 
-Copy the environment variables file from the root of the repository:
+Copy the environment file:
 
     cp .env.example .env
 
-Update `.env` with your own [MONEI Account ID and API key](https://dashboard.monei.com/settings/api) and. These environment variables are loaded and used in [`server/config.js`](/server/config.js).
+Fill in your [Account ID and API key](https://dashboard.monei.com/settings/api) in test mode. `.env.example` explains each variable.
 
-Install dependencies using npm:
+Install dependencies and start the dev server:
 
     npm install
+    npm run dev
 
-Start the local server:
+The store is now on `http://localhost:4321`, which is enough to browse it and enter a card.
 
-    npm run start
+### Completing a payment locally
 
-Lastly, you will see the ngrok URL to serve our app via HTTPS. For example:
+MONEI needs to reach your machine to send the shopper back and to deliver the webhook, and it rejects non-HTTPS URLs. Run the server over HTTPS and open a tunnel to it:
 
-    https://<example>.ngrok.io
+    npm run dev:https      # local HTTPS on :4321
+    npm run tunnel         # public HTTPS URL forwarding to it
 
-Use this URL in your browser to start the demo.
+Put the tunnel hostname in `HOSTNAME` and restart. Payments will now complete and `/api/callback` will receive webhooks.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+### Test cards
+
+Use MONEI's [test cards](https://docs.monei.com/docs/testing/). The demo surfaces the useful ones in the order summary — including a card that triggers a 3D Secure challenge, so you can see the `PENDING` receipt.
+
+Bizum only appears for callers in Spain, because MONEI resolves the available methods from the caller's IP.
+
+## Deployment
+
+The demo deploys to [Vercel](https://vercel.com) with the Astro adapter. Set `MONEI_ACCOUNT_ID`, `MONEI_API_KEY` and `HOSTNAME` in the project's environment variables — `HOSTNAME` must match the host the deployment is served from, or shoppers are redirected somewhere unreachable after paying.
+
+Apple Pay additionally requires the domain to be registered in the MONEI dashboard, and the verification file at `/.well-known/apple-developer-merchantid-domain-association` to be reachable.
+
+## Tests
+
+    npm test

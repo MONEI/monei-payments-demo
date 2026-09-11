@@ -307,8 +307,11 @@ const setMethodSupported = (id, isSupported) => {
   if (!input) return;
 
   input.disabled = !isSupported;
+  if (!isSupported) input.checked = false;
   input.classList.toggle('cursor-pointer', isSupported);
-  input.closest('label')?.classList.toggle('cursor-pointer', isSupported);
+  const label = input.closest('label');
+  label?.classList.toggle('cursor-pointer', isSupported);
+  label?.classList.toggle('opacity-50', !isSupported);
   document.querySelector(`[data-reason="${id}"]`)?.classList.toggle('hidden', isSupported);
 };
 

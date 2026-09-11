@@ -94,6 +94,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
       </section>
       <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
         <h3 class={`text-xs font-medium ${theme.page.muted}`}>Payment methods</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>The hosted page offers its own, so these do not apply.</p>}
         <div class="mt-2 space-y-1.5">
           {
             Object.entries(METHOD_LABELS).map(([id, label]) => {
@@ -103,11 +104,11 @@ const hint = `text-[11px] ${theme.page.muted}`;
                 !UNAVAILABLE[id] &&
                 !redirect;
               return (
-                <label class={`${row} ${onAccount ? 'cursor-pointer' : ''}`}>
-                  <span class="flex items-center gap-2">
+                <label class={`${row} ${onAccount ? 'cursor-pointer' : 'opacity-50'}`}>
+                  <span class="flex min-w-0 items-center gap-2">
                     <input
                       type="checkbox"
-                      class={onAccount ? 'cursor-pointer' : ''}
+                      class={`shrink-0 ${onAccount ? 'cursor-pointer' : ''}`}
                       value={id}
                       checked={onAccount && (config.methods.length === 0 || config.methods.includes(id))}
                       disabled={!onAccount}
@@ -123,7 +124,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       </span>
                     </>
                   ) : (
-                    <span class={hint}>{redirect ? 'Hosted page' : (UNAVAILABLE[id] ?? 'Not on this account')}</span>
+                    !redirect && <span class={`${hint} shrink-0 text-right`}>{UNAVAILABLE[id] ?? 'Not on this account'}</span>
                   )}
                 </label>
               );

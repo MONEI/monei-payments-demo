@@ -1,0 +1,175 @@
+---
+import {FLOWS, THEMES} from '../lib/config.js';
+import {THEME_DATA} from '../data/themes.js';
+
+const {theme, config, enabled} = Astro.props;
+
+const FLOW_LABELS = {components: 'Components', redirect: 'Hosted page'};
+
+const redirect = config.flow === 'redirect';
+
+const METHOD_LABELS = {
+  card: 'Card',
+  wallet: 'Google Pay / Apple Pay',
+  paypal: 'PayPal',
+  bizum: 'Bizum'
+};
+
+const UNAVAILABLE = {paypal: 'Temporarily unavailable'};
+
+// `/client-payment-methods` answers per caller, so a row starts optimistic and the
+// browser corrects it once the component reports whether it loaded.
+const REASON = {bizum: 'Spain only'};
+
+// The account reports the two wallets separately; the single row stands for either.
+const ACCOUNT_IDS = {wallet: ['applePay', 'googlePay']};
+
+const row = `flex items-center justify-between gap-3 text-sm`;
+const hint = `text-[11px] ${theme.page.muted}`;
+---
+
+<aside
+  id="rail"
+  data-open={String(config.panel)}
+  class="fixed top-0 left-0 z-40 flex h-full"
+  style={`--rail-accent: ${theme.page.accent}`}
+>
+  <div id="rail-body" class={`rail-body overflow-y-auto ${theme.page.surface} border-r ${theme.page.border}`}>
+    <div class="px-4 py-4">
+      <p class={`text-xs font-medium tracking-widest uppercase ${theme.page.muted}`}>Demo settings</p>
+      <section class="mt-4">
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Theme</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>MONEI's page has its own styling.</p>}
+        <div class="mt-2 space-y-1.5">
+          {
+            THEMES.map((name) => (
+              <label class={`${row} cursor-pointer`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class="cursor-pointer"
+                    name="theme"
+                    value={name}
+                    checked={config.theme === name}
+                    disabled={!THEME_DATA[name] || redirect}
+                    data-param="theme"
+                  />
+                  {THEME_DATA[name]?.label ?? name}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Checkout flow</h3>
+        <div class="mt-2 space-y-1.5">
+          {
+            FLOWS.map((name) => (
+              <label class={`${row} cursor-pointer`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class="cursor-pointer"
+                    name="flow"
+                    value={name}
+                    checked={config.flow === name}
+                    data-param="flow"
+                  />
+                  {FLOW_LABELS[name]}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+        {
+          redirect && (
+            <p class={`mt-2 ${hint}`}>
+              The hosted page collects the card, so the card layout and the express buttons do not apply.
+            </p>
+          )
+        }
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Payment methods</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>The hosted page offers its own, so these do not apply.</p>}
+        <div class="mt-2 space-y-1.5">
+          {
+            Object.entries(METHOD_LABELS).map(([id, label]) => {
+              const ids = ACCOUNT_IDS[id] ?? [id];
+              const onAccount =
+                (enabled === null || ids.some((i) => enabled.includes(i)) || REASON[id]) &&
+                !UNAVAILABLE[id] &&
+                !redirect;
+              return (
+                <label class={`${row} ${onAccount ? 'cursor-pointer' : 'opacity-50'}`}>
+                  <span class="flex min-w-0 items-center gap-2">
+                    <input
+                      type="checkbox"
+                      class={`shrink-0 ${onAccount ? 'cursor-pointer' : ''}`}
+                      value={id}
+                      checked={onAccount && (config.methods.length === 0 || config.methods.includes(id))}
+                      disabled={!onAccount}
+                      data-method={id}
+                    />
+                    {label}
+                  </span>
+                  {onAccount ? (
+                    <>
+                      <span class="spinner" aria-hidden="true" />
+                      <span class={`${hint} hidden`} data-reason={id}>
+                        {REASON[id]}
+                      </span>
+                    </>
+                  ) : (
+                    !redirect && <span class={`${hint} shrink-0 text-right`}>{UNAVAILABLE[id] ?? 'Not on this account'}</span>
+                  )}
+                </label>
+              );
+            })
+          }
+        </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Shipping zones</h3>
+        <p class={`mt-1 ${hint}`}>This sample shop's own rates, not MONEI's coverage.</p>
+        <dl class={`mt-2 space-y-1 text-[11px] ${theme.page.muted}`}>
+          <div class="flex justify-between"><dt>Mainland ES</dt><dd>€4.99</dd></div>
+          <div class="flex justify-between"><dt>Canary Is. (35…, 38…)</dt><dd>€14.99</dd></div>
+          <div class="flex justify-between"><dt>International</dt><dd>€19.99</dd></div>
+          <div class="flex justify-between"><dt>United Kingdom</dt><dd>Not served</dd></div>
+        </dl>
+      </section>
+      <p class={`mt-5 border-t ${theme.page.border} pt-4 ${hint}`}>
+        Every setting lives in the URL, so this link reproduces it.
+      </p>
+    </div>
+  </div>
+  <button
+    type="button"
+    id="rail-toggle"
+    class="cursor-pointer self-center rounded-r-lg py-5 pr-1 pl-0.5 text-white shadow-md"
+    style={`background: ${theme.page.accent}`}
+    aria-expanded={String(config.panel)}
+    aria-controls="rail-body"
+    aria-label="Customize this demo"
+    title="Customize this demo"
+  >
+    <svg
+      id="rail-chevron"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 18l6-6-6-6"></path>
+    </svg>
+  </button>
+</aside>

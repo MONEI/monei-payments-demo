@@ -1,0 +1,25 @@
+---
+import {STORE} from '../data/store.js';
+import {toQuery} from '../lib/config.js';
+
+const {theme, config} = Astro.props;
+const home = config ? `/?${toQuery(config)}` : '/';
+---
+
+<header class={`border-b ${theme.page.border} ${theme.page.surface}`}>
+  <div class="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
+    <a href={home} class={`text-lg ${theme.page.heading}`}>{STORE.name}</a>
+    <nav class={`ml-auto flex items-center gap-5 text-sm ${theme.page.muted}`}>
+      <a class="hover:underline" href="https://docs.monei.com/monei-js/reference/" rel="noopener"> Docs </a>
+      <a class="hover:underline" href="https://github.com/MONEI/monei-payments-demo" rel="noopener"> Source </a>
+      <a
+        class={`${theme.page.radius} px-3 py-1.5 text-sm font-medium text-white`}
+        style={`background: ${theme.page.accent}`}
+        href="https://dashboard.monei.com/?action=signUp"
+        rel="noopener"
+      >
+        Create account
+      </a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,75 @@
+---
+/**
+ * Line-art stand-in for a product photo. Inline SVG rather than a bitmap: no
+ * stock-photo licensing on a public repo, a few hundred bytes each, and it
+ * inherits `currentColor` so one drawing suits both themes.
+ */
+const {art, class: className = ''} = Astro.props;
+---
+
+<svg
+  class={className}
+  viewBox="0 0 64 64"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  {
+    art === 'bag' && (
+      <>
+        <path d="M18 22h28l-3 32H21L18 22Z" />
+        <path d="M22 22c0-5 4-8 10-8s10 3 10 8" />
+        <path d="M26 32h12M26 39h8" />
+      </>
+    )
+  }
+  {
+    art === 'sack' && (
+      <>
+        <path d="M14 26h36l-4 30H18l-4-30Z" />
+        <path d="M20 26c2-6 6-9 12-9s10 3 12 9" />
+        <path d="M24 36h16M24 44h10" />
+      </>
+    )
+  }
+  {
+    art === 'dripper' && (
+      <>
+        <path d="M16 18h32l-8 16H24l-8-16Z" />
+        <path d="M28 34v6" />
+        <path d="M22 46h20l-2 10H24l-2-10Z" />
+      </>
+    )
+  }
+  {
+    art === 'grinder' && (
+      <>
+        <rect x="22" y="24" width="20" height="26" rx="3" />
+        <path d="M32 24v-8M32 16h8" />
+        <circle cx="32" cy="37" r="5" />
+        <path d="M22 50h20" />
+      </>
+    )
+  }
+  {
+    art === 'cup' && (
+      <>
+        <path d="M18 26h24v14a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10V26Z" />
+        <path d="M42 30h4a5 5 0 0 1 0 10h-4" />
+        <path d="M24 18c0 3 2 4 2 6M32 16c0 3 2 4 2 6" />
+      </>
+    )
+  }
+  {
+    art === 'papers' && (
+      <>
+        <path d="M20 20h24l-6 30H26l-6-30Z" />
+        <path d="M24 20c0-2 3-4 8-4s8 2 8 4" />
+        <path d="M27 30h10M28 38h8" />
+      </>
+    )
+  }
+</svg>

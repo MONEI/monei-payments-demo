@@ -1,8 +1,8 @@
 {
   "name": "monei-payments-demo",
-  "description": "Sample store accepting card payments on the web with MONEI Components and Payments API.",
-  "version": "1.0.0",
-  "main": "index.js",
+  "description": "Sample store accepting card, PayPal, Bizum, Apple Pay and Google Pay payments on the web with MONEI Components and Payments API.",
+  "version": "2.0.0",
+  "type": "module",
   "homepage": "https://payments-demo.monei.com/",
   "author": "MONEI <support@monei.com> (https://monei.com)",
   "license": "MIT",
@@ -20,34 +20,44 @@
     "javascript",
     "payments",
     "payment-methods",
-    "payment-request"
+    "payment-request",
+    "express-checkout",
+    "apple-pay",
+    "google-pay",
+    "bizum"
   ],
+  "engines": {
+    "node": ">=20.11"
+  },
   "devDependencies": {
-    "@types/faker": "^5.1.2",
-    "@types/request-promise": "^4.1.47",
-    "ngrok": "^4.3.3",
-    "prettier": "^2.3.2"
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
+    "vitest": "^3.2.7"
   },
   "dependencies": {
-    "@monei-js/node-sdk": "^1.4.2",
-    "body-parser": "^1.19.0",
-    "cookie-parser": "^1.4.5",
-    "dotenv": "^8.2.0",
-    "ejs": "^3.1.5",
-    "express": "^4.17.1",
-    "express-force-ssl": "^0.3.2",
-    "express-handlebars": "^5.3.2",
-    "faker": "^5.1.0",
-    "request-promise": "^4.2.6"
+    "@astrojs/vercel": "11.0.10",
+    "@monei-js/node-sdk": "3.1.0",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.3.1",
+    "dotenv": "17.4.2",
+    "tailwindcss": "4.3.3"
   },
   "scripts": {
-    "start": "node server/server.js",
-    "web": "node server/server.js"
+    "dev": "astro dev",
+    "dev:https": "astro dev --https",
+    "build": "astro build",
+    "preview": "astro preview",
+    "tunnel": "cloudflared tunnel --url https://localhost:4321 --no-tls-verify",
+    "test": "vitest run",
+    "format": "prettier --write ."
   },
   "prettier": {
     "bracketSpacing": false,
-    "jsxBracketSameLine": true,
     "printWidth": 120,
-    "trailingComma": "none"
+    "singleQuote": true,
+    "trailingComma": "none",
+    "plugins": [
+      "prettier-plugin-astro"
+    ]
   }
 }

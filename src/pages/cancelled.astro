@@ -1,0 +1,26 @@
+---
+import StoreLayout from '../layouts/store.astro';
+import StoreHeader from '../components/store-header.astro';
+import {themeFor} from '../data/themes.js';
+import {parseConfig, toQuery} from '../lib/config.js';
+
+const config = parseConfig(Astro.url);
+const theme = themeFor(config.theme);
+---
+
+<StoreLayout theme={theme} title="Payment cancelled">
+  <StoreHeader theme={theme} config={config} />
+  <main class="mx-auto max-w-xl px-6 py-12">
+    <h1 class={`text-2xl ${theme.page.heading}`}>Payment cancelled</h1>
+    <p class={`mt-2 text-sm ${theme.page.muted}`}>
+      Nothing was charged. Your order is still here if you want to try a different payment method.
+    </p>
+    <a
+      class={`${theme.page.radius} mt-8 block w-full px-4 py-2.5 text-center text-sm font-medium text-white`}
+      style={`background: ${theme.page.accent}`}
+      href={`/?${toQuery(config)}`}
+    >
+      Back to the shop
+    </a>
+  </main>
+</StoreLayout>

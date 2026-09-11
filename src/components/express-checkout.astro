@@ -1,0 +1,24 @@
+---
+import {unserviceableNames} from '../lib/shipping.js';
+
+const {theme, flow} = Astro.props;
+const notServed = unserviceableNames();
+---
+
+<section
+  class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}
+  id="express"
+  hidden={flow === 'redirect'}
+>
+  <h2 class={`text-sm ${theme.page.heading}`}>Express checkout</h2>
+  <p class={`mt-1 text-xs ${theme.page.muted}`}>
+    The wallet collects the address, so shipping is priced inside the sheet.
+    {
+      notServed.length > 0 &&
+        ` This sample shop doesn't ship to ${notServed.join(' or ')}, and the wallet won't say so.`
+    }
+  </p>
+  <div class="mt-4" id="payment-request"></div>
+  <p class="mt-3 text-xs text-rose-600" id="express-error" hidden></p>
+  <p class={`mt-3 text-xs ${theme.page.muted}`} id="express-reason" hidden></p>
+</section>

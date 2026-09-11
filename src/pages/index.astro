@@ -1,0 +1,131 @@
+---
+import StoreLayout from '../layouts/store.astro';
+import StoreHeader from '../components/store-header.astro';
+import CartSummary from '../components/cart-summary.astro';
+import AddressForm from '../components/address-form.astro';
+import TestCards from '../components/test-cards.astro';
+import CardForm from '../components/card-form.astro';
+import ExpressCheckout from '../components/express-checkout.astro';
+import CodePanel from '../components/code-panel.astro';
+import Rail from '../components/rail.astro';
+import {accountId} from '../lib/monei.js';
+import ProductArt from '../components/product-art.astro';
+import {PRODUCTS} from '../data/products.js';
+import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
+import {parseConfig, serializeCart, toQuery} from '../lib/config.js';
+import {initialShippingOptions, zipDecidesZone} from '../lib/shipping.js';
+import {countryList} from '../lib/countries.js';
+import {themeFor} from '../data/themes.js';
+import {fetchAccountMethods} from '../lib/monei.js';
+
+const config = parseConfig(Astro.url);
+const theme = themeFor(config.theme);
+const lines = cartLines(config.cart);
+const total = cartTotal(config.cart);
+
+// null means the lookup failed — unknown, not "none enabled".
+const account = await fetchAccountMethods();
+const enabled = account?.methods ?? null;
+const inCart = new Set(config.cart.map((i) => i.productId));
+
+const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
+const failedPayment = Astro.url.searchParams.has('error');
+
+const clientConfig = {
+  accountId,
+  seed: config.seed,
+  currency: config.currency,
+  goods: total,
+  cart: serializeCart(config.cart),
+  // Empty means every method the account allows, so the client treats it as "all".
+  methods: config.methods,
+  flow: config.flow,
+  cardUi: theme.cardUi,
+  cardStyle: theme.card.style,
+  cardFonts: theme.card.fonts,
+  walletRadius: theme.card.style.base.borderRadius,
+  initialShippingOptions: initialShippingOptions(config.country),
+  zipZones: countryList()
+    .map((c) => c.code)
+    .filter(zipDecidesZone),
+  mutedClass: theme.page.muted
+};
+---
+
+<StoreLayout theme={theme}>
+  <Rail theme={theme} config={config} enabled={enabled} />
+  <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
+  <StoreHeader theme={theme} config={config} />
+  <main class="mx-auto max-w-5xl px-6 py-12">
+    {
+      failedPayment && (
+        <p class={`${theme.page.radius} mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700`}>
+          That payment did not complete. Nothing was charged — try again below.
+        </p>
+      )
+    }
+    <p class={`text-sm ${theme.page.muted}`}>
+      A working checkout built on MONEI Components. Nothing charges a real card.
+    </p>
+    <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
+      <section>
+        <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+          {
+            PRODUCTS.map((product) => (
+              <li
+                class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
+              >
+                <div class="flex gap-4">
+                  <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium">{product.name}</p>
+                    <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
+                    <p class="mt-2 text-sm tabular-nums">
+                      {formatPrice(product.price)}
+                      {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
+                    data-cart-add={product.id}
+                  >
+                    {inCart.has(product.id) ? 'Add another' : 'Add'}
+                  </button>
+                  <span class="spinner" aria-hidden="true" />
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-6 space-y-6">
+          <ExpressCheckout theme={theme} flow={config.flow} />
+          <AddressForm theme={theme} country={config.country} />
+          <CardForm theme={theme} flow={config.flow} />
+        </div>
+      </section>
+      <aside class="space-y-4">
+        <CartSummary theme={theme} lines={lines} total={total} />
+        {/* PayPal express is disabled while `order.patch` cannot be made to work. */}
+        <TestCards theme={theme} paypalEnabled={false} />
+      </aside>
+    </div>
+  </main>
+  {canonicalQuery && <script is:inline set:html={`history.replaceState(history.state, '', '?${canonicalQuery}');`} />}
+  <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
+  <script id="demo-cart" type="application/json" set:html={JSON.stringify(config.cart)} />
+  <script>
+    import '../client/checkout.js';
+    import '../client/panels.js';
+    import '../client/code-panel.js';
+    import {initCartUi} from '../client/cart-ui.js';
+
+    document.addEventListener('astro:page-load', () => {
+      const cart = document.getElementById('demo-cart');
+      if (cart) initCartUi(JSON.parse(cart.textContent));
+    });
+  </script>
+</StoreLayout>

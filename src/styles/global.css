@@ -1,0 +1,192 @@
+@import 'tailwindcss';
+
+.rail-body,
+.code-body {
+  width: 0;
+  opacity: 0;
+  /* Vertical scrolling only. `overflow-y: auto` alone makes the element a scroll
+     container on both axes, and the scrollbar's width is enough to nudge it. */
+  overflow-x: hidden;
+  /* `visibility` rather than `display` so the panel keeps a layout box to
+     animate from, while still being skipped by assistive tech when closed. */
+  visibility: hidden;
+  transition:
+    width 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease,
+    visibility 0ms linear 220ms;
+}
+
+/* The panel animates its width, so the content must not reflow with it — text
+   would rewrap on every frame and settle with a jump at the end. */
+.rail-body > * {
+  width: 18rem;
+}
+
+.code-body > * {
+  width: 30rem;
+}
+
+#rail input {
+  accent-color: var(--rail-accent);
+}
+
+#rail[data-open='true'] .rail-body,
+#code-rail[data-open='true'] .code-body {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    width 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease 60ms,
+    visibility 0ms linear;
+}
+
+#rail[data-open='true'] .rail-body {
+  width: 18rem;
+}
+
+#code-rail[data-open='true'] .code-body {
+  width: 30rem;
+}
+
+/* The code rail opens from the right, so its chevron starts pointing the other way. */
+#code-rail[data-open='true'] #code-chevron {
+  transform: rotate(180deg);
+}
+
+#rail-chevron,
+#code-chevron {
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Closed, the toggle sits outside the panel as its only visible handle. Open, it
+   overlays the panel's inner edge — a full-width panel would otherwise carry it off
+   the viewport, leaving no way to close it. */
+#rail[data-open='true'] #rail-toggle,
+#code-rail[data-open='true'] #code-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#rail[data-open='true'] #rail-toggle {
+  right: 0;
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+#code-rail[data-open='true'] #code-toggle {
+  left: 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* The open toggle overlays the panel, so the content it covers is pushed clear. */
+#rail[data-open='true'] .rail-body > * {
+  padding-right: 2.25rem;
+}
+
+#code-rail[data-open='true'] .code-body > * {
+  padding-left: 2.25rem;
+}
+
+/* The rail is wider than a phone, so on one it covers the page instead. */
+@media (max-width: 48rem) {
+  #code-rail[data-open='true'] .code-body,
+  .code-body > * {
+    width: 100vw;
+  }
+}
+
+/* A theme change is a server render, so the control that triggered it shows the
+   wait. Only the pending one spins. */
+.spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0;
+  animation: spin 600ms linear infinite;
+}
+
+.is-pending .spinner {
+  opacity: 0.45;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A cart change is a server render, so there is no old state to transition from —
+   the new one announces itself instead. */
+[data-cart-line].just-changed {
+  animation: cart-line-in 900ms ease-out;
+}
+
+#cart-total.just-changed {
+  animation: cart-total-in 500ms ease-out;
+  display: inline-block;
+}
+
+@keyframes cart-line-in {
+  from {
+    background: color-mix(in oklab, currentColor 12%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes cart-total-in {
+  40% {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+#rail[data-open='true'] #rail-chevron {
+  transform: rotate(180deg);
+}
+
+/* Card part containers. The SDK toggles these on the merchant's own mount box. */
+.monei-part {
+  transition: border-color 120ms ease;
+}
+
+.monei-part.monei-component--focus {
+  border-color: currentColor;
+}
+
+.monei-part.monei-component--invalid {
+  border-color: var(--color-rose-500);
+}
+
+.monei-part.monei-component--complete {
+  border-color: var(--color-emerald-500);
+}
+
+/* A wallet button cannot be greyed out from here — it lives in a cross-origin frame
+   — so the whole mount box is taken out of reach instead. */
+.is-busy {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-body,
+  .code-body,
+  #rail-chevron,
+  #code-chevron,
+  .monei-part {
+    transition-duration: 0ms;
+  }
+
+  .spinner,
+  [data-cart-line].just-changed,
+  #cart-total.just-changed {
+    animation: none;
+  }
+}

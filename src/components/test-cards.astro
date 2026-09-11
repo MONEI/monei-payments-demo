@@ -1,0 +1,86 @@
+---
+const {theme, paypalEnabled} = Astro.props;
+
+const CARDS = [
+  {number: '4444 4444 4444 4422', label: 'Visa · frictionless'},
+  {number: '5555 5555 5555 5532', label: 'Mastercard · frictionless'},
+  {number: '4444 4444 4444 4406', label: 'Visa · 3DS challenge'},
+  {number: '5555 5555 5555 5565', label: 'Mastercard · 3DS challenge'}
+];
+
+const PAYPAL = [
+  {value: 'paypal-personal@monei.net', label: 'sandbox buyer'},
+  {value: 'monei12345', label: 'password'}
+];
+
+const copyButton = `copy cursor-pointer font-mono text-xs tabular-nums underline decoration-dotted`;
+---
+
+<section class={`${theme.page.radius} border ${theme.page.border} ${theme.page.surface} p-5`}>
+  <h2 class={`text-sm ${theme.page.heading}`}>Paying in test mode</h2>
+  <p class={`mt-1 text-xs ${theme.page.muted}`}>
+    Any of these cards works. Expiry <strong>12/34</strong>, CVC <strong>123</strong>.
+  </p>
+  <ul class="mt-3 space-y-1.5">
+    {
+      CARDS.map((card) => (
+        <li class="flex items-center gap-2">
+          <button
+            type="button"
+            class={copyButton}
+            data-copy={card.number.replace(/ /g, '')}
+            style={`color: ${theme.page.accent}`}
+          >
+            {card.number}
+          </button>
+          <span class={`text-xs ${theme.page.muted}`}>{card.label}</span>
+        </li>
+      ))
+    }
+    <li class="flex items-center gap-2" id="bizum-test" hidden>
+      <button type="button" class={copyButton} data-copy="+34500000000" style={`color: ${theme.page.accent}`}>
+        +34 500 000 000
+      </button>
+      <span class={`text-xs ${theme.page.muted}`}>Bizum</span>
+    </li>
+  </ul>
+  {
+    paypalEnabled && (
+      <div class={`mt-4 border-t ${theme.page.border} pt-3`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>PayPal sandbox</h3>
+        <ul class="mt-2 space-y-1.5">
+          {PAYPAL.map((entry) => (
+            <li class="flex items-center gap-2">
+              <button type="button" class={copyButton} data-copy={entry.value} style={`color: ${theme.page.accent}`}>
+                {entry.value}
+              </button>
+              <span class={`text-xs ${theme.page.muted}`}>{entry.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+  <p class={`mt-3 text-xs ${theme.page.muted}`}>
+    <a class="underline" href="https://docs.monei.com/testing/" rel="noopener"> Full list of test cards </a>
+  </p>
+</section>
+<script>
+  // A module is evaluated once and survives client-side navigation, so the buttons
+  // of every later render need wiring on the event rather than at import time.
+  const wire = () => {
+    for (const button of document.querySelectorAll('.copy')) {
+      if (button.dataset.wired === 'true') continue;
+      button.dataset.wired = 'true';
+
+      button.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => (button.textContent = original), 1200);
+      });
+    }
+  };
+
+  document.addEventListener('astro:page-load', wire);
+</script>

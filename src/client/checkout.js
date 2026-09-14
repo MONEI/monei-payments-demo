@@ -324,7 +324,10 @@ const lockCart = (locked) => {
   for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = locked;
   if (payButton) payButton.disabled = locked || !complete || !quote;
 
-  if (locked) document.addEventListener('pointerdown', unlockCart, {once: true, capture: true});
+  // Armed a tick late: the tap that opens the sheet is itself a `pointerdown`, and on
+  // a touch screen it fires before the sheet appears — arming synchronously unlocks
+  // on the very gesture that locked.
+  if (locked) setTimeout(() => document.addEventListener('pointerdown', unlockCart, {once: true, capture: true}), 0);
   else document.removeEventListener('pointerdown', unlockCart, {capture: true});
 };
 
@@ -437,49 +440,6 @@ const walletSubmit = async (result) => {
   });
 };
 
-/**
- * Apple refuses a merchant session silently — the sheet simply never opens — so its
- * own checks are logged to the events panel, which is the only console a phone has.
- */
-const reportApplePay = () => {
-  const s = window.ApplePaySession;
-  if (!s) return emit('ApplePay', {available: false, reason: 'no ApplePaySession'});
-
-  emit('ApplePay', {
-    canMakePayments: s.canMakePayments?.(),
-    v3: s.supportsVersion?.(3),
-    host: location.hostname
-  });
-
-  // The domain check: rejects when this host is not registered for the merchant.
-  s.canMakePaymentsWithActiveCard?.('merchant.com.monei')
-    .then((ok) => emit('ApplePay.activeCard', {ok}))
-    .catch((error) => emit('ApplePay.activeCard', {error: error?.message ?? String(error)}));
-
-  // Constructing a session needs a user gesture, and the wallet button is inside a
-  // cross-origin frame whose taps never reach us — so this hangs off the express
-  // section's own heading, which is ours.
-  document.getElementById('express')?.querySelector('h2')?.addEventListener(
-    'click',
-    () => {
-      try {
-        const session = new s(3, {
-          countryCode: 'ES',
-          currencyCode: config.currency,
-          merchantCapabilities: ['supports3DS'],
-          supportedNetworks: ['visa', 'masterCard'],
-          total: {label: 'probe', amount: '1.00'}
-        });
-        emit('ApplePay.session', {constructed: true});
-        session.abort();
-      } catch (error) {
-        emit('ApplePay.session', {error: error?.message ?? String(error)});
-      }
-    },
-    {once: true}
-  );
-};
-
 const mountPaymentRequest = () => {
   const container = el('payment-request');
   if (!container) return;
@@ -529,7 +489,6 @@ const mountPaymentRequest = () => {
 
     onLoad: (isSupported) => {
       emit('PaymentRequest.onLoad', {isSupported});
-      reportApplePay();
       setMethodSupported('wallet', isSupported);
       if (isSupported) return;
 

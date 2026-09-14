@@ -455,6 +455,28 @@ const reportApplePay = () => {
   s.canMakePaymentsWithActiveCard?.('merchant.com.monei')
     .then((ok) => emit('ApplePay.activeCard', {ok}))
     .catch((error) => emit('ApplePay.activeCard', {error: error?.message ?? String(error)}));
+
+  // Constructing a session needs a user gesture, so it is attempted from the tap
+  // rather than here. It throws with a reason, where the checks above only say false.
+  el('payment-request')?.addEventListener(
+    'click',
+    () => {
+      try {
+        const session = new s(3, {
+          countryCode: 'ES',
+          currencyCode: config.currency,
+          merchantCapabilities: ['supports3DS'],
+          supportedNetworks: ['visa', 'masterCard'],
+          total: {label: 'probe', amount: '1.00'}
+        });
+        emit('ApplePay.session', {constructed: true});
+        session.abort();
+      } catch (error) {
+        emit('ApplePay.session', {error: error?.message ?? String(error)});
+      }
+    },
+    {once: true, capture: true}
+  );
 };
 
 const mountPaymentRequest = () => {

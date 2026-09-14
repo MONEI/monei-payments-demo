@@ -456,9 +456,10 @@ const reportApplePay = () => {
     .then((ok) => emit('ApplePay.activeCard', {ok}))
     .catch((error) => emit('ApplePay.activeCard', {error: error?.message ?? String(error)}));
 
-  // Constructing a session needs a user gesture, so it is attempted from the tap
-  // rather than here. It throws with a reason, where the checks above only say false.
-  el('payment-request')?.addEventListener(
+  // Constructing a session needs a user gesture, and the wallet button is inside a
+  // cross-origin frame whose taps never reach us — so this hangs off the express
+  // section's own heading, which is ours.
+  document.getElementById('express')?.querySelector('h2')?.addEventListener(
     'click',
     () => {
       try {
@@ -475,7 +476,7 @@ const reportApplePay = () => {
         emit('ApplePay.session', {error: error?.message ?? String(error)});
       }
     },
-    {once: true, capture: true}
+    {once: true}
   );
 };
 

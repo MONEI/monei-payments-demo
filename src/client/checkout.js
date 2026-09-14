@@ -517,7 +517,10 @@ const mountBizum = () => {
     sessionId: config.seed,
     // The one number the sandbox accepts, so the modal opens ready to pay.
     phoneNumber: BIZUM_TEST_PHONE,
-    style: {height: 47, borderRadius: config.walletRadius},
+    // Documented, but the prop never appears in the live bundle and Bizum does not
+    // render outside Spain, so whether the modal picks the font up is unverified.
+    style: {height: 47, borderRadius: config.walletRadius, fontFamily: config.pageFont},
+    fonts: config.cardFonts,
 
     onBeforeOpen: () => {
       setError(null);

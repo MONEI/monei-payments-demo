@@ -474,6 +474,7 @@ const mountPaymentRequest = () => {
     },
 
     onBeforeOpen: () => {
+      emit('PaymentRequest.onBeforeOpen', {});
       setExpressError(null);
       lockCart(true);
       return true;

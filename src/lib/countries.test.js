@@ -15,8 +15,8 @@ describe('countryList', () => {
     expect(by.PT).toBe('numeric');
   });
 
-  it('marks exactly one country unserviceable so the error path stays reachable', () => {
-    expect(countryList().filter((c) => c.unserviceable)).toHaveLength(1);
+  it('carries no unserviceable flag, so every listed country can be paid for', () => {
+    expect(countryList().some((c) => 'unserviceable' in c)).toBe(false);
   });
 });
 

@@ -1,18 +1,28 @@
 ---
+import {codeToHtml} from 'shiki';
 import {clientSnippet, serverSnippet} from '../lib/snippet.js';
 
 const {theme, config, clientConfig} = Astro.props;
 
+/**
+ * Highlighted here rather than in the browser: the snippets are built from the live
+ * config on the server, so shipping a highlighter to the client would only repeat
+ * work already done. Shiki wraps its output in a `<pre><code>` carrying its own
+ * background; only the inside is kept, so the panel keeps the page's styling.
+ */
+const highlight = async (code, lang) => {
+  const html = await codeToHtml(code, {lang, theme: 'github-light'});
+  return html.replace(/^<pre[^>]*><code[^>]*>/, '').replace(/<\/code><\/pre>$/, '');
+};
+
 const TABS = [
-  {id: 'client', label: 'Client', code: clientSnippet(clientConfig)},
-  {id: 'server', label: 'Server', code: serverSnippet(clientConfig)}
+  {id: 'client', label: 'Client', code: clientSnippet(clientConfig), lang: 'html'},
+  {id: 'server', label: 'Server', code: serverSnippet(clientConfig), lang: 'js'}
 ];
 
-const tab = `cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium`;
+const panes = await Promise.all(TABS.map(async (t) => ({...t, html: await highlight(t.code, t.lang)})));
 
-// `<pre>` renders whitespace literally, so the code cannot sit on its own indented
-// line inside the element.
-const escapeHtml = (code) => code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const tab = `cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium`;
 ---
 
 <aside
@@ -24,8 +34,7 @@ const escapeHtml = (code) => code.replace(/&/g, '&amp;').replace(/</g, '&lt;').r
   <button
     type="button"
     id="code-toggle"
-    class="cursor-pointer self-center rounded-l-lg py-5 pr-0.5 pl-1 text-white shadow-md"
-    style={`background: ${theme.page.accent}`}
+    class="accent-fill flex cursor-pointer items-center gap-2 self-center rounded-l-lg py-5 pl-1 text-white shadow-md"
     aria-expanded={String(config.code)}
     aria-controls="code-body"
     aria-label="Show the code behind this demo"
@@ -45,6 +54,7 @@ const escapeHtml = (code) => code.replace(/&/g, '&amp;').replace(/</g, '&lt;').r
     >
       <path d="M15 18l-6-6 6-6"></path>
     </svg>
+    <span class="toggle-label text-xs font-medium tracking-wide">Code</span>
   </button>
   <div id="code-body" class={`code-body overflow-y-auto ${theme.page.surface} border-l ${theme.page.border}`}>
     <div class="px-4 py-4">
@@ -69,12 +79,12 @@ const escapeHtml = (code) => code.replace(/&/g, '&amp;').replace(/</g, '&lt;').r
         <button type="button" id="code-copy" class={`${tab} border ${theme.page.border}`}>Copy</button>
       </div>
       {
-        TABS.map((t) => (
+        panes.map((t) => (
           <pre
             class={`mt-3 overflow-x-auto ${theme.page.radius} border ${theme.page.border} bg-white p-3 text-[11px] leading-relaxed`}
             data-pane={t.id}
             hidden={t.id !== config.tab}
-            set:html={escapeHtml(t.code)}
+            set:html={t.html}
           />
         ))
       }

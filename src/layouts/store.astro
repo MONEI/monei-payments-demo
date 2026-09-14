@@ -19,12 +19,26 @@ const preview = new URL('/images/preview.jpg', Astro.site).href;
     <meta property="og:image" content={preview} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={preview} />
+    {
+      /* The page's own faces are served from this origin and preloaded, so the first
+        paint already has them and nothing swaps. The card iframes fetch the Google
+        sheet themselves — they are cross-origin and cannot use ours. */
+    }
+    {
+      theme.card.preload?.map((file) => (
+        <link rel="preload" href={`/fonts/${file}`} as="font" type="font/woff2" crossorigin />
+      ))
+    }
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href={theme.card.fonts[0].cssSrc} />
     <script is:inline src="https://js.monei.com/v3/monei.js"></script>
     <ClientRouter />
   </head>
-  <body class={`min-h-full ${theme.page.body}`} style={`font-family: ${theme.page.fontFamily}`}>
+  <body
+    class={`min-h-full ${theme.page.body}`}
+    data-numerals={theme.page.numerals ? '' : undefined}
+    style={`font-family: ${theme.page.fontFamily}; --accent: ${theme.page.accent}; --accent-hover: ${theme.page.accentHover}${theme.page.numerals ? `; --numerals: ${theme.page.numerals}` : ''}`}
+  >
     <slot />
   </body>
 </html>

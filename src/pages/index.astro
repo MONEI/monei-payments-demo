@@ -56,7 +56,7 @@ const clientConfig = {
   <Rail theme={theme} config={config} enabled={enabled} />
   <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
   <StoreHeader theme={theme} config={config} />
-  <main id="cart-root" class="mx-auto max-w-5xl px-6 py-12">
+  <main id="cart-root" class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
     {
       failedPayment && (
         <p class={`${theme.page.radius} mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700`}>
@@ -67,50 +67,62 @@ const clientConfig = {
     <p class={`text-sm ${theme.page.muted}`}>
       A working checkout built on MONEI Components. Nothing charges a real card.
     </p>
-    <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
-      <section>
-        <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
-        <ul class="mt-4 grid gap-4 sm:grid-cols-2">
-          {
-            PRODUCTS.map((product) => (
-              <li
-                class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
-              >
-                <div class="flex gap-4">
-                  <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium">{product.name}</p>
-                    <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
-                    <p class="mt-2 text-sm tabular-nums">
-                      {formatPrice(product.price)}
-                      {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
-                    </p>
+    {
+      /* `minmax(0,…)` rather than the default `minmax(auto,…)`, which never shrinks a
+         column below the widest thing in it — here a product card, which held the
+         whole page open on a narrow screen. */
+    }
+    <div class="mt-8 flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      {
+        /* Stacked, the cart belongs between the shop and the form it prices, so this
+           wrapper collapses on a phone and `order` sequences all three as siblings.
+           From `lg` it is a column again, keeping the checkout under the shop instead
+           of level with the end of the taller right-hand column. */
+      }
+      <div class="contents lg:flex lg:flex-col lg:gap-10">
+        <section class="order-1">
+          <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
+          <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+            {
+              PRODUCTS.map((product) => (
+                <li
+                  class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
+                >
+                  <div class="flex gap-4">
+                    <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium">{product.name}</p>
+                      <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
+                      <p class="mt-2 text-sm tabular-nums">
+                        {formatPrice(product.price)}
+                        {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div class="mt-auto flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
-                    data-cart-add={product.id}
-                  >
-                    {inCart.has(product.id) ? 'Add another' : 'Add'}
-                  </button>
-                  <span class="spinner" aria-hidden="true" />
-                </div>
-              </li>
-            ))
-          }
-        </ul>
-        <div class="mt-6 space-y-6">
+                  <div class="mt-auto flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
+                      data-cart-add={product.id}
+                    >
+                      {inCart.has(product.id) ? 'Add another' : 'Add'}
+                    </button>
+                    <span class="spinner" aria-hidden="true" />
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+        <div class="order-3 space-y-6">
           <ExpressCheckout theme={theme} flow={config.flow} />
           <AddressForm theme={theme} country={config.country} />
           <CardForm theme={theme} flow={config.flow} />
         </div>
-      </section>
-      <aside class="space-y-4">
+      </div>
+      <aside class="order-2 space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
-        {/* PayPal express is disabled while `order.patch` cannot be made to work. */}
-        <TestCards theme={theme} paypalEnabled={false} />
+        <TestCards theme={theme} paypalEnabled={true} />
       </aside>
     </div>
   </main>

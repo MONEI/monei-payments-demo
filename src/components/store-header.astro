@@ -7,14 +7,17 @@ const home = config ? `/?${toQuery(config)}` : '/';
 ---
 
 <header class={`border-b ${theme.page.border} ${theme.page.surface}`}>
-  <div class="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
-    <a href={home} class={`text-lg ${theme.page.heading}`}>{STORE.name}</a>
-    <nav class={`ml-auto flex items-center gap-5 text-sm ${theme.page.muted}`}>
+  <div class="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:gap-4">
+    <a href={home} class={`flex items-center gap-2.5 text-lg ${theme.page.heading}`}>
+      <img src="/images/logo.svg" alt="MONEI" width="141" height="31" class="h-5 w-auto" />
+      {/* The wordmark already says MONEI, so the text carries only the rest of the name. */}
+      {STORE.name.replace(/^MONEI\s+/, '')}
+    </a>
+    <nav class={`flex items-center gap-5 text-sm sm:ml-auto ${theme.page.muted}`}>
       <a class="hover:underline" href="https://docs.monei.com/monei-js/reference/" rel="noopener"> Docs </a>
       <a class="hover:underline" href="https://github.com/MONEI/monei-payments-demo" rel="noopener"> Source </a>
       <a
-        class={`${theme.page.radius} px-3 py-1.5 text-sm font-medium text-white`}
-        style={`background: ${theme.page.accent}`}
+        class={`${theme.page.radius} px-3 py-1.5 text-sm font-medium text-white accent-fill`}
         href="https://dashboard.monei.com/?action=signUp"
         rel="noopener"
       >

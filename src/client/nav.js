@@ -27,11 +27,17 @@ export const go = (url, options = {}) => {
 
   const {preserveForm, ...navOptions} = options;
   const form = preserveForm ? readForm(preserveForm) : null;
+  const {scrollX, scrollY} = window;
 
   navigate(url, navOptions);
   if (form) {
     // `astro:after-swap` runs before the new DOM paints, so the fields never blank.
     document.addEventListener('astro:after-swap', () => writeForm(preserveForm, form), {once: true});
   }
+  // Every caller is a settings change, and the router scrolls to the top on each one.
+  // The scroll lands after this event, so the restore waits for the frame after it.
+  document.addEventListener('astro:page-load', () => requestAnimationFrame(() => window.scrollTo(scrollX, scrollY)), {
+    once: true
+  });
   return true;
 };

@@ -8,11 +8,27 @@ const redirect = flow === 'redirect';
  * whichever element is handed to render(), so the border and ring styling below
  * lives on the merchant's own box rather than inside the iframe.
  */
-const part = `monei-part ${theme.page.radius} border ${theme.page.border} bg-white px-3 py-2`;
+// The iframe inside is a fixed 45px the SDK controls and will not shrink, so the box
+// wraps it rather than setting a height, and the other controls on the page match the
+// 47px that leaves.
+// The number field inside the iframe is a fixed 155px and overlaps the expiry once
+// the frame drops under ~220px, so on a narrow screen the box gives up its own
+// padding to keep the frame above that.
+const part = `monei-part ${theme.page.radius} border ${theme.page.border} bg-white px-1 sm:px-3`;
 const label = `block text-xs font-medium ${theme.page.muted}`;
 ---
 
-<section id="checkout-panel" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+<section id="checkout-panel" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-4 sm:p-6`}>
+  {/* Ahead of the card, so the one-tap method is offered before the form. */}
+  <div id="bizum-row" hidden>
+    <div id="bizum"></div>
+    <p class={`mt-2 text-xs ${theme.page.muted}`}>In this demo Bizum only accepts payments under €5.</p>
+    <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`}>
+      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
+      or
+      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
+    </div>
+  </div>
   <div id="card-fields" hidden={redirect}>
     <h2 class={`text-sm ${theme.page.heading}`}>Card details</h2>
     {
@@ -59,25 +75,22 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
     <div class="mt-2 space-y-1.5" id="shipping-options">
       <p class={`text-xs ${theme.page.muted}`}>Enter an address to see rates.</p>
     </div>
-    <p class="mt-2 text-xs text-amber-700" id="bizum-band-shipping" hidden></p>
   </div>
   <p class="mt-4 text-xs text-rose-600" id="pay-error" hidden></p>
   <button
     type="button"
     id="pay"
     disabled
-    class={`${theme.page.radius} mt-4 w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50`}
-    style={`background: ${theme.page.accent}`}
+    class={`${theme.page.radius} mt-4 h-[47px] w-full cursor-pointer px-4 text-sm font-medium text-white accent-fill disabled:cursor-not-allowed disabled:opacity-50`}
   >
     {redirect ? 'Continue to payment' : 'Pay'}
   </button>
-  <div id="bizum-row" hidden>
+  <div id="paypal-row" hidden>
     <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`}>
       <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
       or
       <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
     </div>
-    <div id="bizum"></div>
-    <p class={`mt-2 text-xs ${theme.page.muted}`}>In test mode the total decides whether Bizum approves.</p>
+    <div id="paypal"></div>
   </div>
 </section>

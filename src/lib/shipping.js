@@ -8,7 +8,6 @@ const MAX_ZIP_LENGTH = 12;
  * spinning, so the table must always terminate.
  */
 const ZONES = [
-  {id: 'unserviceable', label: 'Not served', match: {country: ['GB']}},
   {id: 'canary', label: 'Canary Islands', match: {country: 'ES', zip: /^(35|38)/}},
   {id: 'peninsula', label: 'Mainland Spain', match: {country: 'ES'}},
   {id: 'row', label: 'International', match: {}}
@@ -24,8 +23,7 @@ const RATES = {
     {id: 'express', label: 'Express (24 h)', amount: 999},
     {id: 'pickup', label: 'Collect in store', amount: 0, type: 'PICKUP'}
   ],
-  row: [{id: 'international', label: 'International (7–14 days)', amount: 1999}],
-  unserviceable: []
+  row: [{id: 'international', label: 'International (7–14 days)', amount: 1999}]
 };
 
 const normalizeZip = (value) =>
@@ -79,13 +77,6 @@ export const rateFor = (zoneId, optionId) => {
 };
 
 export const zoneIds = () => ZONES.map((z) => z.id);
-
-/** Wallet sheets do not render `SHIPPING_ADDRESS_UNSERVICEABLE`, so the page says it. */
-export const unserviceableNames = () =>
-  ZONES.filter((zone) => ratesFor(zone).length === 0)
-    .flatMap((zone) => (Array.isArray(zone.match.country) ? zone.match.country : [zone.match.country]))
-    .filter(Boolean)
-    .map((code) => countryByCode(code)?.name ?? code);
 
 /** True when a postcode can move the country into a different zone. */
 export const zipDecidesZone = (country) => {

@@ -10,23 +10,26 @@
 export const THEME_DATA = {
   aurora: {
     label: 'Aurora',
-    tagline: 'Modern, soft, generous whitespace',
+    tagline: "MONEI's own type: Montserrat, with Fira Code for numbers",
     cardUi: 'input',
     page: {
       body: 'bg-[#fbfaff] text-[#241c33]',
-      accent: '#6d4aff',
+      accent: '#00C1B1',
+      accentHover: '#009E91',
       muted: 'text-[#6b6480]',
       surface: 'bg-white',
       border: 'border-[#e8e3f5]',
       radius: 'rounded-xl',
       heading: 'font-semibold tracking-tight',
-      fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
+      fontFamily: '"Montserrat", ui-sans-serif, system-ui, sans-serif',
+      numerals: '"Fira Code", ui-monospace, monospace'
     },
     card: {
       style: {
         base: {
           color: '#241c33',
-          fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif',
+          // Card entry is digits, and the brand pairs its numerals with Fira Code.
+          fontFamily: '"Fira Code", ui-monospace, monospace',
           fontSize: '16px',
           borderRadius: '12px'
         },
@@ -37,29 +40,39 @@ export const THEME_DATA = {
           color: '#c2255c'
         }
       },
-      fonts: [{cssSrc: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap'}]
+      // The card fields live in a cross-origin iframe that fetches this itself, and
+      // it only reliably picks up a Google-hosted sheet. The page's own copy is
+      // self-hosted and preloaded, which is what removes the flash on first paint.
+      fonts: [
+        {
+          cssSrc:
+            'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap'
+        }
+      ],
+      preload: ['montserrat-400-latin.woff2', 'montserrat-600-latin.woff2', 'fira-code-400-latin.woff2']
     }
   },
 
   monoline: {
     label: 'Monoline',
-    tagline: 'Editorial, sharp corners, serif',
+    tagline: 'Sharp corners, three card fields the merchant places',
     cardUi: 'parts',
     page: {
       body: 'bg-[#f7f6f3] text-[#14110f]',
-      accent: '#14110f',
+      accent: '#65427E',
+      accentHover: '#533667',
       muted: 'text-[#6f6a63]',
       surface: 'bg-white',
       border: 'border-[#ddd8d0]',
       radius: 'rounded-none',
       heading: 'font-medium tracking-tight',
-      fontFamily: '"Instrument Serif", ui-serif, Georgia, serif'
+      fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     },
     card: {
       style: {
         base: {
           color: '#14110f',
-          fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+          fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif',
           fontSize: '15px',
           borderRadius: '0'
         },
@@ -70,12 +83,8 @@ export const THEME_DATA = {
           color: '#a61b3c'
         }
       },
-      fonts: [
-        {
-          cssSrc:
-            'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap'
-        }
-      ]
+      fonts: [{cssSrc: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap'}],
+      preload: ['outfit-400-latin.woff2', 'outfit-500-latin.woff2']
     }
   }
 };

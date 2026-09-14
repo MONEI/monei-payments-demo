@@ -17,9 +17,10 @@ const stepButton = `${theme.page.radius} cursor-pointer border ${theme.page.bord
 const lineRow = `${theme.page.radius} -mx-2 flex items-start gap-3 p-2`;
 ---
 
-<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
-  <h2 class={`text-sm ${theme.page.heading}`}>Your order</h2>
-  <ul class="mt-2 space-y-1">
+{/* Outside the card, so it lines up with "Shop" at the top of the other column. */}
+<h2 class={`text-sm ${theme.page.heading}`}>Your order</h2>
+<section class={`${theme.page.surface} ${theme.page.radius} mt-4 border ${theme.page.border} p-6`}>
+  <ul class="space-y-1">
     {
       rows.map(({product, line}) => (
         <li class={lineRow} data-cart-line={product.id} hidden={!line}>
@@ -51,7 +52,9 @@ const lineRow = `${theme.page.radius} -mx-2 flex items-start gap-3 p-2`;
               </button>
             </div>
           </div>
-          <span class="flex items-center gap-1.5 self-start">
+          {/* A flex item defaults to `min-width: auto`, so without this the price
+              holds the row — and the page — open wider than a narrow phone. */}
+          <span class="flex min-w-0 items-center gap-1.5 self-start">
             <span class="spinner" aria-hidden="true" />
             <span class="text-sm tabular-nums" data-cart-line-total>
               {formatPrice(line?.lineTotal ?? 0)}
@@ -75,5 +78,4 @@ const lineRow = `${theme.page.radius} -mx-2 flex items-start gap-3 p-2`;
       <dd class="tabular-nums" id="cart-total">{formatPrice(total)}</dd>
     </div>
   </dl>
-  <p class="mt-3 text-xs text-amber-700" id="bizum-band" hidden></p>
 </section>

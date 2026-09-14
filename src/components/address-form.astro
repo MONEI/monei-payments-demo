@@ -5,23 +5,25 @@ const {theme, country} = Astro.props;
 const countries = countryList();
 const selected = countries.find((c) => c.code === country) ?? countries[0];
 
-const field = `w-full ${theme.page.radius} border ${theme.page.border} bg-white px-3 py-2 text-sm outline-none focus:border-current`;
+// A card field is the SDK's fixed 45px iframe inside a bordered box, so every control
+// on the page is sized to that 47px rather than to its own padding.
+const field = `h-[47px] w-full ${theme.page.radius} border ${theme.page.border} bg-white px-3 text-sm outline-none focus:border-current`;
 const label = `block text-xs font-medium ${theme.page.muted}`;
+// Wraps in the two-column layout a narrow viewport falls back to; on one row from
+// `sm` up there is space for the labels to stay on a single line.
+const helper = `${theme.page.radius} cursor-pointer px-2.5 py-1.5 text-xs font-medium text-white accent-fill sm:whitespace-nowrap`;
 
 const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
 ---
 
 <section id="address" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
-  <div class="flex items-baseline justify-between gap-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
     <h2 class={`text-sm ${theme.page.heading}`}>Shipping address</h2>
-    <button
-      type="button"
-      id="fill-sample"
-      class="cursor-pointer text-xs underline"
-      style={`color: ${theme.page.accent}`}
-    >
-      Use a sample address
-    </button>
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+      {/* Only one basket in the whole shop stays under Bizum's €5 test ceiling. */}
+      <button type="button" id="bizum-preset" class={helper} hidden> Set up a Bizum payment </button>
+      <button type="button" id="fill-sample" class={helper}> Use a sample address </button>
+    </div>
   </div>
   <div class="mt-4 grid gap-4 sm:grid-cols-2">
     <label class="sm:col-span-2">
@@ -47,7 +49,6 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
               data-example={c.example}
               data-inputmode={c.inputmode}
               data-pattern={c.pattern}
-              data-unserviceable={c.unserviceable ? 'true' : 'false'}
             >
               {c.name}
             </option>
@@ -74,9 +75,6 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
       <input class={`mt-1 ${field}`} name="city" autocomplete="address-level2" required />
     </label>
   </div>
-  <p class={`mt-3 text-xs ${theme.page.muted}`} id="country-note" hidden>
-    This sample shop doesn't ship to this country — pick another to see shipping rates.
-  </p>
 </section>
 <script define:vars={{samples, PEOPLE: people()}}>
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -87,7 +85,6 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     const country = document.getElementById('country');
     const zip = document.getElementById('zip');
     const zipError = document.getElementById('zip-error');
-    const note = document.getElementById('country-note');
     const fill = document.getElementById('fill-sample');
     if (!country || !zip || !fill || fill.dataset.wired === 'true') return;
     fill.dataset.wired = 'true';
@@ -120,12 +117,45 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
       zip.dispatchEvent(new Event('change', {bubbles: true}));
     });
 
+    /**
+     * Bizum's test mode only approves under €5, and one basket in the shop reaches
+     * that: a single pack of filter papers collected in store. Assembling it by hand
+     * means emptying the cart and finding the one free shipping option, so the demo
+     * does it in a click.
+     */
+    const preset = document.getElementById('bizum-preset');
+    preset?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('monei:set-cart', {detail: [{productId: 'filter-papers', quantity: 1}]}));
+
+      const person = pick(PEOPLE);
+      // Mainland only: the Canary postcodes have no collect-in-store option, and a
+      // paid rate would push the total past the €5 Bizum approves under.
+      const address = pick(samples.ES.filter((s) => !/^(35|38)/.test(s.zip)));
+      country.value = 'ES';
+      sync();
+      const set = (name, value) => {
+        const input = form.querySelector(`[name="${name}"]`);
+        if (input) input.value = value;
+      };
+      set('name', person.name);
+      set('email', person.email);
+      set('line1', address.line1);
+      set('city', address.city);
+      set('zip', address.zip);
+      validate();
+
+      // Collect in store is the only rate that keeps the total under €5. Stated as a
+      // preference rather than applied to one render, because the cart change and the
+      // address change each start their own lookup.
+      document.dispatchEvent(new CustomEvent('monei:prefer-option', {detail: 'pickup'}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+
     const sync = () => {
       const option = country.selectedOptions[0];
       zip.placeholder = option.dataset.example ?? '';
       zip.inputMode = option.dataset.inputmode ?? 'text';
       zip.pattern = option.dataset.pattern ?? '';
-      note.hidden = option.dataset.unserviceable !== 'true';
       validate();
     };
 

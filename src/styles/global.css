@@ -26,8 +26,89 @@
   width: 30rem;
 }
 
+/* The brand pairs its numerals with Fira Code, so figures take it wherever the theme
+   provides one. */
+body[data-numerals] .tabular-nums {
+  font-family: var(--numerals);
+}
+
+/* Confirms a copy without touching the value underneath, which would reflow the row
+   and hide the thing the reader is about to type. */
+.copied {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 0.375rem;
+  background: var(--accent);
+  padding: 0.125rem 0.5rem;
+  font-size: 11px;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.copied.is-shown {
+  opacity: 1;
+}
+
+/* An inline `style` cannot carry a `:hover`, so anything painted with the accent
+   takes it from here instead. */
+.accent-fill {
+  background: var(--accent);
+  transition: background 120ms ease;
+}
+
+.accent-fill:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.accent-text {
+  color: var(--accent);
+  transition: color 120ms ease;
+}
+
+.accent-text:hover {
+  color: var(--accent-hover);
+}
+
 #rail input {
   accent-color: var(--rail-accent);
+}
+
+/* Firefox paints a checked radio's accent out to the control's edge, so the fill
+   spills over the ring. Drawn here instead, which also makes the two browsers agree:
+   a ring that stays put, and a dot inset within it. */
+#rail input[type='radio'] {
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+#rail input[type='radio']:checked {
+  border-color: var(--rail-accent);
+  opacity: 1;
+  background: radial-gradient(circle at center, var(--rail-accent) 0 44%, transparent 46%);
+}
+
+#rail input[type='radio']:disabled {
+  opacity: 0.25;
+}
+
+/* Disabled for the length of a render reads as waiting, not as unavailable, so the
+   controls keep their colour while the spinner runs. */
+#rail[data-busy='true'] input:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+#rail[data-busy='true'] input[type='radio']:checked:disabled {
+  opacity: 1;
 }
 
 #rail[data-open='true'] .rail-body,
@@ -53,6 +134,28 @@
   transform: rotate(180deg);
 }
 
+/* The label collapses with the same timing as the panel it labels, so the toggle
+   changes width over the animation instead of snapping on the first frame. */
+.toggle-label {
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease;
+  max-width: 5rem;
+}
+
+#rail[data-open='true'] .toggle-label,
+#code-rail[data-open='true'] .toggle-label {
+  max-width: 0;
+  opacity: 0;
+}
+
+#rail[data-open='true'] #rail-toggle,
+#code-rail[data-open='true'] #code-toggle {
+  gap: 0;
+}
+
 #rail-chevron,
 #code-chevron {
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -60,22 +163,46 @@
 
 /* Closed, the toggle sits outside the panel as its only visible handle. Open, it
    overlays the panel's inner edge — a full-width panel would otherwise carry it off
-   the viewport, leaving no way to close it. */
-#rail[data-open='true'] #rail-toggle,
-#code-rail[data-open='true'] #code-toggle {
+   the viewport, leaving no way to close it. The rail's own right edge does not move,
+   so pinning to it reproduces where flex already put the button. */
+#rail[data-open='true'] #rail-toggle {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-}
-
-#rail[data-open='true'] #rail-toggle {
   right: 0;
+  transform: translateY(-50%);
   border-radius: 0.5rem 0 0 0.5rem;
 }
 
+/* This toggle stays a flex sibling rather than being positioned like the rail's. Its
+   panel grows leftward, so the body's animating width is the one value that should
+   move it; an offset of its own animates on a separate clock and drifts off the edge
+   it is meant to sit on. The body's negative margin slides back under the toggle to
+   put it over that edge. */
+#code-rail[data-open='true'] .code-body {
+  margin-left: -1.375rem;
+}
+
+/* Closed, the toggle sits against the right edge, where a classic scrollbar would
+   otherwise cover the chevron. */
+#code-toggle {
+  padding-right: 1rem;
+}
+
+/* Also the background, because this shorthand replaces the one `.accent-fill` sets
+   and the toggles would otherwise be the only accent elements that snap on hover. */
+#rail-toggle,
+#code-toggle {
+  transition:
+    padding 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    gap 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    background 120ms ease;
+}
+
 #code-rail[data-open='true'] #code-toggle {
-  left: 0;
+  z-index: 1;
   border-radius: 0 0.5rem 0.5rem 0;
+  /* Open, it overlays the panel's inner edge — no scrollbar there to clear. */
+  padding-right: 0.125rem;
 }
 
 /* The open toggle overlays the panel, so the content it covers is pushed clear. */
@@ -84,7 +211,7 @@
 }
 
 #code-rail[data-open='true'] .code-body > * {
-  padding-left: 2.25rem;
+  padding-left: 1.25rem;
 }
 
 /* The rail is wider than a phone, so on one it covers the page instead. */
@@ -92,6 +219,34 @@
   #code-rail[data-open='true'] .code-body,
   .code-body > * {
     width: 100vw;
+  }
+
+  /* A phone has no room for a label beside the chevron, so it reads vertically
+     underneath it instead. */
+  #rail-toggle,
+  #code-toggle {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  /* Overlay scrollbars take no layout width, so there is nothing to clear here. */
+  #code-toggle {
+    padding-right: 0.125rem;
+  }
+
+  .toggle-label {
+    writing-mode: vertical-rl;
+    max-height: 5rem;
+    max-width: none;
+    transition:
+      max-height 220ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 160ms ease;
+  }
+
+  #rail[data-open='true'] .toggle-label,
+  #code-rail[data-open='true'] .toggle-label {
+    max-height: 0;
+    max-width: none;
   }
 }
 
@@ -169,8 +324,11 @@
 }
 
 /* A wallet button cannot be greyed out from here — it lives in a cross-origin frame
-   — so the whole mount box is taken out of reach instead. */
-.is-busy {
+   — so the whole mount box is taken out of reach instead. `is-busy` covers a quote
+   being replaced, `is-locked` a method that has no quote to pay for yet; they move
+   independently, so neither may clear the other. */
+.is-busy,
+.is-locked {
   pointer-events: none;
   opacity: 0.5;
 }
@@ -180,6 +338,9 @@
   .code-body,
   #rail-chevron,
   #code-chevron,
+  #rail-toggle,
+  #code-toggle,
+  .toggle-label,
   .monei-part {
     transition-duration: 0ms;
   }

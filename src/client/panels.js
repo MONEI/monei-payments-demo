@@ -32,11 +32,20 @@ const wire = () => {
 
   toggle.addEventListener('click', () => setOpen(rail.dataset.open !== 'true'));
 
+  /**
+   * The change is a server render, so the controls go read-only until it lands —
+   * otherwise a second click moves a control whose change is then dropped. The next
+   * render replaces this markup, so nothing has to re-enable them.
+   */
+  const started = (input) => {
+    input.closest('label')?.classList.add('is-pending');
+    rail.dataset.busy = 'true';
+    for (const control of rail.querySelectorAll('input')) control.disabled = true;
+  };
+
   for (const input of rail.querySelectorAll('[data-param]')) {
     input.addEventListener('change', () => {
-      if (go((q) => q.set(input.dataset.param, input.value))) {
-        input.closest('label')?.classList.add('is-pending');
-      }
+      if (go((q) => q.set(input.dataset.param, input.value))) started(input);
     });
   }
 
@@ -44,14 +53,14 @@ const wire = () => {
   for (const input of methods) {
     input.addEventListener('change', () => {
       const chosen = methods.filter((i) => i.checked).map((i) => i.value);
-      const started = go((q) => {
+      const begun = go((q) => {
         // All available methods checked is the default, so the param comes off and
         // the shared link stays short. None checked writes an empty value, which is
         // a different state — dropping the param would turn them all back on.
         if (chosen.length === methods.length) q.delete('methods');
         else q.set('methods', chosen.join(','));
       });
-      if (started) input.closest('label')?.classList.add('is-pending');
+      if (begun) started(input);
     });
   }
 };

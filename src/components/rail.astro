@@ -15,7 +15,7 @@ const METHOD_LABELS = {
   bizum: 'Bizum'
 };
 
-const UNAVAILABLE = {paypal: 'Temporarily unavailable'};
+const UNAVAILABLE = {};
 
 // `/client-payment-methods` answers per caller, so a row starts optimistic and the
 // browser corrects it once the component reports whether it loaded.
@@ -141,7 +141,6 @@ const hint = `text-[11px] ${theme.page.muted}`;
           <div class="flex justify-between"><dt>Mainland ES</dt><dd>€4.99</dd></div>
           <div class="flex justify-between"><dt>Canary Is. (35…, 38…)</dt><dd>€14.99</dd></div>
           <div class="flex justify-between"><dt>International</dt><dd>€19.99</dd></div>
-          <div class="flex justify-between"><dt>United Kingdom</dt><dd>Not served</dd></div>
         </dl>
       </section>
       <p class={`mt-5 border-t ${theme.page.border} pt-4 ${hint}`}>
@@ -152,8 +151,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
   <button
     type="button"
     id="rail-toggle"
-    class="cursor-pointer self-center rounded-r-lg py-5 pr-1 pl-0.5 text-white shadow-md"
-    style={`background: ${theme.page.accent}`}
+    class="accent-fill flex cursor-pointer items-center gap-2 self-center rounded-r-lg py-5 pr-1 pl-0.5 text-white shadow-md"
     aria-expanded={String(config.panel)}
     aria-controls="rail-body"
     aria-label="Customize this demo"
@@ -173,5 +171,6 @@ const hint = `text-[11px] ${theme.page.muted}`;
     >
       <path d="M9 18l6-6-6-6"></path>
     </svg>
+    <span class="toggle-label text-xs font-medium tracking-wide">Customize</span>
   </button>
 </aside>

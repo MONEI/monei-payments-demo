@@ -103,8 +103,15 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
       )
     }
     {
+      /* The label column is fixed, so on a phone it would leave the values too little
+         room to wrap in — they take their own row there instead. `minmax(0,…)` lets the
+         value column shrink; the default never goes below its own content. */
+    }
+    {
       payment && (
-        <dl class={`mt-8 ${card} grid grid-cols-[9rem_1fr] gap-y-2 text-sm`}>
+        <dl
+          class={`mt-8 ${card} grid gap-y-2 text-sm break-words sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-x-2`}
+        >
           <dt class={theme.page.muted}>Order</dt>
           <dd>{payment.orderId}</dd>
           <dt class={theme.page.muted}>Amount</dt>
@@ -147,7 +154,7 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
     <div class="mt-8 space-y-3">
       {
         state === 'failed' && (
-          <a class={`${button} text-white`} style={`background: ${theme.page.accent}`} href={`${retryHref}&error=1`}>
+          <a class={`${button} text-white accent-fill`} href={`${retryHref}&error=1`}>
             Try again
           </a>
         )
@@ -156,8 +163,8 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
         Create another order
       </a>
       <a
-        class={`${button} text-white`}
-        style={`background: ${theme.page.accent}`}
+        class={`${button} text-white accent-fill`}
+       
         href="https://dashboard.monei.com/?action=signUp"
         rel="noopener"
       >

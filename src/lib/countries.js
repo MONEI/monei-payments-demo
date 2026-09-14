@@ -81,7 +81,6 @@ const COUNTRIES = [
     name: 'United Kingdom',
     postcode: /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i,
     example: 'SW1A 1AA',
-    unserviceable: true,
     samples: [
       {line1: '55 Broadwick Street', city: 'London', zip: 'W1F 9QT'},
       {line1: '12 Deansgate', city: 'Manchester', zip: 'M3 2BW'}
@@ -101,12 +100,11 @@ const PEOPLE = [
 export const DEFAULT_COUNTRY = 'ES';
 
 export const countryList = () =>
-  COUNTRIES.map(({code, name, example, postcode, unserviceable, samples}) => ({
+  COUNTRIES.map(({code, name, example, postcode, samples}) => ({
     code,
     name,
     example,
     samples,
-    unserviceable: Boolean(unserviceable),
     inputmode: /[A-Z]/.test(example) ? 'text' : 'numeric',
     // The `pattern` attribute is implicitly anchored and case-sensitive, so the
     // anchors come off and a lowercase alternative goes in.

@@ -84,19 +84,19 @@ describe('matchZone input handling', () => {
     expect(matchZone({country: ' ES ', zip: '28014'}).id).toBe('peninsula');
   });
 
-  it('matches a country list without falling back to substring matching', () => {
-    expect(matchZone({country: 'GB'}).id).toBe('unserviceable');
-    expect(matchZone({country: 'G'}).id).toBe('row');
-    expect(matchZone({country: 'GBR'}).id).toBe('row');
+  it('matches a country exactly rather than by substring', () => {
+    expect(matchZone({country: 'ES', zip: '28014'}).id).toBe('peninsula');
+    expect(matchZone({country: 'E'}).id).toBe('row');
+    expect(matchZone({country: 'ESP'}).id).toBe('row');
   });
 });
 
 describe('rates', () => {
-  it('marks the unserviceable zone by having no rates at all', () => {
-    const zone = matchZone({country: 'GB', zip: 'W1F 9QT'});
-    expect(zone.id).toBe('unserviceable');
-    expect(ratesFor(zone)).toEqual([]);
-    expect(isServiceable(zone)).toBe(false);
+  /** The guard the API relies on, kept honest even though no zone is empty today. */
+  it('treats a zone with no rates as one the shop cannot serve', () => {
+    expect(isServiceable({id: 'nowhere'})).toBe(false);
+    expect(ratesFor({id: 'nowhere'})).toEqual([]);
+    expect(isServiceable(matchZone({country: 'GB', zip: 'W1F 9QT'}))).toBe(true);
   });
 
   it('gives every other zone at least one rate', () => {
@@ -141,9 +141,10 @@ describe('initialShippingOptions', () => {
     expect(initialShippingOptions('ES')).toEqual(shippableRatesFor(matchZone({country: 'ES'})));
   });
 
-  it('falls back rather than seeding the unserviceable zone', () => {
-    expect(isServiceable(matchZone({country: 'GB'}))).toBe(false);
-    expect(initialShippingOptions('GB').length).toBeGreaterThan(0);
+  it('seeds a rate for every country the form offers', () => {
+    for (const {code} of countryList()) {
+      expect(initialShippingOptions(code).length).toBeGreaterThan(0);
+    }
   });
 });
 

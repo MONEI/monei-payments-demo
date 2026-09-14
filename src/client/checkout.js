@@ -25,6 +25,7 @@ let walletQuote = null;
 let walletOpen = false;
 let walletUnserviceable = false;
 let pricing = false;
+let preferredOption = null;
 
 const readPage = () => {
   config = JSON.parse(el('demo-config').textContent);
@@ -104,33 +105,12 @@ const updateAmount = (component) => {
   Promise.resolve(component?.updateProps({amount: currentTotal()})).catch(() => {});
 };
 
-/**
- * In test mode the Bizum outcome is decided by the total, so it is reported by the
- * amount and by the shipping choice — the two places that move it, and neither is
- * near the button.
- */
-const BIZUM_BANDS = [
-  {max: 500, text: null},
-  {max: 1000, text: 'Over €5, so Bizum will decline. Collect in store to drop the total.'},
-  {max: 1500, text: 'Over €10, so Bizum approves through a redirect.'},
-  {max: Infinity, text: 'Over €15, so Bizum rejects the test phone number.'}
-];
+// Bizum's test mode approves nothing from €5 up, so the button is out of reach above
+// that rather than failing at the provider.
+const BIZUM_MAX = 500;
 
-const renderBizumBand = () => {
-  const supported = Boolean(el('bizum-row') && !el('bizum-row').hidden);
-  const {text} = BIZUM_BANDS.find((band) => currentTotal() < band.max);
-  const hasRates = Boolean(shippingBox?.querySelector('input[name="shipping"]'));
-
-  for (const [id, show] of [
-    ['bizum-band', true],
-    ['bizum-band-shipping', hasRates]
-  ]) {
-    const node = el(id);
-    if (!node) continue;
-    node.textContent = text ?? '';
-    node.hidden = !supported || !text || !show;
-  }
-};
+// The sandbox accepts this one number, and the modal opens with it already filled in.
+const BIZUM_TEST_PHONE = '+34500000000';
 
 /**
  * The rate picker prices whatever the pay button submits — the card, Bizum or the
@@ -139,7 +119,7 @@ const renderBizumBand = () => {
  */
 const syncCheckoutPanel = () => {
   const visible = (id) => Boolean(el(id) && !el(id).hidden);
-  const needed = visible('card-fields') || visible('bizum-row') || isRedirectFlow();
+  const needed = visible('card-fields') || visible('bizum-row') || visible('paypal-row') || isRedirectFlow();
   for (const id of ['shipping-section', 'checkout-panel']) {
     const node = el(id);
     if (node) node.hidden = !needed;
@@ -154,8 +134,20 @@ const renderTotals = () => {
   // A navigation can destroy these between the listener firing and this running.
   updateAmount(card);
   updateAmount(bizum);
-  renderBizumBand();
+  updateAmount(payPal);
   setBusy(false);
+  syncQuoteGate();
+};
+
+/**
+ * Bizum and PayPal pay the amount the page priced, so neither is reachable until a
+ * quote exists, and Bizum's test mode refuses anything from €5 up. They live in
+ * cross-origin frames and cannot be disabled from here, so the mount box is taken out
+ * of reach instead.
+ */
+const syncQuoteGate = () => {
+  el('paypal')?.classList.toggle('is-locked', !quote);
+  el('bizum')?.classList.toggle('is-locked', !quote || currentTotal() >= BIZUM_MAX);
 };
 
 const loadRates = async () => {
@@ -202,19 +194,30 @@ const loadRates = async () => {
   }
 
   quote = {quote: data.quote, sig: data.sig};
+  // Whatever is selected survives the re-render if the new rates still offer it, so a
+  // cart edit does not silently move the shopper onto a different one. A preset's
+  // request outranks that, and has to outlive the several lookups its own click starts.
+  const chosen = preferredOption ?? shippingBox.querySelector('input[name="shipping"]:checked')?.value;
+  const preferred = data.shippingOptions.find((o) => o.id === chosen) ?? data.shippingOptions[0];
   shippingBox.innerHTML = data.shippingOptions
     .map(
-      (option, index) => `
+      (option) => `
         <label class="flex items-center gap-2 text-sm">
           <input type="radio" name="shipping" value="${option.id}"
-                 data-amount="${option.amount}" ${index === 0 ? 'checked' : ''} />
+                 data-amount="${option.amount}" ${option.id === preferred.id ? 'checked' : ''} />
           <span class="flex-1">${option.label}</span>
           <span class="tabular-nums">${money(option.amount)}</span>
         </label>`
     )
     .join('');
 
-  for (const input of shippingBox.querySelectorAll('input')) input.addEventListener('change', renderTotals);
+  for (const input of shippingBox.querySelectorAll('input')) {
+    input.addEventListener('change', () => {
+      // A choice of their own outranks the preset's.
+      preferredOption = null;
+      renderTotals();
+    });
+  }
 
   renderTotals();
 };
@@ -246,6 +249,7 @@ const cardProps = () => ({
   amount: currentTotal(),
   currency: config.currency,
   sessionId: config.seed,
+  language: 'en',
   style: config.cardStyle,
   fonts: config.cardFonts,
   onError: (error) => setError(error?.message ?? String(error))
@@ -456,7 +460,7 @@ const mountPaymentRequest = () => {
     // Pay reads `shippingOptionParameters` at the same point, so an empty list
     // here means the first sheet opens with no shipping at all.
     shippingOptions: config.initialShippingOptions,
-    style: {borderRadius: config.walletRadius},
+    style: {height: 47, borderRadius: config.walletRadius},
 
     onShippingAddressChange: walletRates,
 
@@ -511,7 +515,9 @@ const mountBizum = () => {
     amount: currentTotal(),
     currency: config.currency,
     sessionId: config.seed,
-    style: {height: 45, borderRadius: config.walletRadius},
+    // The one number the sandbox accepts, so the modal opens ready to pay.
+    phoneNumber: BIZUM_TEST_PHONE,
+    style: {height: 47, borderRadius: config.walletRadius},
 
     onBeforeOpen: () => {
       setError(null);
@@ -549,12 +555,11 @@ const mountBizum = () => {
     onLoad: (isSupported) => {
       emit('Bizum.onLoad', {isSupported});
       setMethodSupported('bizum', isSupported);
-      for (const id of ['bizum-row', 'bizum-test']) {
+      for (const id of ['bizum-row', 'bizum-preset']) {
         const node = el(id);
         if (node) node.hidden = !isSupported;
       }
       syncCheckoutPanel();
-      renderBizumBand();
     }
   });
 
@@ -562,59 +567,66 @@ const mountBizum = () => {
 };
 
 /**
- * `createOrder` reads `amount` and `shippingOptions` off the props closure when the
- * buyer clicks, not when the button renders — and the server only omits the token's
- * amount when `shippingOptions` is non-empty (`getPaymentToken/utils.ts:119`). An
- * empty list therefore pins the pre-shipping amount on the token, and the buyer
- * changing shipping inside PayPal then fails the payment with E206. So the button
- * is never rendered without options.
+ * Mounted without `requestShipping`, so the buyer cannot change the address inside
+ * PayPal and the amount is settled before the popup opens. Asking PayPal to collect
+ * it instead requires repricing the open order through `order.patch`, which never
+ * fires; the payment then fails with E206 when the buyer picks a different option.
+ * Like Bizum, this pays for whatever the page's form and shipping selection priced.
  */
 const mountPayPal = () => {
   const container = el('paypal');
   if (!container || isRedirectFlow() || !hasSomethingToBuy() || !methodAllowed('paypal')) return;
-  if (!config.initialShippingOptions.length) return;
 
   payPal = window.monei.PayPal({
     accountId: config.accountId,
-    // The order is created with its first shipping option already selected, so the
-    // total has to include that option or PayPal is handed an order whose amount and
-    // selected option disagree.
-    amount: config.goods + config.initialShippingOptions[0].amount,
+    amount: currentTotal(),
     currency: config.currency,
     sessionId: config.seed,
-    requestShipping: true,
-    shippingOptions: config.initialShippingOptions,
     // PayPal's own `Buttons()` validates this and rejects a CSS string, unlike the
     // other components which parse it.
-    style: {height: 45, borderRadius: Number.parseInt(config.walletRadius, 10) || 0},
-
-    onShippingAddressChange: walletRates,
-
-    onShippingOptionChange: async (option) => {
-      emit('PayPal.onShippingOptionChange', option);
-      walletQuote = walletQuote && {...walletQuote, optionId: option.id};
-      return {amount: config.goods + option.amount};
-    },
+    style: {height: 47, borderRadius: Number.parseInt(config.walletRadius, 10) || 0},
 
     onBeforeOpen: () => {
-      setExpressError(null);
-      lockCart(true);
+      setError(null);
+      if (!quote) {
+        setError('Enter a shipping address first, so the order can be priced.');
+        return false;
+      }
       return true;
     },
 
-    onSubmit: walletSubmit,
+    onSubmit: async (result) => {
+      if (result.error || !result.token) {
+        return setError(result.error ?? 'PayPal did not return a payment.');
+      }
+
+      emit('PayPal.onSubmit', {amount: currentTotal(), token: `${result.token.slice(0, 12)}…`});
+
+      await submitPayment({
+        paymentToken: result.token,
+        optionId: shippingBox.querySelector('input[name="shipping"]:checked')?.value,
+        ...quote,
+        customer: {
+          name: document.querySelector('[name="name"]')?.value,
+          email: document.querySelector('[name="email"]')?.value
+        },
+        address: addressFromForm()
+      });
+    },
 
     onError: (error) => {
-      lockCart(false);
       emit('PayPal.onError', {message: error?.message ?? String(error)});
-      setExpressError(error?.message ?? 'PayPal could not complete this payment.');
+      setError(error?.message ?? 'PayPal could not complete this payment.');
     },
 
     // Reports `false` reliably but `true` optimistically — it fires before
     // `Buttons().render()` is attempted, so a later failure surfaces via onError.
     onLoad: (isSupported) => {
       emit('PayPal.onLoad', {isSupported});
-      if (!isSupported) container.hidden = true;
+      setMethodSupported('paypal', isSupported);
+      const row = el('paypal-row');
+      if (row) row.hidden = !isSupported;
+      syncCheckoutPanel();
     }
   });
 
@@ -742,10 +754,9 @@ const remount = async () => {
   mountCard();
   mountPaymentRequest();
   mountBizum();
-  // PayPal express stays unmounted while `order.patch` cannot be made to work: the
-  // buyer reaches the popup but can never complete the payment.
-  // mountPayPal();
+  mountPayPal();
   syncCheckoutPanel();
+  syncQuoteGate();
   loadRates();
 };
 
@@ -764,6 +775,12 @@ const start = async () => {
     input?.addEventListener('blur', loadRates);
   }
 };
+
+// The demo's Bizum preset needs a specific rate, and the address it fills triggers
+// more than one lookup, so the choice is held rather than applied to one render.
+document.addEventListener('monei:prefer-option', (event) => {
+  preferredOption = event.detail;
+});
 
 // Fires on the first load as well as after every client-side navigation.
 document.addEventListener('astro:page-load', () => {

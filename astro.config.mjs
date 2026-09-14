@@ -9,6 +9,9 @@ export default defineConfig({
   adapter: vercel(),
   site: 'https://payments-demo.monei.com',
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    // The card iframes fetch the font stylesheet from this origin, so it has to be
+    // readable cross-origin. Production sets the same header in vercel.json.
+    server: {headers: {'Access-Control-Allow-Origin': '*'}}
   }
 });

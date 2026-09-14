@@ -96,6 +96,13 @@ export const initCartUi = (initialLines) => {
   if (root.dataset.cartWired === 'true') return;
   root.dataset.cartWired = 'true';
 
+  // The address form's preset replaces the whole basket. It is inline markup rather
+  // than a module, so it asks through an event instead of importing.
+  document.addEventListener('monei:set-cart', (event) => {
+    lines = event.detail;
+    apply(lines[0]?.productId ?? null);
+  });
+
   // Delegated: the stepper buttons are replaced on every edit, so per-button
   // listeners would be lost with the markup they were attached to.
   root.addEventListener('click', (event) => {

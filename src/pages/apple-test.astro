@@ -61,8 +61,17 @@ export const prerender = false;
         button.setAttribute('locale', 'en');
         document.getElementById('button').append(button);
 
-        button.addEventListener('click', () => {
-          log('tapped');
+        // The SDK's handler is `async` and awaits `onBeforeOpen` before `begin()`.
+        // `?await=1` reproduces that here: if the sheet then stops opening, the await
+        // is the fault and dropping `onBeforeOpen` is the workaround.
+        const mimicSdk = new URLSearchParams(location.search).has('await');
+
+        button.addEventListener('click', async () => {
+          log('tapped', {mimicSdk});
+          if (mimicSdk) {
+            await Promise.resolve(true);
+            log('awaited, as the SDK does');
+          }
           try {
             const version = S.supportsVersion(14) ? 14 : 3;
             const session = new S(version, {

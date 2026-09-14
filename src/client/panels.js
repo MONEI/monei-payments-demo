@@ -21,7 +21,7 @@ const setOpen = (open) => {
 const go = (mutate) => {
   const url = new URL(location.href);
   mutate(url.searchParams);
-  return navigateOnce(url.toString());
+  return navigateOnce(url.toString(), {preserveForm: '#address'});
 };
 
 const wire = () => {
@@ -45,8 +45,9 @@ const wire = () => {
     input.addEventListener('change', () => {
       const chosen = methods.filter((i) => i.checked).map((i) => i.value);
       const started = go((q) => {
-        // All available methods checked is the default, so the param comes off
-        // and the shared link stays short.
+        // All available methods checked is the default, so the param comes off and
+        // the shared link stays short. None checked writes an empty value, which is
+        // a different state — dropping the param would turn them all back on.
         if (chosen.length === methods.length) q.delete('methods');
         else q.set('methods', chosen.join(','));
       });

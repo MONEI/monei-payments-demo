@@ -9,21 +9,29 @@ document.addEventListener('astro:page-load', () => {
   navigating = false;
 });
 
-// The router scrolls to the top on every navigation and restores a position only
-// when going back, so `preserveScroll` covers cart changes made down the page.
+// A settings change re-renders the page, and the server has no idea what the
+// shopper typed into the address form, so it is read off the old DOM and written
+// back onto the new one.
+const readForm = (selector) => [...document.querySelectorAll(`${selector} [name]`)].map((el) => [el.name, el.value]);
+
+const writeForm = (selector, entries) => {
+  for (const [name, value] of entries) {
+    const el = document.querySelector(`${selector} [name="${name}"]`);
+    if (el && value) el.value = value;
+  }
+};
+
 export const go = (url, options = {}) => {
   if (navigating) return false;
   navigating = true;
 
-  const {preserveScroll, ...navOptions} = options;
-  const {scrollX, scrollY} = window;
+  const {preserveForm, ...navOptions} = options;
+  const form = preserveForm ? readForm(preserveForm) : null;
 
   navigate(url, navOptions);
-  if (preserveScroll) {
-    // The scroll to the top happens after this event, so the restore waits a frame.
-    document.addEventListener('astro:page-load', () => requestAnimationFrame(() => window.scrollTo(scrollX, scrollY)), {
-      once: true
-    });
+  if (form) {
+    // `astro:after-swap` runs before the new DOM paints, so the fields never blank.
+    document.addEventListener('astro:after-swap', () => writeForm(preserveForm, form), {once: true});
   }
   return true;
 };

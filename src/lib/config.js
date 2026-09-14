@@ -21,7 +21,7 @@ export const DEFAULTS = {
   theme: 'aurora',
   seed: null, // generated when absent, then written back with replaceState
   layout: 'stacked',
-  methods: [], // empty means "every method the account has enabled"
+  methods: null, // null means "every method the account has enabled"
   shipping: true, // requestShipping
   billing: true, // requestBilling — PaymentRequest only, never PayPal
   country: 'ES',
@@ -41,8 +41,13 @@ const bool = (value, fallback) => {
   return !['0', 'false', 'no', 'off', ''].includes(value.toLowerCase());
 };
 
+/**
+ * Null means every method the account allows. `methods=` with no value is the
+ * shopper having unchecked them all, which is a different thing and has to survive
+ * a round trip through the URL.
+ */
 const subset = (value, allowed) => {
-  if (!value) return [];
+  if (value === null || value === undefined) return null;
   const picked = value.split(',').map((s) => s.trim());
   return allowed.filter((a) => picked.includes(a));
 };
@@ -113,7 +118,8 @@ export const toQuery = (config) => {
   if (config.theme !== DEFAULTS.theme) q.set('theme', config.theme);
   if (config.layout !== DEFAULTS.layout) q.set('layout', config.layout);
   if (config.flow !== DEFAULTS.flow) q.set('flow', config.flow);
-  if (config.methods?.length) q.set('methods', config.methods.join(','));
+  // An empty list still writes the param: `methods=` is "none", absent is "all".
+  if (config.methods) q.set('methods', config.methods.join(','));
   if (config.shipping !== DEFAULTS.shipping) q.set('shipping', '0');
   if (config.billing !== DEFAULTS.billing) q.set('billing', '0');
   if (config.country && config.country !== DEFAULTS.country) q.set('country', config.country);

@@ -54,6 +54,23 @@ describe('parseConfig', () => {
   });
 
   /**
+   * Unchecking every method used to round-trip as "all methods": the empty param
+   * was read back as the absent one, so the rail turned itself on again.
+   */
+  it('tells no methods apart from every method', () => {
+    expect(at('?seed=abc123').methods).toBeNull();
+    expect(at('?seed=abc123&methods=').methods).toEqual([]);
+
+    const none = at('?seed=abc123&methods=');
+    expect(toQuery(none)).toContain('methods=');
+    expect(parseConfig(`https://x/?${toQuery(none)}`).methods).toEqual([]);
+
+    const all = at('?seed=abc123');
+    expect(toQuery(all)).not.toContain('methods');
+    expect(parseConfig(`https://x/?${toQuery(all)}`).methods).toBeNull();
+  });
+
+  /**
    * `PaymentRequest` renders one button and picks Apple Pay or Google Pay from the
    * browser, with no prop to constrain it — so the two wallets cannot be selected
    * apart, and the individual ids are not accepted.

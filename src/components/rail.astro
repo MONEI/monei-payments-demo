@@ -110,7 +110,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       type="checkbox"
                       class={`shrink-0 ${onAccount ? 'cursor-pointer' : ''}`}
                       value={id}
-                      checked={onAccount && (config.methods.length === 0 || config.methods.includes(id))}
+                      checked={onAccount && (config.methods === null || config.methods.includes(id))}
                       disabled={!onAccount}
                       data-method={id}
                     />
@@ -124,7 +124,9 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       </span>
                     </>
                   ) : (
-                    !redirect && <span class={`${hint} shrink-0 text-right`}>{UNAVAILABLE[id] ?? 'Not on this account'}</span>
+                    !redirect && (
+                      <span class={`${hint} shrink-0 text-right`}>{UNAVAILABLE[id] ?? 'Not on this account'}</span>
+                    )
                   )}
                 </label>
               );

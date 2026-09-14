@@ -12,7 +12,7 @@ const part = `monei-part ${theme.page.radius} border ${theme.page.border} bg-whi
 const label = `block text-xs font-medium ${theme.page.muted}`;
 ---
 
-<section class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+<section id="checkout-panel" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
   <div id="card-fields" hidden={redirect}>
     <h2 class={`text-sm ${theme.page.heading}`}>Card details</h2>
     {
@@ -51,7 +51,7 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
       </div>
     )
   }
-  <div class="mt-5">
+  <div class="mt-5" id="shipping-section">
     <h3 class={`${label} flex items-center gap-2`}>
       Shipping
       <span class="spinner" id="shipping-spinner" aria-hidden="true"></span>

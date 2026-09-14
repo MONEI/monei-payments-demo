@@ -132,6 +132,20 @@ const renderBizumBand = () => {
   }
 };
 
+/**
+ * The rate picker prices whatever the pay button submits — the card, Bizum or the
+ * hosted page. The wallets quote shipping inside their own sheet, so with only
+ * those left the panel holds nothing and would render as an empty box.
+ */
+const syncCheckoutPanel = () => {
+  const visible = (id) => Boolean(el(id) && !el(id).hidden);
+  const needed = visible('card-fields') || visible('bizum-row') || isRedirectFlow();
+  for (const id of ['shipping-section', 'checkout-panel']) {
+    const node = el(id);
+    if (node) node.hidden = !needed;
+  }
+};
+
 const renderTotals = () => {
   const selected = shippingBox?.querySelector('input[name="shipping"]:checked');
   if (shippingOut) shippingOut.textContent = selected ? money(Number(selected.dataset.amount)) : '—';
@@ -205,6 +219,28 @@ const loadRates = async () => {
   renderTotals();
 };
 
+/**
+ * A cart edit changes the goods total without a re-render, so the amount every
+ * mounted component quotes has to follow it. Rates are re-fetched because a signed
+ * quote only covers the cart it was issued for.
+ */
+export const setGoods = (goods, cart) => {
+  if (!config) return;
+  const wasEmpty = !hasSomethingToBuy();
+  config.goods = goods;
+  config.cart = cart;
+
+  // Emptying the cart unmounts every component, and the SDK rejects an amount of
+  // zero, so crossing that line either way has to rebuild rather than reprice.
+  if (wasEmpty !== !hasSomethingToBuy()) {
+    remount();
+    return;
+  }
+
+  renderTotals();
+  loadRates();
+};
+
 const cardProps = () => ({
   accountId: config.accountId,
   amount: currentTotal(),
@@ -231,12 +267,17 @@ const mountCard = () => {
     return;
   }
 
+  const fields = el('card-fields');
   if (!hasSomethingToBuy() || !methodAllowed('card')) {
-    const fields = el('card-fields');
     if (fields) fields.hidden = true;
     if (payButton) payButton.hidden = true;
+    syncCheckoutPanel();
     return;
   }
+
+  // A cart edit remounts without a fresh render, so a hide from last time stands.
+  if (fields) fields.hidden = false;
+  if (payButton) payButton.hidden = false;
 
   if (config.cardUi === 'parts') {
     card = monei.CardGroup({
@@ -292,7 +333,7 @@ const unlockCart = () => {
  * caller — so a method the server could not see may still work here, and vice
  * versa. The component's own `onLoad` is the only authority.
  */
-const methodAllowed = (id) => config.methods.length === 0 || config.methods.includes(id);
+const methodAllowed = (id) => config.methods === null || config.methods.includes(id);
 
 // `validateComponentProps` tests `accountId && amount && currency` for truthiness, so
 // every component throws on a zero amount rather than rendering a disabled state.
@@ -400,6 +441,7 @@ const mountPaymentRequest = () => {
     container.hidden = true;
     return;
   }
+  container.hidden = false;
 
   const reason = el('express-reason');
 
@@ -511,6 +553,7 @@ const mountBizum = () => {
         const node = el(id);
         if (node) node.hidden = !isSupported;
       }
+      syncCheckoutPanel();
       renderBizumBand();
     }
   });
@@ -681,11 +724,7 @@ const submitPayment = async (body) => {
   window.location.assign(`/receipt?id=${encodeURIComponent(data.id)}`);
 };
 
-const start = async () => {
-  const button = el('pay');
-  if (!button || button.dataset.wired === 'true') return;
-  button.dataset.wired = 'true';
-
+const remount = async () => {
   // The previous page's iframes would otherwise linger, and a stale CardGroup
   // keeps its controller frame attached to a document that no longer exists.
   for (const component of [card, paymentRequest, payPal, bizum]) {
@@ -700,14 +739,23 @@ const start = async () => {
   payPal = null;
   bizum = null;
 
-  readPage();
   mountCard();
   mountPaymentRequest();
   mountBizum();
   // PayPal express stays unmounted while `order.patch` cannot be made to work: the
   // buyer reaches the popup but can never complete the payment.
   // mountPayPal();
+  syncCheckoutPanel();
   loadRates();
+};
+
+const start = async () => {
+  const button = el('pay');
+  if (!button || button.dataset.wired === 'true') return;
+  button.dataset.wired = 'true';
+
+  readPage();
+  await remount();
 
   payButton.addEventListener('click', pay);
   for (const name of ['country', 'zip']) {

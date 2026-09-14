@@ -399,6 +399,12 @@ const walletRates = async (address) => {
  * shipping callback signed.
  */
 const walletSubmit = async (result) => {
+  emit('wallet.onSubmit', {
+    method: result?.paymentMethod,
+    token: result?.token ? `${result.token.slice(0, 10)}…` : null,
+    error: result?.error ?? null
+  });
+
   if (result.error || !result.token) {
     lockCart(false);
     return setExpressError(result.error ?? 'The wallet did not return a payment method.');
@@ -452,6 +458,16 @@ const mountPaymentRequest = () => {
 
   const reason = el('express-reason');
 
+  emit('PaymentRequest.mount', {
+    amount: config.goods,
+    currency: config.currency,
+    requestShipping: true,
+    requestBilling: true,
+    shippingOptions: config.initialShippingOptions.length,
+    host: location.hostname,
+    https: location.protocol === 'https:'
+  });
+
   paymentRequest = window.monei.PaymentRequest({
     accountId: config.accountId,
     amount: config.goods,
@@ -474,9 +490,23 @@ const mountPaymentRequest = () => {
     },
 
     onBeforeOpen: () => {
-      emit('PaymentRequest.onBeforeOpen', {});
+      emit('PaymentRequest.onBeforeOpen', {returning: true});
       setExpressError(null);
       lockCart(true);
+      // The frame's permission policy decides whether Apple Pay may open at all, and
+      // a refusal is silent, so it is recorded at the moment of the attempt.
+      const frame = container.querySelector('iframe');
+      emit('PaymentRequest.frame', {
+        allow: frame?.getAttribute('allow') ?? '(absent)',
+        sandbox: frame?.getAttribute('sandbox') ?? '(none)',
+        applePay: typeof window.ApplePaySession,
+        canMakePayments: window.ApplePaySession?.canMakePayments?.() ?? null
+      });
+      return true;
+    },
+
+    onBeforeSubmit: (result) => {
+      emit('PaymentRequest.onBeforeSubmit', {method: result?.paymentMethod});
       return true;
     },
 

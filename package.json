@@ -48,7 +48,6 @@
     "dev:https": "astro dev --https",
     "build": "astro build",
     "preview": "astro preview",
-    "tunnel": "cloudflared tunnel --url https://localhost:4321 --no-tls-verify",
     "test": "vitest run",
     "format": "prettier --write ."
   },

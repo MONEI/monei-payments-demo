@@ -216,6 +216,14 @@ body[data-numerals] .tabular-nums {
 
 /* The rail is wider than a phone, so on one it covers the page instead. */
 @media (max-width: 48rem) {
+  /* An open panel covers the page, so scrolling should move the panel rather than
+     the shop behind it. Both elements, because `overflow` on the body alone leaves
+     the document itself scrollable. */
+  html:has(#rail[data-open='true'], #code-rail[data-open='true']),
+  html:has(#rail[data-open='true'], #code-rail[data-open='true']) body {
+    overflow: hidden;
+  }
+
   #code-rail[data-open='true'] .code-body,
   .code-body > * {
     width: 100vw;

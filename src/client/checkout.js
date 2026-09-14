@@ -437,6 +437,26 @@ const walletSubmit = async (result) => {
   });
 };
 
+/**
+ * Apple refuses a merchant session silently — the sheet simply never opens — so its
+ * own checks are logged to the events panel, which is the only console a phone has.
+ */
+const reportApplePay = () => {
+  const s = window.ApplePaySession;
+  if (!s) return emit('ApplePay', {available: false, reason: 'no ApplePaySession'});
+
+  emit('ApplePay', {
+    canMakePayments: s.canMakePayments?.(),
+    v3: s.supportsVersion?.(3),
+    host: location.hostname
+  });
+
+  // The domain check: rejects when this host is not registered for the merchant.
+  s.canMakePaymentsWithActiveCard?.('merchant.com.monei')
+    .then((ok) => emit('ApplePay.activeCard', {ok}))
+    .catch((error) => emit('ApplePay.activeCard', {error: error?.message ?? String(error)}));
+};
+
 const mountPaymentRequest = () => {
   const container = el('payment-request');
   if (!container) return;
@@ -486,6 +506,7 @@ const mountPaymentRequest = () => {
 
     onLoad: (isSupported) => {
       emit('PaymentRequest.onLoad', {isSupported});
+      reportApplePay();
       setMethodSupported('wallet', isSupported);
       if (isSupported) return;
 

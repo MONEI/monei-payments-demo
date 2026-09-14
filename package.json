@@ -44,6 +44,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "host": "astro dev --host",
     "dev:https": "astro dev --https",
     "build": "astro build",
     "preview": "astro preview",

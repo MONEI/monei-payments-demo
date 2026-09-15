@@ -761,16 +761,29 @@ const submitPayment = async (body) => {
     return setError(`${error.message}. Your card was not charged — you can try again.`);
   }
 
-  const next = data.nextAction;
+  const receipt = `/receipt?id=${encodeURIComponent(data.id)}`;
+  emit('monei.confirmPayment()', {paymentId: data.id});
+
+  let result;
+  try {
+    result = await window.monei.confirmPayment({paymentId: data.id, paymentToken: body.paymentToken});
+    emit('← confirmPayment', {status: result?.status, statusCode: result?.statusCode});
+  } catch (error) {
+    // The payment exists either way, so its own status decides the outcome.
+    emit('confirmPayment threw', {message: error?.message ?? String(error)});
+    window.location.assign(receipt);
+    return;
+  }
+
+  // A popup blocker leaves the challenge nowhere to open, and the redirect is the
+  // only way through it.
+  const next = result?.nextAction;
   if (next?.mustRedirect && next.redirectUrl) {
     window.location.assign(next.redirectUrl);
     return;
   }
-  if (next?.type === 'CONFIRM') {
-    setBusy(false);
-    return setError('This payment needs extra confirmation that the demo does not handle yet.');
-  }
-  window.location.assign(`/receipt?id=${encodeURIComponent(data.id)}`);
+
+  window.location.assign(receipt);
 };
 
 const remount = async () => {

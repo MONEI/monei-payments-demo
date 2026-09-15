@@ -59,9 +59,11 @@ monei.PaymentRequest({
   onShippingOptionChange: async (option) => ({amount: goods + option.amount}),
 
   onSubmit: async ({token, shippingDetails}) => {
-    const payment = await createPayment(token, shippingDetails);
-    const next = payment.nextAction;
-    if (next?.mustRedirect) location.assign(next.redirectUrl);
+    // The server prices the order and opens the payment; confirming here keeps a
+    // 3D Secure challenge in a popup instead of navigating away.
+    const {id} = await createPayment(shippingDetails);
+    const result = await monei.confirmPayment({paymentId: id, paymentToken: token});
+    if (result.nextAction?.mustRedirect) location.assign(result.nextAction.redirectUrl);
   },
 
   onLoad: (isSupported) => {
@@ -80,7 +82,7 @@ const monei = new Monei(process.env.MONEI_API_KEY);
 const ZONES = ${JSON.stringify(ZONE_TABLE(), null, 2).replace(/\n/g, '\n')};
 
 app.post('/api/payment', async (req, res) => {
-  const {paymentToken, quote, sig, optionId} = req.body;
+  const {quote, sig, optionId} = req.body;
 
   // Never trust an amount from the client. The signed quote carries the
   // cart and zone the server decided; the amount is recomputed from those.
@@ -90,14 +92,13 @@ app.post('/api/payment', async (req, res) => {
 
   const amount = cartTotal(cart) + rate.amount;
 
-  // paymentToken confirms in the same call. completeUrl is required even
-  // outside the redirect flow: a 3D Secure challenge returns there.
+  // No paymentToken: the browser confirms this payment. completeUrl is still
+  // reached when a 3D Secure popup is blocked and the challenge redirects.
   const payment = await monei.payments.create({
     amount,
     currency: '${currency}',
     orderId,
     sessionId: seed,
-    paymentToken,
     completeUrl: \`\${origin}/receipt\`,
     cancelUrl: \`\${origin}/cancelled\`,
     callbackUrl: \`\${origin}/api/callback\`

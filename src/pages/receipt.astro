@@ -177,4 +177,6 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
     </p>
   </main>
   {state === 'pending' && <script is:inline>setTimeout(() => location.reload(), 4000);</script>}
+  {/* The address is kept for a retry, and a paid order has nothing to retry. */}
+  {state === 'succeeded' && <script is:inline set:html="try { sessionStorage.removeItem('monei:address') } catch {}" />}
 </StoreLayout>

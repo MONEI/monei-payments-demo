@@ -14,8 +14,8 @@ export const THEME_DATA = {
     cardUi: 'input',
     page: {
       body: 'bg-[#fbfaff] text-[#241c33]',
-      accent: '#00C1B1',
-      accentHover: '#009E91',
+      accent: '#8961A5',
+      accentHover: '#74508D',
       muted: 'text-[#6b6480]',
       surface: 'bg-white',
       border: 'border-[#e8e3f5]',
@@ -59,8 +59,9 @@ export const THEME_DATA = {
     cardUi: 'parts',
     page: {
       body: 'bg-[#f7f6f3] text-[#14110f]',
-      accent: '#65427E',
-      accentHover: '#533667',
+      accent: '#14110f',
+      // Near-black cannot darken on hover, so it lifts instead.
+      accentHover: '#3a3330',
       muted: 'text-[#6f6a63]',
       surface: 'bg-white',
       border: 'border-[#ddd8d0]',

@@ -8,9 +8,9 @@ const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
 
 /**
- * The same `payments.create` as the Components flow, minus the `paymentToken`.
- * Without one there is nothing to confirm, so MONEI answers with a `nextAction`
- * carrying the hosted page's URL instead of a completed payment.
+ * Prices the order the same way the Components flow does, then hands back the
+ * hosted page's URL from `nextAction` rather than leaving the payment for the
+ * browser to confirm.
  */
 export const POST = async ({request}) => {
   if (!monei) return json({error: 'MONEI_API_KEY is not configured'}, 500);

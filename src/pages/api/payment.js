@@ -8,10 +8,9 @@ const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
 
 /**
- * Turns a payment token into a payment. The Component mounts against the
- * account and the amount, the shopper authorises, and it returns the token;
- * the card itself never reaches this server. The settled status arrives
- * separately at /api/callback, which fires even if the tab closes mid-3DS.
+ * Prices the order and opens a payment for it. The browser confirms that payment
+ * with the token it holds, so no card data reaches this server. The settled status
+ * arrives separately at /api/callback, which fires even if the tab closes mid-3DS.
  */
 export const POST = async ({request}) => {
   if (!monei) return json({error: 'MONEI_API_KEY is not configured'}, 500);
@@ -23,8 +22,7 @@ export const POST = async ({request}) => {
     return json({error: 'Invalid JSON'}, 400);
   }
 
-  const {paymentToken, quote, sig, optionId, walletAmount, customer, address, search} = body ?? {};
-  if (!paymentToken) return json({error: 'Missing paymentToken'}, 400);
+  const {quote, sig, optionId, walletAmount, customer, address, search} = body ?? {};
 
   // Reparsed rather than forwarded: `search` is the client's query string, and it
   // ends up in a provider-facing redirect URL, so only whitelisted params may pass.
@@ -51,7 +49,6 @@ export const POST = async ({request}) => {
       monei,
       amount: resolved.amount,
       currency: CURRENCY,
-      paymentToken,
       sessionId: resolved.seed,
       customer,
       billingDetails: details,

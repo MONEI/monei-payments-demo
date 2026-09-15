@@ -79,6 +79,41 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
 <script define:vars={{samples, PEOPLE: people()}}>
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
+  const FIELDS = ['name', 'email', 'line1', 'country', 'zip', 'city'];
+  const STORE_KEY = 'monei:address';
+
+  // A retry after a declined payment is a full page load, so the typed address
+  // survives only if it is written down. `sessionStorage` keeps it out of the URL,
+  // which is meant to be shared, and out of any other tab.
+  const remember = (form) => {
+    const entries = FIELDS.map((name) => [name, form.querySelector(`[name="${name}"]`)?.value ?? '']);
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+      // Private browsing and blocked site data both throw; the form still works.
+    }
+  };
+
+  const restore = (form) => {
+    let saved;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? 'null');
+    } catch {
+      return false;
+    }
+    if (!saved) return false;
+
+    let filled = false;
+    for (const name of FIELDS) {
+      const input = form.querySelector(`[name="${name}"]`);
+      if (input && saved[name]) {
+        input.value = saved[name];
+        filled = true;
+      }
+    }
+    return filled;
+  };
+
   // Client-side navigation replaces the body, so these elements and their
   // listeners belong to one render and have to be found again on the next.
   const wire = () => {
@@ -171,6 +206,19 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     zip.addEventListener('input', () => {
       if (!zipError.classList.contains('hidden')) validate();
     });
+
+    form.addEventListener('input', () => remember(form));
+    form.addEventListener('change', () => remember(form));
+
+    if (restore(form)) {
+      // The restored country carries its own postcode pattern, and the shipping
+      // lookup has not seen this address yet.
+      sync();
+      country.dispatchEvent(new Event('change', {bubbles: true}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+      return;
+    }
+
     sync();
   };
 

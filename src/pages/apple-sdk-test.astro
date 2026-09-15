@@ -1,0 +1,179 @@
+---
+/**
+ * The same SDK component mounted two ways against one account: with a real
+ * `paymentId`, and with the `accountId` + `amount` + `sessionId` shape the store
+ * uses. A sheet from one and not the other isolates the fault to a constructor
+ * path rather than to the configuration both share.
+ */
+import {monei, accountId, fetchAccountMethods} from '../lib/monei.js';
+
+export const prerender = false;
+
+let paymentId = null;
+let createError = null;
+
+if (monei) {
+  try {
+    const payment = await monei.payments.create({
+      amount: 100,
+      currency: 'EUR',
+      orderId: `SDKTEST${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+      description: 'Apple Pay SDK path test',
+      completeUrl: `${Astro.url.origin}/apple-sdk-test`,
+      cancelUrl: `${Astro.url.origin}/apple-sdk-test`,
+      callbackUrl: `${Astro.url.origin}/api/callback`
+    });
+    paymentId = payment.id;
+  } catch (error) {
+    createError = error.message ?? String(error);
+  }
+}
+
+const account = await fetchAccountMethods();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apple Pay — SDK constructor paths</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0.75rem;
+        font:
+          13px/1.5 system-ui,
+          sans-serif;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 1rem 0 0.35rem;
+      }
+      .mount {
+        min-height: 50px;
+        border: 1px dashed #ccc;
+        border-radius: 8px;
+        padding: 0.35rem;
+      }
+      #log {
+        margin-top: 0.75rem;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+      }
+      #log div {
+        padding: 0.2rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      .bad {
+        color: #b3261e;
+      }
+      .ok {
+        color: #067d3d;
+      }
+    </style>
+    <script is:inline src="https://js.monei.com/v3/monei.js"></script>
+  </head>
+  <body>
+    <h1 style="font-size:15px;margin:0">PaymentRequest: two constructor paths</h1>
+
+    <h2>A — paymentId (the docs shape)</h2>
+    <div class="mount" id="mount-payment-id"></div>
+
+    <h2>B — accountId + amount + sessionId (the store shape)</h2>
+    <div class="mount" id="mount-account-id"></div>
+
+    <h2>C — as B, plus shipping and billing</h2>
+    <div class="mount" id="mount-account-shipping"></div>
+
+    <div id="log"></div>
+
+    <script
+      is:inline
+      define:vars={{
+        paymentId,
+        createError,
+        accountId,
+        livemode: account?.livemode ?? null,
+        methods: account?.methods ?? null
+      }}
+    >
+      const LOG = document.getElementById('log');
+      const log = (label, detail, tone) => {
+        const row = document.createElement('div');
+        if (tone) row.className = tone;
+        row.textContent = detail === undefined ? label : `${label} — ${JSON.stringify(detail)}`;
+        LOG.prepend(row);
+      };
+
+      const S = window.ApplePaySession;
+      log('context', {
+        host: location.hostname,
+        applePay: typeof S,
+        canMakePayments: S?.canMakePayments?.() ?? null,
+        versions: S ? [1, 3, 4, 6, 10, 14].filter((v) => S.supportsVersion(v)).join(',') : null
+      });
+      log('account', {accountId, livemode, methods, paymentId, createError}, createError ? 'bad' : undefined);
+
+      const callbacks = (name) => ({
+        onBeforeOpen: () => {
+          log(`${name}: onBeforeOpen`);
+          return true;
+        },
+        onSubmit: (result) => {
+          log(`${name}: onSubmit`, {method: result?.paymentMethod, error: result?.error ?? null}, 'ok');
+        },
+        onError: (error) => {
+          log(`${name}: onError`, {message: error?.message ?? String(error)}, 'bad');
+        },
+        onLoad: (isSupported) => {
+          log(`${name}: onLoad`, {isSupported}, isSupported ? 'ok' : 'bad');
+        }
+      });
+
+      const mount = (name, props, selector) => {
+        try {
+          const component = window.monei.PaymentRequest({...props, ...callbacks(name)});
+          component.render(selector);
+          log(`${name}: rendered`);
+        } catch (error) {
+          log(`${name}: construction THREW`, {message: error?.message ?? String(error)}, 'bad');
+        }
+      };
+
+      if (paymentId) {
+        mount('A paymentId', {paymentId, style: {height: 47}}, '#mount-payment-id');
+      } else {
+        log('A skipped — no payment was created', undefined, 'bad');
+      }
+
+      const session = `sdktest${Math.random().toString(36).slice(2, 8)}`;
+
+      mount(
+        'B accountId',
+        {accountId, amount: 100, currency: 'EUR', sessionId: session, style: {height: 47}},
+        '#mount-account-id'
+      );
+
+      mount(
+        'C accountId+shipping',
+        {
+          accountId,
+          amount: 100,
+          currency: 'EUR',
+          sessionId: session,
+          requestShipping: true,
+          requestBilling: true,
+          shippingOptions: [{id: 'standard', label: 'Standard', detail: '3–5 days', amount: 499}],
+          onShippingAddressChange: async () => ({
+            shippingOptions: [{id: 'standard', label: 'Standard', detail: '3–5 days', amount: 499}],
+            amount: 599
+          }),
+          onShippingOptionChange: async () => ({amount: 599}),
+          style: {height: 47}
+        },
+        '#mount-account-shipping'
+      );
+    </script>
+  </body>
+</html>

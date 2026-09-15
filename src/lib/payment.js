@@ -26,15 +26,14 @@ export const resolveAmount = ({quote, sig, optionId}) => {
 };
 
 /**
- * Passing `paymentToken` confirms the payment in the same call, so there is no
- * separate confirm step. `completeUrl` is needed even outside the redirect flow —
- * a 3D Secure challenge returns there.
+ * Creates the payment unconfirmed. `monei.confirmPayment` confirms it in the
+ * browser, where a 3D Secure challenge opens in a popup over the checkout rather
+ * than as a redirect. `completeUrl` is still reached when that popup is blocked.
  */
 export const createPayment = async ({
   monei,
   amount,
   currency,
-  paymentToken,
   customer,
   billingDetails,
   shippingDetails,
@@ -53,7 +52,6 @@ export const createPayment = async ({
     currency,
     orderId,
     sessionId,
-    paymentToken,
     description: `${STORE.name} — order ${orderId}`,
     customer,
     billingDetails,

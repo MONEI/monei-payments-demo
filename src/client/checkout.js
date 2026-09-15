@@ -113,17 +113,42 @@ const BIZUM_MAX = 500;
 const BIZUM_TEST_PHONE = '+34500000000';
 
 /**
- * The rate picker prices whatever the pay button submits — the card, Bizum or the
- * hosted page. The wallets quote shipping inside their own sheet, so with only
- * those left the panel holds nothing and would render as an empty box.
+ * Everything in this panel is charged against the quote the rate picker issues, so
+ * the picker belongs to the panel rather than to the card. Only the wallets price
+ * shipping elsewhere — inside their own sheet — which is why an empty panel is
+ * possible at all.
  */
 const syncCheckoutPanel = () => {
   const visible = (id) => Boolean(el(id) && !el(id).hidden);
-  const needed = visible('card-fields') || visible('bizum-row') || visible('paypal-row') || isRedirectFlow();
-  for (const id of ['shipping-section', 'checkout-panel']) {
-    const node = el(id);
-    if (node) node.hidden = !needed;
+
+  const bizum = visible('bizum-row');
+  const payPal = visible('paypal-row');
+  const payButtonRow = visible('card-fields') || isRedirectFlow();
+
+  // In panel order, each method paired with the divider that precedes it. A divider
+  // belongs between two shown methods, so it follows the count rather than its
+  // neighbours: any method can be switched off, and asking only "is something on the
+  // other side" leaves two rules stacked where one method was removed from between.
+  const blocks = [
+    {shown: bizum, divider: null},
+    {shown: payButtonRow, divider: 'card-divider'},
+    {shown: payPal, divider: 'paypal-divider'}
+  ];
+
+  let seen = 0;
+  for (const block of blocks) {
+    const node = block.divider && el(block.divider);
+    if (node) node.hidden = !(block.shown && seen > 0);
+    if (block.shown) seen++;
   }
+
+  // Bizum and PayPal are charged against this same quote, so the picker outlives the
+  // card form and goes only when nothing here is left to price.
+  const shipping = el('shipping-section');
+  if (shipping) shipping.hidden = seen === 0;
+
+  const panel = el('checkout-panel');
+  if (panel) panel.hidden = seen === 0;
 };
 
 const renderTotals = () => {

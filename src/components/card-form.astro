@@ -1,5 +1,5 @@
 ---
-const {theme, flow} = Astro.props;
+const {theme, flow, cardUi} = Astro.props;
 
 const redirect = flow === 'redirect';
 
@@ -18,21 +18,41 @@ const part = `monei-part ${theme.page.radius} border ${theme.page.border} bg-whi
 const label = `block text-xs font-medium ${theme.page.muted}`;
 ---
 
-<section id="checkout-panel" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-4 sm:p-6`}>
+<section
+  id="checkout-panel"
+  class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-4 sm:p-6`}
+>
+  {
+    /* Every method below is charged against the quote this picks, so it leads the
+      panel rather than sitting with any one of them. */
+  }
+  <div id="shipping-section">
+    <h3 class={`${label} flex items-center gap-2`}>
+      Shipping
+      <span class="spinner" id="shipping-spinner" aria-hidden="true"></span>
+    </h3>
+    <div class="mt-2 mb-5 space-y-1.5" id="shipping-options">
+      <p class={`text-xs ${theme.page.muted}`}>Enter an address to see rates.</p>
+    </div>
+  </div>
   {/* Ahead of the card, so the one-tap method is offered before the form. */}
   <div id="bizum-row" hidden>
     <div id="bizum"></div>
     <p class={`mt-2 text-xs ${theme.page.muted}`}>In this demo Bizum only accepts payments under €5.</p>
-    <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`}>
-      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
-      or
-      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
-    </div>
+  </div>
+  {
+    /* Outside both rows: either side can be switched off, and a rule inside one of
+      them would outlive the block it was separating. */
+  }
+  <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`} id="card-divider" hidden>
+    <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
+    or
+    <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
   </div>
   <div id="card-fields" hidden={redirect}>
     <h2 class={`text-sm ${theme.page.heading}`}>Card details</h2>
     {
-      theme.cardUi === 'parts' ? (
+      cardUi === 'parts' ? (
         <div class="mt-4 space-y-3">
           <div>
             <span class={label}>Card number</span>
@@ -67,15 +87,6 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
       </div>
     )
   }
-  <div class="mt-5" id="shipping-section">
-    <h3 class={`${label} flex items-center gap-2`}>
-      Shipping
-      <span class="spinner" id="shipping-spinner" aria-hidden="true"></span>
-    </h3>
-    <div class="mt-2 space-y-1.5" id="shipping-options">
-      <p class={`text-xs ${theme.page.muted}`}>Enter an address to see rates.</p>
-    </div>
-  </div>
   <p class="mt-4 text-xs text-rose-600" id="pay-error" hidden></p>
   <button
     type="button"
@@ -85,12 +96,12 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
   >
     {redirect ? 'Continue to payment' : 'Pay'}
   </button>
+  <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`} id="paypal-divider" hidden>
+    <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
+    or
+    <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
+  </div>
   <div id="paypal-row" hidden>
-    <div class={`my-4 flex items-center gap-3 text-xs ${theme.page.muted}`}>
-      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
-      or
-      <span class={`h-px flex-1 border-t ${theme.page.border}`}></span>
-    </div>
     <div id="paypal"></div>
   </div>
 </section>

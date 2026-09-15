@@ -137,6 +137,7 @@ body[data-numerals] .tabular-nums {
 /* The label collapses with the same timing as the panel it labels, so the toggle
    changes width over the animation instead of snapping on the first frame. */
 .toggle-label {
+  display: flex;
   overflow: hidden;
   white-space: nowrap;
   transition:
@@ -229,8 +230,7 @@ body[data-numerals] .tabular-nums {
     width: 100vw;
   }
 
-  /* A phone has no room for a label beside the chevron, so it reads vertically
-     underneath it instead. */
+  /* A phone has no room for two icons side by side, so they stack. */
   #rail-toggle,
   #code-toggle {
     flex-direction: column;
@@ -242,9 +242,9 @@ body[data-numerals] .tabular-nums {
     padding-right: 0.125rem;
   }
 
+  /* Stacked, so the icon collapses vertically rather than across. */
   .toggle-label {
-    writing-mode: vertical-rl;
-    max-height: 5rem;
+    max-height: 1.5rem;
     max-width: none;
     transition:
       max-height 220ms cubic-bezier(0.32, 0.72, 0, 1),
@@ -314,6 +314,32 @@ body[data-numerals] .tabular-nums {
   transform: rotate(180deg);
 }
 
+/* Safari draws a stacked pair of chevrons on a native select and offers no way to
+   style them, so the control is stripped back and the page's own single chevron is
+   painted in their place. It stays a real `select`, keeping the platform picker and
+   its keyboard behaviour. */
+.select-field {
+  appearance: none;
+  /* Clears the arrow, which the text would otherwise run under. */
+  padding-right: 2.25rem;
+}
+
+/* Masked rather than drawn as a background image, so the chevron takes the theme's
+   own text colour instead of a value fixed here. */
+.select-field + .select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translateY(-50%);
+  background: currentColor;
+  opacity: 0.55;
+  pointer-events: none;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
 /* Card part containers. The SDK toggles these on the merchant's own mount box. */
 .monei-part {
   transition: border-color 120ms ease;
@@ -339,6 +365,18 @@ body[data-numerals] .tabular-nums {
 .is-locked {
   pointer-events: none;
   opacity: 0.5;
+}
+
+/* The express components set a stacking order inside their own frames, high enough
+   to cover an open panel. Giving each mount box a stacking context of its own keeps
+   that ordering local, so the frame competes with its neighbours rather than with
+   the panels above the page. */
+#paypal,
+#bizum,
+#payment-request {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
 }
 
 @media (prefers-reduced-motion: reduce) {

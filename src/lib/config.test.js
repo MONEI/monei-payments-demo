@@ -71,6 +71,23 @@ describe('parseConfig', () => {
   });
 
   /**
+   * Absent means the theme decides, so the setting has to stay absent until it is
+   * chosen — writing a default would pin one card component onto both themes.
+   */
+  it('leaves the card component to the theme until it is set', () => {
+    expect(at('?seed=abc123').cardUi).toBeNull();
+    expect(toQuery(at('?seed=abc123'))).not.toContain('cardUi');
+
+    const parts = at('?seed=abc123&cardUi=parts');
+    expect(parts.cardUi).toBe('parts');
+    expect(parseConfig(`https://x/?${toQuery(parts)}`).cardUi).toBe('parts');
+  });
+
+  it('ignores an unknown card component rather than rendering nothing', () => {
+    expect(at('?cardUi=nonsense').cardUi).toBeNull();
+  });
+
+  /**
    * `PaymentRequest` renders one button and picks Apple Pay or Google Pay from the
    * browser, with no prop to constrain it — so the two wallets cannot be selected
    * apart, and the individual ids are not accepted.

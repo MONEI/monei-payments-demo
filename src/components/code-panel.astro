@@ -54,7 +54,22 @@ const tab = `cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium`;
     >
       <path d="M15 18l-6-6 6-6"></path>
     </svg>
-    <span class="toggle-label text-xs font-medium tracking-wide">Code</span>
+    <span class="toggle-label">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="2.5" y="4" width="19" height="16" rx="2.5"></rect>
+        <path d="M7 10l2.5 2L7 14M12.5 15h4.5"></path>
+      </svg>
+    </span>
   </button>
   <div id="code-body" class={`code-body overflow-y-auto ${theme.page.surface} border-l ${theme.page.border}`}>
     <div class="px-4 py-4">
@@ -97,7 +112,11 @@ const tab = `cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium`;
         <ol class="space-y-1" id="events-list"></ol>
       </div>
       <p class={`mt-3 text-[11px] ${theme.page.muted}`}>
-        Illustrative — the running demo adds error handling and validation these extracts leave out.
+        Illustrative — the running demo adds error handling and validation these extracts leave out. See the <a
+          class="underline"
+          href="https://docs.monei.com/integrations/build-custom-checkout/"
+          rel="noopener">full integration guide</a
+        >.
       </p>
     </div>
   </div>

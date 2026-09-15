@@ -13,6 +13,9 @@ export const THEMES = ['aurora', 'monoline'];
 export const LAYOUTS = ['stacked', 'grid'];
 export const FLOWS = ['components', 'redirect'];
 export const TABS = ['client', 'server', 'events'];
+// `CardInput` is one field for the whole card; `CardGroup` is three the merchant
+// places itself.
+export const CARD_UIS = ['input', 'parts'];
 // One entry for both wallets: `PaymentRequest` renders a single button and picks
 // Apple Pay or Google Pay from the browser, with no prop to constrain the choice.
 export const METHODS = ['card', 'wallet', 'paypal', 'bizum'];
@@ -22,6 +25,7 @@ export const DEFAULTS = {
   seed: null, // generated when absent, then written back with replaceState
   layout: 'stacked',
   methods: null, // null means "every method the account has enabled"
+  cardUi: null, // null means "whichever the theme prefers"
   shipping: true, // requestShipping
   billing: true, // requestBilling — PaymentRequest only, never PayPal
   country: 'ES',
@@ -97,6 +101,7 @@ export const parseConfig = (url) => {
     layout: oneOf(q.get('layout'), LAYOUTS, DEFAULTS.layout),
     flow: oneOf(q.get('flow'), FLOWS, DEFAULTS.flow),
     methods: subset(q.get('methods'), METHODS),
+    cardUi: oneOf(q.get('cardUi'), CARD_UIS, DEFAULTS.cardUi),
     shipping: bool(q.get('shipping'), DEFAULTS.shipping),
     billing: bool(q.get('billing'), DEFAULTS.billing),
     panel: bool(q.get('panel'), DEFAULTS.panel),
@@ -120,6 +125,7 @@ export const toQuery = (config) => {
   if (config.flow !== DEFAULTS.flow) q.set('flow', config.flow);
   // An empty list still writes the param: `methods=` is "none", absent is "all".
   if (config.methods) q.set('methods', config.methods.join(','));
+  if (config.cardUi) q.set('cardUi', config.cardUi);
   if (config.shipping !== DEFAULTS.shipping) q.set('shipping', '0');
   if (config.billing !== DEFAULTS.billing) q.set('billing', '0');
   if (config.country && config.country !== DEFAULTS.country) q.set('country', config.country);

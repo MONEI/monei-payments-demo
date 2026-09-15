@@ -40,21 +40,24 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     </label>
     <label>
       <span class={label}>Country</span>
-      <select class={`mt-1 ${field}`} name="country" id="country" autocomplete="country">
-        {
-          countries.map((c) => (
-            <option
-              value={c.code}
-              selected={c.code === selected.code}
-              data-example={c.example}
-              data-inputmode={c.inputmode}
-              data-pattern={c.pattern}
-            >
-              {c.name}
-            </option>
-          ))
-        }
-      </select>
+      <span class="relative mt-1 block">
+        <select class={`select-field ${field}`} name="country" id="country" autocomplete="country">
+          {
+            countries.map((c) => (
+              <option
+                value={c.code}
+                selected={c.code === selected.code}
+                data-example={c.example}
+                data-inputmode={c.inputmode}
+                data-pattern={c.pattern}
+              >
+                {c.name}
+              </option>
+            ))
+          }
+        </select>
+        <span class="select-arrow" aria-hidden="true"></span>
+      </span>
     </label>
     <label>
       <span class={label}>Postcode</span>

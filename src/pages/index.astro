@@ -15,11 +15,12 @@ import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
 import {parseConfig, serializeCart, toQuery} from '../lib/config.js';
 import {initialShippingOptions, zipDecidesZone} from '../lib/shipping.js';
 import {countryList} from '../lib/countries.js';
-import {themeFor} from '../data/themes.js';
+import {cardUiFor, themeFor} from '../data/themes.js';
 import {fetchAccountMethods} from '../lib/monei.js';
 
 const config = parseConfig(Astro.url);
 const theme = themeFor(config.theme);
+const cardUi = cardUiFor(theme, config.cardUi);
 const lines = cartLines(config.cart);
 const total = cartTotal(config.cart);
 
@@ -40,7 +41,7 @@ const clientConfig = {
   // Null means every method the account allows; an empty list means none.
   methods: config.methods,
   flow: config.flow,
-  cardUi: theme.cardUi,
+  cardUi,
   cardStyle: theme.card.style,
   cardFonts: theme.card.fonts,
   walletRadius: theme.card.style.base.borderRadius,
@@ -54,7 +55,7 @@ const clientConfig = {
 ---
 
 <StoreLayout theme={theme}>
-  <Rail theme={theme} config={config} enabled={enabled} />
+  <Rail theme={theme} config={config} enabled={enabled} cardUi={cardUi} />
   <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
   <StoreHeader theme={theme} config={config} />
   <main id="cart-root" class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -66,7 +67,9 @@ const clientConfig = {
       )
     }
     <p class={`text-sm ${theme.page.muted}`}>
-      A working checkout built on MONEI Components. Nothing charges a real card.
+      A working checkout built on <a class="underline" href="https://docs.monei.com/monei-js/overview/" rel="noopener"
+        >MONEI Components</a
+      >. Nothing charges a real card.
     </p>
     {
       /* `minmax(0,…)` rather than the default `minmax(auto,…)`, which never shrinks a
@@ -106,7 +109,7 @@ const clientConfig = {
                       class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
                       data-cart-add={product.id}
                     >
-                      {inCart.has(product.id) ? 'Add another' : 'Add'}
+                      {inCart.has(product.id) ? 'Add another' : 'Add to cart'}
                     </button>
                     <span class="spinner" aria-hidden="true" />
                   </div>
@@ -118,7 +121,7 @@ const clientConfig = {
         <div class="order-3 space-y-6">
           <ExpressCheckout theme={theme} flow={config.flow} />
           <AddressForm theme={theme} country={config.country} />
-          <CardForm theme={theme} flow={config.flow} />
+          <CardForm theme={theme} flow={config.flow} cardUi={cardUi} />
         </div>
       </div>
       <aside class="order-2 space-y-4">

@@ -42,11 +42,11 @@ const renderCart = (lines) => {
   if (subtotal) subtotal.textContent = formatPrice(cartTotal(lines));
 };
 
-/** The shop's buttons read "Add" until the product is in the basket. */
+/** The shop's buttons read "Add to cart" until the product is in the basket. */
 const renderShopButtons = (lines) => {
   const inCart = new Set(lines.map((l) => l.productId));
   for (const button of document.querySelectorAll('[data-cart-add]')) {
-    button.textContent = inCart.has(button.dataset.cartAdd) ? 'Add another' : 'Add';
+    button.textContent = inCart.has(button.dataset.cartAdd) ? 'Add another' : 'Add to cart';
   }
 };
 

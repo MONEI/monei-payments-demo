@@ -91,3 +91,6 @@ export const THEME_DATA = {
 };
 
 export const themeFor = (name) => THEME_DATA[name] ?? THEME_DATA.aurora;
+
+/** Each theme prefers a card component; the setting overrides that preference. */
+export const cardUiFor = (theme, override) => override ?? theme.cardUi;

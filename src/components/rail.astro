@@ -1,12 +1,23 @@
 ---
-import {FLOWS, THEMES} from '../lib/config.js';
+import {CARD_UIS, FLOWS, THEMES} from '../lib/config.js';
 import {THEME_DATA} from '../data/themes.js';
 
-const {theme, config, enabled} = Astro.props;
+const {theme, config, enabled, cardUi} = Astro.props;
 
 const FLOW_LABELS = {components: 'Components', redirect: 'Hosted page'};
 
+const CARD_UI_LABELS = {input: 'One field', parts: 'Three fields'};
+
+const CARD_UI_HINTS = {
+  input: 'CardInput — number, expiry and CVC in a single component.',
+  parts: 'CardGroup — CardNumber, CardExpiry and CardCvc, placed separately.'
+};
+
 const redirect = config.flow === 'redirect';
+
+// The hosted page collects the card itself, and an unchecked Card row removes the
+// fields altogether; neither leaves anything for this setting to change.
+const cardOff = redirect || !(config.methods === null || config.methods.includes('card'));
 
 const METHOD_LABELS = {
   card: 'Card',
@@ -61,6 +72,39 @@ const hint = `text-[11px] ${theme.page.muted}`;
             ))
           }
         </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Card fields</h3>
+        <div class="mt-2 space-y-1.5">
+          {
+            CARD_UIS.map((name) => (
+              <label class={`${row} ${cardOff ? 'opacity-50' : 'cursor-pointer'}`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class={cardOff ? '' : 'cursor-pointer'}
+                    name="cardUi"
+                    value={name}
+                    checked={cardUi === name}
+                    disabled={cardOff}
+                    data-param="cardUi"
+                  />
+                  {CARD_UI_LABELS[name]}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+        <p class={`mt-2 ${hint}`}>
+          {
+            redirect
+              ? "MONEI's page collects the card."
+              : cardOff
+                ? 'Turn on Card below to lay out its fields.'
+                : CARD_UI_HINTS[cardUi]
+          }
+        </p>
       </section>
       <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
         <h3 class={`text-xs font-medium ${theme.page.muted}`}>Checkout flow</h3>
@@ -171,6 +215,22 @@ const hint = `text-[11px] ${theme.page.muted}`;
     >
       <path d="M9 18l6-6-6-6"></path>
     </svg>
-    <span class="toggle-label text-xs font-medium tracking-wide">Customize</span>
+    <span class="toggle-label">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"></path>
+        <circle cx="16" cy="6" r="2"></circle>
+        <circle cx="8" cy="12" r="2"></circle>
+        <circle cx="16" cy="18" r="2"></circle>
+      </svg>
+    </span>
   </button>
 </aside>

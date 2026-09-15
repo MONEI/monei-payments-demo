@@ -1,0 +1,217 @@
+---
+/**
+ * Apple Pay driven directly, with no MONEI components in the way, across every
+ * variant that differs from how the SDK opens it. The sheet opening in one and not
+ * another isolates the fault; the store page failing while all of these pass puts it
+ * inside the SDK.
+ */
+export const prerender = false;
+
+const framed = Astro.url.searchParams.has('framed');
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apple Pay — direct test</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0.75rem;
+        font:
+          13px/1.5 system-ui,
+          sans-serif;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 0.5rem;
+      }
+      button.run {
+        display: block;
+        width: 100%;
+        margin: 0.35rem 0;
+        padding: 0.7rem;
+        font: inherit;
+        border: 1px solid #999;
+        border-radius: 8px;
+        background: #fff;
+      }
+      iframe {
+        width: 100%;
+        height: 210px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin: 0.35rem 0;
+      }
+      #log {
+        margin-top: 0.75rem;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+      }
+      #log div {
+        padding: 0.2rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      .ok {
+        color: #067d3d;
+      }
+      .bad {
+        color: #b3261e;
+      }
+    </style>
+    <script src="https://applepay.cdn-apple.com/jsapi/v1/apple-pay-sdk.js" crossorigin async></script>
+  </head>
+  <body>
+    <h1>{framed ? 'Inside a frame' : 'Apple Pay, no SDK'}</h1>
+    <div id="buttons"></div>
+    {!framed && <div id="frames" />}
+    <div id="log"></div>
+
+    <script is:inline define:vars={{framed}}>
+      const LOG = document.getElementById('log');
+      const log = (label, detail, tone) => {
+        const row = document.createElement('div');
+        if (tone) row.className = tone;
+        const where = framed ? '[frame] ' : '';
+        row.textContent = where + (detail === undefined ? label : `${label} — ${JSON.stringify(detail)}`);
+        LOG.prepend(row);
+        // A framed page has its own log; mirror it up so everything reads in one place.
+        if (framed) parent.postMessage({appleTest: row.textContent}, '*');
+      };
+
+      window.addEventListener('message', (event) => {
+        if (event.data?.appleTest) {
+          const row = document.createElement('div');
+          row.textContent = event.data.appleTest;
+          LOG.prepend(row);
+        }
+      });
+
+      const S = window.ApplePaySession;
+
+      log('context', {
+        framed,
+        host: location.hostname,
+        https: location.protocol === 'https:',
+        session: typeof S,
+        versions: S ? [1, 3, 4, 6, 10, 14].filter((v) => S.supportsVersion(v)).join(',') : null,
+        canMakePayments: S?.canMakePayments?.() ?? null
+      });
+
+      if (S) {
+        S.canMakePaymentsWithActiveCard?.('merchant.com.monei')
+          .then((ok) => log('activeCard', {ok}, ok ? 'ok' : 'bad'))
+          .catch((e) => log('activeCard threw', {error: String(e?.message ?? e)}, 'bad'));
+      }
+
+      /**
+       * One attempt at opening the sheet. `delay` reproduces the SDK's `await` before
+       * `begin()`; `networks` and `shipping` reproduce the props we pass it.
+       */
+      const attempt = async (name, {delay = false, shipping = false, billing = false, networks} = {}) => {
+        log(`--- ${name} ---`);
+        if (!S) return log('no ApplePaySession', undefined, 'bad');
+
+        try {
+          if (delay) {
+            await Promise.resolve(true);
+            log('awaited before begin(), as the SDK does');
+          }
+
+          const request = {
+            countryCode: 'ES',
+            currencyCode: 'EUR',
+            merchantCapabilities: ['supports3DS'],
+            supportedNetworks: networks ?? ['visa', 'masterCard'],
+            total: {label: 'Test', type: shipping ? 'pending' : 'final', amount: '1.00'}
+          };
+          if (billing) request.requiredBillingContactFields = ['postalAddress', 'name', 'email', 'phone'];
+          if (shipping) {
+            request.requiredShippingContactFields = ['postalAddress', 'name', 'email', 'phone'];
+            request.shippingMethods = [{label: 'Standard', detail: '3–5 days', amount: '4.99', identifier: 'standard'}];
+          }
+
+          const version = S.supportsVersion(14) ? 14 : 3;
+          const session = new S(version, request);
+          log('constructed', {version, shipping, billing, networks: request.supportedNetworks.join('/')});
+
+          session.onvalidatemerchant = async (event) => {
+            log('onvalidatemerchant fired');
+            try {
+              const response = await fetch('/api/apple-session', {
+                method: 'POST',
+                headers: {'content-type': 'application/json'},
+                body: JSON.stringify({validationUrl: event.validationURL, domainName: location.hostname})
+              });
+              const merchantSession = await response.json();
+              log('session signed', {
+                status: response.status,
+                id: merchantSession.merchantSessionIdentifier?.slice(0, 14)
+              });
+              session.completeMerchantValidation(merchantSession);
+              log('validation complete — the sheet should be up', undefined, 'ok');
+            } catch (error) {
+              log('validation FAILED', {error: String(error?.message ?? error)}, 'bad');
+              session.abort();
+            }
+          };
+
+          session.onshippingcontactselected = (event) => {
+            log('shippingcontactselected', {country: event.shippingContact?.countryCode});
+            session.completeShippingContactSelection({
+              newTotal: {label: 'Test', type: 'final', amount: '1.00'},
+              newShippingMethods: request.shippingMethods
+            });
+          };
+
+          session.onshippingmethodselected = () =>
+            session.completeShippingMethodSelection({newTotal: {label: 'Test', type: 'final', amount: '1.00'}});
+
+          session.onpaymentauthorized = (event) => {
+            log('AUTHORIZED', {network: event.payment.token.paymentMethod.network}, 'ok');
+            session.completePayment({status: S.STATUS_SUCCESS});
+          };
+
+          session.oncancel = () => log('cancelled (the sheet had opened)', undefined, 'ok');
+
+          session.begin();
+          log('begin() returned without throwing');
+        } catch (error) {
+          log('THREW', {error: String(error?.message ?? error)}, 'bad');
+        }
+      };
+
+      const VARIANTS = [
+        ['plain', {}],
+        ['with await (as the SDK)', {delay: true}],
+        ['with shipping + billing', {shipping: true, billing: true}],
+        ['SDK-shaped: await + shipping + billing', {delay: true, shipping: true, billing: true}],
+        ['every network', {networks: ['visa', 'masterCard', 'amex', 'discover', 'maestro']}]
+      ];
+
+      for (const [name, options] of VARIANTS) {
+        const b = document.createElement('button');
+        b.className = 'run';
+        b.textContent = name;
+        b.addEventListener('click', () => attempt(name, options));
+        document.getElementById('buttons').append(b);
+      }
+
+      // Both permission policies, so a cross-origin-style frame can be compared with
+      // the top-level page on the same device.
+      if (!framed) {
+        for (const allow of ['payment', 'payment *']) {
+          const wrap = document.createElement('div');
+          wrap.textContent = `iframe allow="${allow}"`;
+          const f = document.createElement('iframe');
+          f.src = '/apple-test?framed=1';
+          f.setAttribute('allow', allow);
+          wrap.append(f);
+          document.getElementById('frames').append(wrap);
+        }
+      }
+    </script>
+  </body>
+</html>

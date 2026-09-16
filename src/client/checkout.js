@@ -391,6 +391,11 @@ const setMethodSupported = (id, isSupported) => {
 const walletRates = async (address) => {
   emit('onShippingAddressChange', address);
 
+  // The sheet is open by the time this fires, and the cart must not move underneath
+  // the amount it is showing.
+  setExpressError(null);
+  lockCart(true);
+
   const response = await fetch('/api/shipping-rates', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
@@ -424,12 +429,6 @@ const walletRates = async (address) => {
  * shipping callback signed.
  */
 const walletSubmit = async (result) => {
-  emit('wallet.onSubmit', {
-    method: result?.paymentMethod,
-    token: result?.token ? `${result.token.slice(0, 10)}…` : null,
-    error: result?.error ?? null
-  });
-
   if (result.error || !result.token) {
     lockCart(false);
     return setExpressError(result.error ?? 'The wallet did not return a payment method.');
@@ -483,16 +482,6 @@ const mountPaymentRequest = () => {
 
   const reason = el('express-reason');
 
-  emit('PaymentRequest.mount', {
-    amount: config.goods,
-    currency: config.currency,
-    requestShipping: true,
-    requestBilling: true,
-    shippingOptions: config.initialShippingOptions.length,
-    host: location.hostname,
-    https: location.protocol === 'https:'
-  });
-
   paymentRequest = window.monei.PaymentRequest({
     accountId: config.accountId,
     amount: config.goods,
@@ -514,27 +503,9 @@ const mountPaymentRequest = () => {
       return {amount: config.goods + option.amount};
     },
 
-    onBeforeOpen: () => {
-      emit('PaymentRequest.onBeforeOpen', {returning: true});
-      setExpressError(null);
-      lockCart(true);
-      // The frame's permission policy decides whether Apple Pay may open at all, and
-      // a refusal is silent, so it is recorded at the moment of the attempt.
-      const frame = container.querySelector('iframe');
-      emit('PaymentRequest.frame', {
-        allow: frame?.getAttribute('allow') ?? '(absent)',
-        sandbox: frame?.getAttribute('sandbox') ?? '(none)',
-        applePay: typeof window.ApplePaySession,
-        canMakePayments: window.ApplePaySession?.canMakePayments?.() ?? null
-      });
-      return true;
-    },
-
-    onBeforeSubmit: (result) => {
-      emit('PaymentRequest.onBeforeSubmit', {method: result?.paymentMethod});
-      return true;
-    },
-
+    // No `onBeforeOpen`: the SDK awaits it before `ApplePaySession.begin()`, and
+    // Safari will not open the sheet once the call has left the gesture's own task.
+    // The cart lock moves to the first wallet callback instead.
     onSubmit: walletSubmit,
 
     onError: (error) => {

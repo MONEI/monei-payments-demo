@@ -391,11 +391,6 @@ const setMethodSupported = (id, isSupported) => {
 const walletRates = async (address) => {
   emit('onShippingAddressChange', address);
 
-  // The sheet is open by the time this fires, and the cart must not move underneath
-  // the amount it is showing.
-  setExpressError(null);
-  lockCart(true);
-
   const response = await fetch('/api/shipping-rates', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
@@ -482,6 +477,14 @@ const mountPaymentRequest = () => {
 
   const reason = el('express-reason');
 
+  // Locked from our own listener rather than `onBeforeOpen`: the SDK awaits that
+  // callback before `ApplePaySession.begin()`, and Safari opens no sheet once the
+  // call has left the gesture's own task.
+  container.addEventListener('pointerdown', () => {
+    setExpressError(null);
+    lockCart(true);
+  });
+
   paymentRequest = window.monei.PaymentRequest({
     accountId: config.accountId,
     amount: config.goods,
@@ -504,8 +507,7 @@ const mountPaymentRequest = () => {
     },
 
     // No `onBeforeOpen`: the SDK awaits it before `ApplePaySession.begin()`, and
-    // Safari will not open the sheet once the call has left the gesture's own task.
-    // The cart lock moves to the first wallet callback instead.
+    // Safari opens no sheet once that call has left the gesture's own task.
     onSubmit: walletSubmit,
 
     onError: (error) => {

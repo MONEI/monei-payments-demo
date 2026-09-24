@@ -1,0 +1,235 @@
+---
+import {CARD_UIS, FLOWS, METHODS, THEMES, methodAllowed} from '../lib/config.js';
+import {THEME_DATA} from '../data/themes.js';
+import {zoneSummary} from '../lib/shipping.js';
+import {formatPrice} from '../lib/cart.js';
+
+const {theme, config, enabled, cardUi} = Astro.props;
+
+const FLOW_LABELS = {components: 'Components', redirect: 'Hosted page'};
+
+const CARD_UI_LABELS = {input: 'One field', parts: 'Three fields'};
+
+const CARD_UI_HINTS = {
+  input: 'CardInput — number, expiry and CVC in a single component.',
+  parts: 'CardGroup — CardNumber, CardExpiry and CardCvc, placed separately.'
+};
+
+const redirect = config.flow === 'redirect';
+
+// The hosted page collects the card itself, and an unchecked Card row removes the
+// fields altogether; neither leaves anything for this setting to change.
+const cardOff = redirect || !methodAllowed(config.methods, 'card');
+
+const METHOD_LABELS = {
+  card: 'Card',
+  wallet: 'Google Pay / Apple Pay',
+  paypal: 'PayPal',
+  bizum: 'Bizum'
+};
+
+// Shown when a method is on the account but its component reports it unsupported here.
+const REASON = {bizum: 'Spain only'};
+
+// The account reports the two wallets separately; the single row stands for either.
+const ACCOUNT_IDS = {wallet: ['applePay', 'googlePay']};
+
+const row = `flex items-center justify-between gap-3 text-sm`;
+const hint = `text-[11px] ${theme.page.muted}`;
+---
+
+<aside
+  id="rail"
+  data-open={String(config.panel)}
+  class="fixed top-0 left-0 z-40 flex h-[100dvh]"
+  style={`--rail-accent: ${theme.page.accent}`}
+>
+  <div id="rail-body" class={`rail-body overflow-y-auto ${theme.page.surface} border-r ${theme.page.border}`}>
+    <div class="px-4 py-4">
+      <p class={`text-xs font-medium tracking-widest uppercase ${theme.page.muted}`}>Demo settings</p>
+      <section class="mt-4">
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Theme</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>MONEI's page has its own styling.</p>}
+        <div class="mt-2 space-y-1.5">
+          {
+            THEMES.map((name) => (
+              <label class={`${row} cursor-pointer`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class="cursor-pointer"
+                    name="theme"
+                    value={name}
+                    checked={config.theme === name}
+                    disabled={!THEME_DATA[name] || redirect}
+                    data-param="theme"
+                  />
+                  {THEME_DATA[name]?.label ?? name}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Card fields</h3>
+        <div class="mt-2 space-y-1.5">
+          {
+            CARD_UIS.map((name) => (
+              <label class={`${row} ${cardOff ? 'opacity-50' : 'cursor-pointer'}`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class={cardOff ? '' : 'cursor-pointer'}
+                    name="cardUi"
+                    value={name}
+                    checked={cardUi === name}
+                    disabled={cardOff}
+                    data-param="cardUi"
+                  />
+                  {CARD_UI_LABELS[name]}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+        <p class={`mt-2 ${hint}`}>
+          {
+            redirect
+              ? "MONEI's page collects the card."
+              : cardOff
+                ? 'Turn on Card below to lay out its fields.'
+                : CARD_UI_HINTS[cardUi]
+          }
+        </p>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Checkout flow</h3>
+        <div class="mt-2 space-y-1.5">
+          {
+            FLOWS.map((name) => (
+              <label class={`${row} cursor-pointer`}>
+                <span class="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    class="cursor-pointer"
+                    name="flow"
+                    value={name}
+                    checked={config.flow === name}
+                    data-param="flow"
+                  />
+                  {FLOW_LABELS[name]}
+                </span>
+                <span class="spinner" aria-hidden="true" />
+              </label>
+            ))
+          }
+        </div>
+        {
+          redirect && (
+            <p class={`mt-2 ${hint}`}>
+              The hosted page collects the card, so the card layout and the express buttons do not apply.
+            </p>
+          )
+        }
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Payment methods</h3>
+        {redirect && <p class={`mt-1 ${hint}`}>The hosted page offers its own, so these do not apply.</p>}
+        <div class="mt-2 space-y-1.5">
+          {
+            METHODS.map((id) => {
+              const ids = ACCOUNT_IDS[id] ?? [id];
+              const onAccount = (enabled === null || ids.some((i) => enabled.includes(i))) && !redirect;
+              return (
+                <label class={`${row} ${onAccount ? 'cursor-pointer' : 'opacity-50'}`}>
+                  <span class="flex min-w-0 items-center gap-2">
+                    <input
+                      type="checkbox"
+                      class={`shrink-0 ${onAccount ? 'cursor-pointer' : ''}`}
+                      value={id}
+                      checked={onAccount && methodAllowed(config.methods, id)}
+                      disabled={!onAccount}
+                      data-method={id}
+                    />
+                    {METHOD_LABELS[id]}
+                  </span>
+                  {onAccount ? (
+                    <>
+                      <span class="spinner" aria-hidden="true" />
+                      <span class={`${hint} hidden`} data-reason={id}>
+                        {REASON[id]}
+                      </span>
+                    </>
+                  ) : (
+                    !redirect && <span class={`${hint} shrink-0 text-right`}>Not on this account</span>
+                  )}
+                </label>
+              );
+            })
+          }
+        </div>
+      </section>
+      <section class={`mt-5 border-t ${theme.page.border} pt-4`}>
+        <h3 class={`text-xs font-medium ${theme.page.muted}`}>Shipping zones</h3>
+        <p class={`mt-1 ${hint}`}>This sample shop's own rates, not MONEI's coverage.</p>
+        <dl class={`mt-2 space-y-1 text-[11px] ${theme.page.muted}`}>
+          {
+            zoneSummary().map((zone) => (
+              <div class="flex justify-between">
+                <dt>{zone.label}</dt>
+                <dd>from {formatPrice(zone.amount)}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+      <p class={`mt-5 border-t ${theme.page.border} pt-4 ${hint}`}>
+        Every setting lives in the URL, so this link reproduces it.
+      </p>
+    </div>
+  </div>
+  <button
+    type="button"
+    id="rail-toggle"
+    class="accent-fill flex cursor-pointer items-center gap-2 self-center rounded-r-lg py-5 pr-1 pl-0.5 text-white shadow-md"
+    aria-expanded={String(config.panel)}
+    aria-controls="rail-body"
+    aria-label="Customize this demo"
+    title="Customize this demo"
+  >
+    <svg
+      id="rail-chevron"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 18l6-6-6-6"></path>
+    </svg>
+    <span class="toggle-label">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"></path>
+        <circle cx="16" cy="6" r="2"></circle>
+        <circle cx="8" cy="12" r="2"></circle>
+        <circle cx="16" cy="18" r="2"></circle>
+      </svg>
+    </span>
+  </button>
+</aside>

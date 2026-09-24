@@ -3,3 +3,10 @@
 node_modules
 .idea
 .env
+.env.local
+/docs/plans
+
+# Astro
+dist/
+.astro/
+.vercel/

@@ -1,0 +1,214 @@
+---
+import {countryList, people} from '../lib/countries.js';
+import {matchZone} from '../lib/shipping.js';
+
+const {theme, country} = Astro.props;
+const countries = countryList();
+const selected = countries.find((c) => c.code === country) ?? countries[0];
+
+// A card field is the SDK's fixed 45px iframe inside a bordered box, so every control
+// on the page is sized to that 47px rather than to its own padding.
+const field = `h-[47px] w-full ${theme.page.radius} border ${theme.page.border} bg-white px-3 text-sm outline-none focus:border-current`;
+const label = `block text-xs font-medium ${theme.page.muted}`;
+// Wraps in the two-column layout a narrow viewport falls back to; on one row from
+// `sm` up there is space for the labels to stay on a single line.
+const helper = `${theme.page.radius} cursor-pointer border ${theme.page.border} px-2.5 py-1.5 text-xs font-medium sm:whitespace-nowrap`;
+
+const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
+// Mainland only: the other Spanish zones have no collect-in-store option, and a paid
+// rate would push the total past the €5 Bizum's test environment accepts.
+const bizumSamples = samples.ES.filter((s) => matchZone({country: 'ES', zip: s.zip}).id === 'peninsula');
+---
+
+<section id="address" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <h2 class={`text-sm ${theme.page.heading}`}>Shipping address</h2>
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+      {/* Only one basket in the whole shop stays under Bizum's €5 test ceiling. */}
+      <button type="button" id="bizum-preset" class={helper} hidden> Set up a Bizum payment </button>
+      <button type="button" id="fill-sample" class={helper}> Use a sample address </button>
+    </div>
+  </div>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <label class="sm:col-span-2">
+      <span class={label}>Name</span>
+      <input class={`mt-1 ${field}`} name="name" autocomplete="name" required />
+    </label>
+    <label class="sm:col-span-2">
+      <span class={label}>Email</span>
+      <input class={`mt-1 ${field}`} type="email" name="email" autocomplete="email" required />
+    </label>
+    <label class="sm:col-span-2">
+      <span class={label}>Address</span>
+      <input class={`mt-1 ${field}`} name="line1" autocomplete="address-line1" required />
+    </label>
+    <label>
+      <span class={label}>Country</span>
+      <span class="relative mt-1 block">
+        <select class={`select-field ${field}`} name="country" id="country" autocomplete="country">
+          {
+            countries.map((c) => (
+              <option
+                value={c.code}
+                selected={c.code === selected.code}
+                data-example={c.example}
+                data-inputmode={c.inputmode}
+                data-pattern={c.pattern}
+              >
+                {c.name}
+              </option>
+            ))
+          }
+        </select>
+        <span class="select-arrow" aria-hidden="true"></span>
+      </span>
+    </label>
+    <label>
+      <span class={label}>Postcode</span>
+      <input
+        class={`mt-1 ${field}`}
+        name="zip"
+        id="zip"
+        autocomplete="postal-code"
+        inputmode={selected.inputmode}
+        placeholder={selected.example}
+        pattern={selected.pattern}
+        required
+      />
+      <span class="mt-1 hidden text-xs text-rose-600" id="zip-error"></span>
+    </label>
+    <label class="sm:col-span-2">
+      <span class={label}>City</span>
+      <input class={`mt-1 ${field}`} name="city" autocomplete="address-level2" required />
+    </label>
+  </div>
+</section>
+<script define:vars={{samples, bizumSamples, PEOPLE: people()}}>
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+  const FIELDS = ['name', 'email', 'line1', 'country', 'zip', 'city'];
+  const STORE_KEY = 'monei:address';
+
+  // A retry after a declined payment is a full page load, so the typed address
+  // survives only if it is written down. `sessionStorage` keeps it out of the URL,
+  // which is meant to be shared, and out of any other tab.
+  const remember = (form) => {
+    const entries = FIELDS.map((name) => [name, form.querySelector(`[name="${name}"]`)?.value ?? '']);
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+      // Private browsing and blocked site data both throw; the form still works.
+    }
+  };
+
+  const restore = (form) => {
+    let saved;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? 'null');
+    } catch {
+      return false;
+    }
+    if (!saved) return false;
+
+    let filled = false;
+    for (const name of FIELDS) {
+      const input = form.querySelector(`[name="${name}"]`);
+      if (input && saved[name]) {
+        input.value = saved[name];
+        filled = true;
+      }
+    }
+    return filled;
+  };
+
+  // Client-side navigation replaces the body, so these elements and their
+  // listeners belong to one render and have to be found again on the next.
+  const wire = () => {
+    const country = document.getElementById('country');
+    const zip = document.getElementById('zip');
+    const zipError = document.getElementById('zip-error');
+    const fill = document.getElementById('fill-sample');
+    if (!country || !zip || !fill || fill.dataset.wired === 'true') return;
+    fill.dataset.wired = 'true';
+    const form = zip.closest('section');
+
+    const fillAddress = (code, address, person) => {
+      country.value = code;
+      // The postcode field's pattern still belongs to the previous country, so a
+      // valid address would be flagged invalid without re-syncing first.
+      sync();
+      const values = {name: person.name, email: person.email, ...address};
+      for (const name of ['name', 'email', 'line1', 'city', 'zip']) {
+        const input = form.querySelector(`[name="${name}"]`);
+        if (input) input.value = values[name];
+      }
+      validate();
+    };
+
+    fill.addEventListener('click', () => {
+      const code = pick(Object.keys(samples));
+      fillAddress(code, pick(samples[code]), pick(PEOPLE));
+
+      // Assigning .value fires no event, so anything listening for a change — the
+      // shipping lookup among it — would price a stale address.
+      country.dispatchEvent(new Event('change', {bubbles: true}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+
+    /**
+     * Bizum's test environment accepts only payments under €5, and one basket in the shop reaches
+     * that: a single pack of filter papers collected in store. Assembling it by hand
+     * means emptying the cart and finding the one free shipping option, so the demo
+     * does it in a click.
+     */
+    const preset = document.getElementById('bizum-preset');
+    preset?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('monei:set-cart', {detail: [{productId: 'filter-papers', quantity: 1}]}));
+      fillAddress('ES', pick(bizumSamples), pick(PEOPLE));
+
+      // Collect in store is the only rate that keeps the total under €5. Stated as a
+      // preference rather than applied to one render, because the cart change and the
+      // address change each start their own lookup.
+      document.dispatchEvent(new CustomEvent('monei:prefer-option', {detail: 'pickup'}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+
+    const sync = () => {
+      const option = country.selectedOptions[0];
+      zip.placeholder = option.dataset.example ?? '';
+      zip.inputMode = option.dataset.inputmode ?? 'text';
+      zip.pattern = option.dataset.pattern ?? '';
+      validate();
+    };
+
+    const validate = () => {
+      const option = country.selectedOptions[0];
+      const bad = zip.value.trim() && !zip.checkValidity();
+      zipError.textContent = bad ? `Expected a postcode like ${option.dataset.example}` : '';
+      zipError.classList.toggle('hidden', !bad);
+    };
+
+    country.addEventListener('change', sync);
+    zip.addEventListener('blur', validate);
+    zip.addEventListener('input', () => {
+      if (!zipError.classList.contains('hidden')) validate();
+    });
+
+    form.addEventListener('input', () => remember(form));
+    form.addEventListener('change', () => remember(form));
+
+    if (restore(form)) {
+      // The restored country carries its own postcode pattern, and the shipping
+      // lookup has not seen this address yet.
+      sync();
+      country.dispatchEvent(new Event('change', {bubbles: true}));
+      zip.dispatchEvent(new Event('change', {bubbles: true}));
+      return;
+    }
+
+    sync();
+  };
+
+  document.addEventListener('astro:page-load', wire);
+  wire();
+</script>

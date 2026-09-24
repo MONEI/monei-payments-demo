@@ -1,0 +1,151 @@
+---
+import StoreLayout from '../layouts/store.astro';
+import StoreHeader from '../components/store-header.astro';
+import CartSummary from '../components/cart-summary.astro';
+import AddressForm from '../components/address-form.astro';
+import TestCards from '../components/test-cards.astro';
+import CardForm from '../components/card-form.astro';
+import ExpressCheckout from '../components/express-checkout.astro';
+import CodePanel from '../components/code-panel.astro';
+import Rail from '../components/rail.astro';
+import {accountId, fetchAccountMethods} from '../lib/monei.js';
+import ProductArt from '../components/product-art.astro';
+import {PRODUCTS} from '../data/products.js';
+import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
+import {parseConfig, serializeCart, toQuery} from '../lib/config.js';
+import {initialShippingOptions, zipDecidesZone} from '../lib/shipping.js';
+import {countryList} from '../lib/countries.js';
+import {cardUiFor, themeFor} from '../data/themes.js';
+
+const config = parseConfig(Astro.url);
+const theme = themeFor(config.theme);
+const cardUi = cardUiFor(theme, config.cardUi);
+const lines = cartLines(config.cart);
+const total = cartTotal(config.cart);
+
+const enabled = await fetchAccountMethods();
+const inCart = new Set(config.cart.map((i) => i.productId));
+
+const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
+const failedPayment = Astro.url.searchParams.has('error');
+
+const clientConfig = {
+  accountId,
+  currency: config.currency,
+  goods: total,
+  cart: serializeCart(config.cart),
+  // Null means every method the account allows; an empty list means none.
+  methods: config.methods,
+  flow: config.flow,
+  cardUi,
+  cardStyle: theme.card.style,
+  cardFonts: theme.card.fonts,
+  walletRadius: theme.card.style.base.borderRadius,
+  pageFont: theme.page.fontFamily,
+  initialShippingOptions: initialShippingOptions(config.country),
+  zipZones: countryList()
+    .map((c) => c.code)
+    .filter(zipDecidesZone),
+  mutedClass: theme.page.muted
+};
+---
+
+<StoreLayout theme={theme}>
+  <Rail theme={theme} config={config} enabled={enabled} cardUi={cardUi} />
+  <CodePanel theme={theme} config={config} clientConfig={clientConfig} />
+  <StoreHeader theme={theme} config={config} />
+  <main id="cart-root" class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    {
+      failedPayment && (
+        <p class={`${theme.page.radius} mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700`}>
+          That payment did not complete. Nothing was charged — try again below.
+        </p>
+      )
+    }
+    <p class={`text-sm ${theme.page.muted}`}>
+      A working checkout built on <a class="underline" href="https://docs.monei.com/monei-js/overview/" rel="noopener"
+        >MONEI Components</a
+      >. Nothing charges a real card.
+    </p>
+    {
+      /* `minmax(0,…)` rather than the default `minmax(auto,…)`, which never shrinks a
+         column below the widest thing in it — here a product card, which held the
+         whole page open on a narrow screen. */
+    }
+    <div class="mt-8 flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      {
+        /* Stacked, the cart belongs between the shop and the form it prices, so this
+           wrapper collapses on a phone and `order` sequences all three as siblings.
+           From `lg` it is a column again, keeping the checkout under the shop instead
+           of level with the end of the taller right-hand column. */
+      }
+      <div class="contents lg:flex lg:flex-col lg:gap-10">
+        <section class="order-1">
+          <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
+          <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+            {
+              PRODUCTS.map((product) => (
+                <li
+                  class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
+                >
+                  <div class="flex gap-4">
+                    <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium">{product.name}</p>
+                      <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
+                      <p class="mt-2 text-sm tabular-nums">
+                        {formatPrice(product.price)}
+                        {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="mt-auto flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
+                      data-cart-add={product.id}
+                    >
+                      {inCart.has(product.id) ? 'Add another' : 'Add to cart'}
+                    </button>
+                    <span class="spinner" aria-hidden="true" />
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+        <div class="order-3 space-y-6">
+          <ExpressCheckout theme={theme} flow={config.flow} />
+          <AddressForm theme={theme} country={config.country} />
+          <CardForm theme={theme} flow={config.flow} cardUi={cardUi} />
+        </div>
+      </div>
+      <aside class="order-2 space-y-4">
+        <CartSummary theme={theme} lines={lines} total={total} />
+        <TestCards theme={theme} />
+      </aside>
+    </div>
+  </main>
+  {/* The rails' own view state stays out of shared links, but not out of this tab's URL. */}
+  {
+    canonicalQuery && (
+      <script
+        is:inline
+        set:html={`const q = new URLSearchParams('${canonicalQuery}'); const own = new URLSearchParams(location.search); for (const k of ['panel', 'code', 'tab']) if (own.has(k)) q.set(k, own.get(k)); history.replaceState(history.state, '', '?' + q);`}
+      />
+    )
+  }
+  <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
+  <script id="demo-cart" type="application/json" set:html={JSON.stringify(config.cart)} />
+  <script>
+    import '../client/checkout.js';
+    import '../client/panels.js';
+    import '../client/code-panel.js';
+    import {initCartUi} from '../client/cart-ui.js';
+
+    document.addEventListener('astro:page-load', () => {
+      const cart = document.getElementById('demo-cart');
+      if (cart) initCartUi(JSON.parse(cart.textContent));
+    });
+  </script>
+</StoreLayout>

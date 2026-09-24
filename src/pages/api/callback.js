@@ -1,0 +1,31 @@
+import {monei} from '../../lib/monei.js';
+
+export const prerender = false;
+
+/**
+ * The signature covers the exact bytes sent, so the body is read as text and
+ * verified before anything parses it.
+ */
+export const POST = async ({request}) => {
+  if (!monei) return new Response('Not configured', {status: 500});
+
+  const raw = await request.text();
+  const signature = request.headers.get('monei-signature');
+
+  if (!raw) {
+    console.error('Callback body was empty');
+    return new Response('Empty body', {status: 400});
+  }
+
+  try {
+    // A payment `callbackUrl` sends the Payment itself, not an event envelope.
+    const payment = monei.verifySignature(raw, signature);
+    console.log(`Callback — ${payment.id} is ${payment.status}`);
+    // Fulfil the order here on `SUCCEEDED`, once per payment id: callbacks can repeat.
+  } catch (error) {
+    console.error('Callback signature verification failed', error.message);
+    return new Response('Invalid signature', {status: 401});
+  }
+
+  return new Response('OK', {status: 200});
+};

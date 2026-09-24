@@ -1,5 +1,5 @@
 import {PRODUCTS} from '../data/products.js';
-import {newSeed, seededCart} from './cart.js';
+import {MAX_QUANTITY, newSeed, seededCart} from './cart.js';
 import {normalizeCountry} from './countries.js';
 
 // The demo's whole state lives in the query string, so a link reproduces an exact
@@ -10,7 +10,6 @@ import {normalizeCountry} from './countries.js';
 export const CURRENCY = 'EUR';
 
 export const THEMES = ['aurora', 'monoline'];
-export const LAYOUTS = ['stacked', 'grid'];
 export const FLOWS = ['components', 'redirect'];
 export const TABS = ['client', 'server', 'events'];
 // `CardInput` is one field for the whole card; `CardGroup` is three the merchant
@@ -23,16 +22,13 @@ export const METHODS = ['card', 'wallet', 'paypal', 'bizum'];
 export const DEFAULTS = {
   theme: 'aurora',
   seed: null, // generated when absent, then written back with replaceState
-  layout: 'stacked',
   methods: null, // null means "every method the account has enabled"
   cardUi: null, // null means "whichever the theme prefers"
-  shipping: true, // requestShipping
-  billing: true, // requestBilling — PaymentRequest only, never PayPal
   country: 'ES',
   flow: 'components',
   panel: false, // settings rail open; server-rendered so it cannot flash closed
   code: false, // code rail open, same reason
-  tab: 'client' // selected code-rail tab; a cart change is a server render
+  tab: 'client' // selected code-rail tab; a settings change is a server render
 };
 
 const SEED_RE = /^[a-z0-9]{1,16}$/;
@@ -70,7 +66,7 @@ export const parseCart = (value) => {
     const [id, rawQty] = entry.split(':');
     if (!PRODUCT_IDS.has(id)) continue; // unknown product — drop the line
     const quantity = Number.parseInt(rawQty, 10);
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) continue;
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) continue;
     if (items.some((i) => i.productId === id)) continue; // ignore repeats
     items.push({productId: id, quantity});
   }
@@ -98,12 +94,9 @@ export const parseConfig = (url) => {
 
   return {
     theme: oneOf(q.get('theme'), THEMES, DEFAULTS.theme),
-    layout: oneOf(q.get('layout'), LAYOUTS, DEFAULTS.layout),
     flow: oneOf(q.get('flow'), FLOWS, DEFAULTS.flow),
     methods: subset(q.get('methods'), METHODS),
     cardUi: oneOf(q.get('cardUi'), CARD_UIS, DEFAULTS.cardUi),
-    shipping: bool(q.get('shipping'), DEFAULTS.shipping),
-    billing: bool(q.get('billing'), DEFAULTS.billing),
     panel: bool(q.get('panel'), DEFAULTS.panel),
     code: bool(q.get('code'), DEFAULTS.code),
     tab: oneOf(q.get('tab'), TABS, DEFAULTS.tab),
@@ -121,13 +114,10 @@ export const toQuery = (config) => {
   const q = new URLSearchParams();
   if (config.seed) q.set('seed', config.seed);
   if (config.theme !== DEFAULTS.theme) q.set('theme', config.theme);
-  if (config.layout !== DEFAULTS.layout) q.set('layout', config.layout);
   if (config.flow !== DEFAULTS.flow) q.set('flow', config.flow);
   // An empty list still writes the param: `methods=` is "none", absent is "all".
   if (config.methods) q.set('methods', config.methods.join(','));
   if (config.cardUi) q.set('cardUi', config.cardUi);
-  if (config.shipping !== DEFAULTS.shipping) q.set('shipping', '0');
-  if (config.billing !== DEFAULTS.billing) q.set('billing', '0');
   if (config.country && config.country !== DEFAULTS.country) q.set('country', config.country);
   if (config.cartEdited) q.set('cart', serializeCart(config.cart));
   return q.toString();

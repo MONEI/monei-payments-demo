@@ -1,5 +1,3 @@
-import {countryByCode} from './countries.js';
-
 const MAX_ZIP_LENGTH = 12;
 
 /**
@@ -35,9 +33,8 @@ const normalizeZip = (value) =>
 const countryMatches = (rule, country) => (Array.isArray(rule) ? rule.includes(country) : rule === country);
 
 /**
- * The address arrives from a wallet mid-flow, where it is redacted: no street,
- * and often no postcode at all. Only country and zip are consulted, and a missing
- * zip must not fall through to a cheaper zone by accident.
+ * A wallet's mid-flow address is redacted and often has no postcode, so Spain
+ * without one prices as mainland. /api/payment reprices from the full address.
  */
 export const matchZone = (address = {}) => {
   const country = String(address.country ?? '')
@@ -61,10 +58,8 @@ export const ratesFor = (zone) => RATES[zone.id] ?? [];
 /** The rate table itself, so a printed copy of it cannot drift from the live one. */
 export const ZONE_TABLE = () => RATES;
 
-/** PayPal rejects an order patch whose option list contains a `PICKUP` entry. */
+/** A wallet sheet is choosing where to ship, so collect-in-store is left out of its list. */
 export const shippableRatesFor = (zone) => ratesFor(zone).filter((rate) => rate.type !== 'PICKUP');
-
-export const isServiceable = (zone) => ratesFor(zone).length > 0;
 
 /**
  * Throws on an unknown id rather than defaulting: silently picking the first rate
@@ -77,6 +72,10 @@ export const rateFor = (zoneId, optionId) => {
 };
 
 export const zoneIds = () => ZONES.map((z) => z.id);
+
+/** Each zone's label and cheapest delivered rate, for printing the table beside the store. */
+export const zoneSummary = () =>
+  ZONES.map((zone) => ({label: zone.label, amount: Math.min(...shippableRatesFor(zone).map((r) => r.amount))}));
 
 /** True when a postcode can move the country into a different zone. */
 export const zipDecidesZone = (country) => {

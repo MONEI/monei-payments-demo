@@ -7,10 +7,7 @@ describe('parseConfig', () => {
   it('falls back to defaults on a bare URL', () => {
     const c = at('');
     expect(c.theme).toBe(DEFAULTS.theme);
-    expect(c.layout).toBe(DEFAULTS.layout);
     expect(c.flow).toBe(DEFAULTS.flow);
-    expect(c.shipping).toBe(true);
-    expect(c.billing).toBe(true);
     expect(c.currency).toBe('EUR');
   });
 
@@ -35,16 +32,14 @@ describe('parseConfig', () => {
   });
 
   it('ignores unknown values for every enum param', () => {
-    const c = at('?theme=nonsense&layout=hack&flow=whatever');
+    const c = at('?theme=nonsense&flow=whatever');
     expect(c.theme).toBe(DEFAULTS.theme);
-    expect(c.layout).toBe(DEFAULTS.layout);
     expect(c.flow).toBe(DEFAULTS.flow);
   });
 
   it('accepts known enum values', () => {
-    const c = at('?theme=monoline&layout=grid&flow=redirect');
+    const c = at('?theme=monoline&flow=redirect');
     expect(c.theme).toBe('monoline');
-    expect(c.layout).toBe('grid');
     expect(c.flow).toBe('redirect');
   });
 
@@ -117,11 +112,11 @@ describe('parseConfig', () => {
   });
 
   it('reads booleans as off only for explicit falsey spellings', () => {
-    expect(at('?shipping=0').shipping).toBe(false);
-    expect(at('?shipping=false').shipping).toBe(false);
-    expect(at('?shipping=off').shipping).toBe(false);
-    expect(at('?shipping=1').shipping).toBe(true);
-    expect(at('?shipping=yes').shipping).toBe(true);
+    expect(at('?panel=0').panel).toBe(false);
+    expect(at('?panel=false').panel).toBe(false);
+    expect(at('?panel=off').panel).toBe(false);
+    expect(at('?panel=1').panel).toBe(true);
+    expect(at('?panel=yes').panel).toBe(true);
   });
 
   it('uses the seeded cart when no cart param is present', () => {
@@ -156,7 +151,7 @@ describe('parseConfig', () => {
       '?cart=' + 'a:1,'.repeat(500),
       '?methods=' + 'x'.repeat(5000),
       '?seed=%00%01%02',
-      '?shipping=&billing=&layout=&cart=&seed='
+      '?panel=&code=&cart=&seed='
     ];
     for (const q of nasty) expect(() => at(q)).not.toThrow();
   });
@@ -169,11 +164,10 @@ describe('toQuery', () => {
   });
 
   it('round-trips a non-default config', () => {
-    const original = at('?seed=abc123&theme=monoline&layout=grid&shipping=0&methods=card,bizum');
+    const original = at('?seed=abc123&theme=monoline&flow=redirect&methods=card,bizum');
     const reparsed = at(`?${toQuery(original)}`);
     expect(reparsed.theme).toBe('monoline');
-    expect(reparsed.layout).toBe('grid');
-    expect(reparsed.shipping).toBe(false);
+    expect(reparsed.flow).toBe('redirect');
     expect(reparsed.methods).toEqual(['card', 'bizum']);
     expect(reparsed.seed).toBe('abc123');
   });

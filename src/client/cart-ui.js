@@ -1,26 +1,13 @@
 import {emit} from './events.js';
 import {setGoods} from './checkout.js';
-import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
+import {MAX_QUANTITY, cartLines, cartTotal, formatPrice} from '../lib/cart.js';
+import {serializeCart} from '../lib/config.js';
 
-/**
- * The cart is client state rendered in place. It stays mirrored into the URL so the
- * address bar always holds a link that reproduces the basket, but writing it with
- * `replaceState` rather than navigating keeps the typed address, the scroll
- * position and the mounted payment components alive across an edit.
- */
-const readCart = () => {
-  const raw = new URLSearchParams(location.search).get('cart');
-  if (!raw) return null;
-  return raw
-    .split(',')
-    .map((entry) => {
-      const [productId, quantity] = entry.split(':');
-      return {productId, quantity: Number.parseInt(quantity, 10)};
-    })
-    .filter((line) => line.productId && line.quantity > 0);
-};
-
-const serialize = (lines) => lines.map((l) => `${l.productId}:${l.quantity}`).join(',');
+// The address form's preset replaces the whole basket. It is inline markup rather
+// than a module, so it asks through an event instead of importing. `document`
+// outlives a navigation, so the listener is added once and reaches the current render.
+let replaceCart = null;
+document.addEventListener('monei:set-cart', (event) => replaceCart?.(event.detail));
 
 /**
  * Every product already has a row in the markup; a cart edit shows or hides one and
@@ -56,20 +43,26 @@ const flash = (productId) => {
   if (row) row.classList.add('just-changed');
 };
 
+/**
+ * The cart is client state rendered in place. It stays mirrored into the URL so the
+ * address bar always holds a link that reproduces the basket, but writing it with
+ * `replaceState` rather than navigating keeps the typed address, the scroll
+ * position and the mounted payment components alive across an edit.
+ */
 export const initCartUi = (initialLines) => {
-  let lines = readCart() ?? initialLines;
+  let lines = initialLines;
 
   const apply = (changedId) => {
     const url = new URL(location.href);
     // An empty value, not a deleted param: an absent `cart` means "seed a new basket".
-    url.searchParams.set('cart', serialize(lines));
+    url.searchParams.set('cart', serializeCart(lines));
     // `:` and `,` are legal in a query value, and the cart is the part of the link
     // people read, so the encoding searchParams applies is undone.
     history.replaceState(history.state, '', url.toString().replace(/%3A/g, ':').replace(/%2C/g, ','));
 
     renderCart(lines);
     renderShopButtons(lines);
-    setGoods(cartTotal(lines), serialize(lines));
+    setGoods(cartTotal(lines), serializeCart(lines));
     emit('cart', lines);
 
     for (const node of document.querySelectorAll('.just-changed')) node.classList.remove('just-changed');
@@ -81,7 +74,7 @@ export const initCartUi = (initialLines) => {
     const existing = lines.find((l) => l.productId === productId);
     let stillPresent = true;
     if (existing) {
-      const quantity = existing.quantity + delta;
+      const quantity = Math.min(existing.quantity + delta, MAX_QUANTITY);
       stillPresent = quantity > 0;
       lines = stillPresent
         ? lines.map((l) => (l.productId === productId ? {...l, quantity} : l))
@@ -96,12 +89,10 @@ export const initCartUi = (initialLines) => {
   if (root.dataset.cartWired === 'true') return;
   root.dataset.cartWired = 'true';
 
-  // The address form's preset replaces the whole basket. It is inline markup rather
-  // than a module, so it asks through an event instead of importing.
-  document.addEventListener('monei:set-cart', (event) => {
-    lines = event.detail;
+  replaceCart = (next) => {
+    lines = next;
     apply(lines[0]?.productId ?? null);
-  });
+  };
 
   // Delegated: the stepper buttons are replaced on every edit, so per-button
   // listeners would be lost with the markup they were attached to.

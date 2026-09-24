@@ -47,7 +47,7 @@ const wire = () => {
   const accent = getComputedStyle(panel).getPropertyValue('--rail-accent').trim();
 
   const show = (id) => {
-    // A cart change re-renders on the server, which would otherwise reset the tab.
+    // A settings change re-renders on the server, which would otherwise reset the tab.
     const url = new URL(location.href);
     if (id === 'client') url.searchParams.delete('tab');
     else url.searchParams.set('tab', id);

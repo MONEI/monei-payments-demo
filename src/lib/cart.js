@@ -3,6 +3,8 @@ import {PRODUCTS, productById} from '../data/products.js';
 const MIN_ITEMS = 2;
 const MAX_ITEMS = 3;
 
+export const MAX_QUANTITY = 99;
+
 // Per price band, not uniform: people buy several bags of coffee but one grinder.
 const quantityWeights = (price) => {
   if (price >= 4000) return [1];
@@ -65,7 +67,7 @@ export const cartLines = (items) =>
     })
     .filter(Boolean);
 
-/** Goods only, in cents. Shipping is added from a signed quote. */
+/** Goods only, in cents. Shipping is added from the zone's rate. */
 export const cartTotal = (items) => cartLines(items).reduce((sum, line) => sum + line.lineTotal, 0);
 
 export const formatPrice = (cents, currency = 'EUR', locale = 'en-IE') =>

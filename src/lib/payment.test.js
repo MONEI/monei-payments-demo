@@ -1,61 +1,73 @@
-import {beforeAll, describe, expect, it, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {createPayment, resolveAmount} from './payment.js';
-import {signQuote} from './quote.js';
 import {cartTotal} from './cart.js';
-
-beforeAll(() => {
-  process.env.QUOTE_SECRET = 'test-secret';
-});
 
 const CART = [
   {productId: 'ethiopia-guji', quantity: 2},
   {productId: 'stoneware-cup', quantity: 1}
 ];
+const MAINLAND = {country: 'ES', zip: '28014'};
 
-const signed = (overrides = {}) => signQuote({seed: 'abc123', cart: CART, zone: 'peninsula', rates: [], ...overrides});
+const resolve = (overrides = {}) =>
+  resolveAmount({
+    cart: 'ethiopia-guji:2,stoneware-cup:1',
+    address: MAINLAND,
+    optionId: 'standard',
+    ...overrides
+  });
 
 describe('resolveAmount', () => {
-  it('prices from the signed cart rather than anything the client sends', () => {
-    const {quote, sig} = signed();
-    const resolved = resolveAmount({quote, sig, optionId: 'standard'});
+  it('prices the posted cart from the catalogue, since the client never sends an amount', () => {
+    const resolved = resolve();
 
     expect(resolved.goods).toBe(cartTotal(CART));
     expect(resolved.amount).toBe(cartTotal(CART) + 499);
     expect(resolved.zone).toBe('peninsula');
-    expect(resolved.seed).toBe('abc123');
   });
 
-  it('adds the rate belonging to the signed zone, not the cheapest one that exists', () => {
-    const {quote, sig} = signed({zone: 'canary'});
-    const resolved = resolveAmount({quote, sig, optionId: 'canary-standard'});
+  it('takes the zone from the address the order ships to', () => {
+    const resolved = resolve({address: {country: 'ES', zip: '38002'}, optionId: 'canary-standard'});
 
     expect(resolved.amount).toBe(cartTotal(CART) + 1499);
   });
 
-  it('refuses an option from another zone, so an international order cannot buy mainland postage', () => {
-    const {quote, sig} = signed({zone: 'row'});
+  /**
+   * A wallet sheet sees a redacted address with no postcode, which prices as
+   * mainland. The final address carries the Canary postcode, and the mainland
+   * option picked in the sheet must not survive it.
+   */
+  it('refuses a mainland option for a Canary address', () => {
+    expect(() => resolve({address: {country: 'ES', zip: '38002'}, optionId: 'standard'})).toThrow(
+      /unknown shipping option/i
+    );
+  });
 
-    expect(() => resolveAmount({quote, sig, optionId: 'standard'})).toThrow(/unknown shipping option/i);
+  it('refuses an option from another zone, so an international order cannot buy mainland postage', () => {
+    expect(() => resolve({address: {country: 'US', zip: '90210'}})).toThrow(/unknown shipping option/i);
   });
 
   it('refuses an unknown option rather than shipping free', () => {
-    const {quote, sig} = signed();
-
-    expect(() => resolveAmount({quote, sig, optionId: 'no-such-rate'})).toThrow(/unknown shipping option/i);
+    expect(() => resolve({optionId: 'no-such-rate'})).toThrow(/unknown shipping option/i);
   });
 
-  it('refuses a forged signature, which is the only thing standing between a client and its own price', () => {
-    const {quote} = signed();
-
-    expect(() => resolveAmount({quote, sig: 'forged', optionId: 'standard'})).toThrow(/invalid/i);
+  /** A missing address matches the catch-all zone, whose option would otherwise be accepted. */
+  it('refuses a missing address even with an option the catch-all zone offers', () => {
+    expect(() => resolve({address: undefined, optionId: 'international'})).toThrow(/missing shipping address/i);
+    expect(() => resolve({address: {zip: '28014'}, optionId: 'international'})).toThrow(/missing shipping address/i);
   });
 
-  it('falls back to the seeded cart when the quote carries none, so an older quote still prices', () => {
-    const {quote, sig} = signQuote({seed: 'abc123', zone: 'peninsula', rates: []});
-    const resolved = resolveAmount({quote, sig, optionId: 'standard'});
+  /**
+   * The page shows the cart it holds. Substituting another basket for one that fails
+   * validation would charge for goods the shopper never saw.
+   */
+  it('refuses a cart that fails validation instead of pricing a different basket', () => {
+    expect(() => resolve({cart: 'ethiopia-guji:100'})).toThrow(/invalid cart/i);
+    expect(() => resolve({cart: 'no-such-product:1'})).toThrow(/invalid cart/i);
+    expect(() => resolve({cart: undefined})).toThrow(/invalid cart/i);
+  });
 
-    expect(resolved.goods).toBeGreaterThan(0);
-    expect(resolved.amount).toBe(resolved.goods + 499);
+  it('refuses an emptied cart rather than charging for shipping alone', () => {
+    expect(() => resolve({cart: ''})).toThrow(/empty/i);
   });
 });
 
@@ -90,10 +102,10 @@ describe('createPayment', () => {
   });
 
   it('carries the demo config on the return URLs, which is all that survives a redirect', async () => {
-    const sent = await call({config: 'theme=monoline&layout=grid'});
+    const sent = await call({config: 'theme=monoline&flow=redirect'});
 
-    expect(sent.completeUrl).toContain('theme=monoline&layout=grid');
-    expect(sent.cancelUrl).toContain('theme=monoline&layout=grid');
+    expect(sent.completeUrl).toContain('theme=monoline&flow=redirect');
+    expect(sent.cancelUrl).toContain('theme=monoline&flow=redirect');
   });
 
   it('gives every attempt a fresh orderId, because MONEI treats it as a duplicate guard', async () => {

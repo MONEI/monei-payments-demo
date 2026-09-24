@@ -11,7 +11,7 @@ const field = `h-[47px] w-full ${theme.page.radius} border ${theme.page.border} 
 const label = `block text-xs font-medium ${theme.page.muted}`;
 // Wraps in the two-column layout a narrow viewport falls back to; on one row from
 // `sm` up there is space for the labels to stay on a single line.
-const helper = `${theme.page.radius} cursor-pointer px-2.5 py-1.5 text-xs font-medium text-white accent-fill sm:whitespace-nowrap`;
+const helper = `${theme.page.radius} cursor-pointer border ${theme.page.border} px-2.5 py-1.5 text-xs font-medium sm:whitespace-nowrap`;
 
 const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
 ---

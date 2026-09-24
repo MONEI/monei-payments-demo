@@ -27,7 +27,7 @@
     "bizum"
   ],
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.12"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
@@ -45,7 +45,7 @@
   "scripts": {
     "dev": "astro dev",
     "host": "astro dev --host",
-    "dev:https": "astro dev --https",
+    "dev:tunnel": "astro dev --allowed-hosts=.trycloudflare.com",
     "build": "astro build",
     "preview": "astro preview",
     "test": "vitest run",

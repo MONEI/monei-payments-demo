@@ -1,23 +1,14 @@
-import {cartTotal, seededCart} from '../../lib/cart.js';
-import {isServiceable, matchZone, ratesFor, shippableRatesFor} from '../../lib/shipping.js';
-import {signQuote} from '../../lib/quote.js';
+import {cartTotal} from '../../lib/cart.js';
+import {matchZone, ratesFor, shippableRatesFor} from '../../lib/shipping.js';
 import {parseCart} from '../../lib/config.js';
+import {json} from '../../lib/payment.js';
 
 export const prerender = false;
 
-const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: {'content-type': 'application/json'}
-  });
-
 /**
- * Takes `{seed, address}` and never an amount: the goods total is recomputed from
- * the seed and the shipping rate from the zone this endpoint picks, so the only
- * number the client can influence is which of the returned options it selects.
- *
- * Mirrors what a merchant's own rate endpoint does, which is why the returned
- * quote is signed — /api/payment verifies it before creating a payment.
+ * Takes `{cart, address, wallet}` and never an amount. The total it returns is only
+ * for display: /api/payment prices the order again from the same inputs. `wallet`
+ * leaves out the options a wallet sheet cannot show.
  */
 export const POST = async ({request}) => {
   let body;
@@ -27,32 +18,22 @@ export const POST = async ({request}) => {
     return json({error: 'Invalid JSON'}, 400);
   }
 
-  const {seed, cart, address, wallet} = body ?? {};
-  if (typeof seed !== 'string' || !/^[a-z0-9]{1,16}$/.test(seed)) {
-    return json({error: 'Invalid seed'}, 400);
-  }
+  const {cart, address, wallet} = body ?? {};
 
   const zone = matchZone(address ?? {});
   const rates = wallet ? shippableRatesFor(zone) : ratesFor(zone);
+  if (rates.length === 0) return json({error: 'unserviceable', zone: zone.id, label: zone.label}, 422);
 
-  if (!isServiceable(zone)) {
-    return json({error: 'unserviceable', zone: zone.id, label: zone.label}, 422);
-  }
-
-  // Quantities are the shopper's, so they go through the same whitelist as the URL
-  // param before being signed into the quote.
-  const items = parseCart(typeof cart === 'string' ? cart : null) ?? seededCart(seed);
+  // Quantities are the shopper's, so they go through the same whitelist as the URL param.
+  const items = parseCart(typeof cart === 'string' ? cart : null);
+  if (!items) return json({error: 'Invalid cart'}, 400);
   const goods = cartTotal(items);
   if (goods <= 0) return json({error: 'empty'}, 422);
-
-  const {quote, sig} = signQuote({seed, cart: items, zone: zone.id, rates});
 
   return json({
     zone: zone.id,
     label: zone.label,
     shippingOptions: rates,
-    amount: goods + rates[0].amount,
-    quote,
-    sig
+    amount: goods + rates[0].amount
   });
 };

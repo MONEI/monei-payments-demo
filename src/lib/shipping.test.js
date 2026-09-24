@@ -1,7 +1,6 @@
-import {describe, expect, it, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
   initialShippingOptions,
-  isServiceable,
   matchZone,
   rateFor,
   ratesFor,
@@ -9,22 +8,17 @@ import {
   zipDecidesZone,
   zoneIds
 } from './shipping.js';
-import {signQuote, verifyQuote} from './quote.js';
 import {parseConfig, toQuery} from './config.js';
 import {countryList} from './countries.js';
-import {cartTotal, seededCart} from './cart.js';
-import {PRODUCTS} from '../data/products.js';
-import {resolveAmount} from './payment.js';
 
 describe('matchZone with a redacted address', () => {
   /**
    * Apple Pay and Google Pay hand the shipping callback a redacted address
-   * mid-flow: no street, and frequently no postcode. `/^(35|38)/.test(undefined)`
-   * coerces to the string "undefined" and returns false, so without an explicit
-   * guard a Canary address would quietly price as mainland — the sheet completes,
-   * the total looks plausible, and the demo undercharges by €10.
+   * mid-flow: no street, and frequently no postcode. That can only price as
+   * mainland; /api/payment reprices from the final address, so a Canary order is
+   * refused rather than undercharged.
    */
-  it('does not price a missing postcode as mainland by accident', () => {
+  it('prices a Spanish address with no postcode as mainland', () => {
     expect(matchZone({country: 'ES', zip: undefined}).id).toBe('peninsula');
     expect(matchZone({country: 'ES'}).id).toBe('peninsula');
     expect(matchZone({country: 'ES', zip: null}).id).toBe('peninsula');
@@ -94,14 +88,13 @@ describe('matchZone input handling', () => {
 describe('rates', () => {
   /** The guard the API relies on, kept honest even though no zone is empty today. */
   it('treats a zone with no rates as one the shop cannot serve', () => {
-    expect(isServiceable({id: 'nowhere'})).toBe(false);
     expect(ratesFor({id: 'nowhere'})).toEqual([]);
-    expect(isServiceable(matchZone({country: 'GB', zip: 'W1F 9QT'}))).toBe(true);
+    expect(ratesFor(matchZone({country: 'GB', zip: 'W1F 9QT'})).length).toBeGreaterThan(0);
   });
 
   it('gives every other zone at least one rate', () => {
     for (const address of [{country: 'ES', zip: '38002'}, {country: 'ES'}, {country: 'US'}]) {
-      expect(isServiceable(matchZone(address))).toBe(true);
+      expect(ratesFor(matchZone(address)).length).toBeGreaterThan(0);
     }
   });
 
@@ -148,11 +141,7 @@ describe('initialShippingOptions', () => {
   });
 });
 
-/**
- * A wallet is choosing where to ship, so "collect in store" does not belong in the
- * list — and PayPal refuses the whole order patch when a `PICKUP` entry is present,
- * which surfaces to the buyer as "doesn't ship to this location".
- */
+/** A wallet sheet is choosing where to ship, so "collect in store" does not belong in its list. */
 describe('shippableRatesFor', () => {
   it('drops pickup from the zone that offers it', () => {
     const zone = matchZone({country: 'ES', zip: '28014'});
@@ -201,89 +190,13 @@ describe('zipDecidesZone', () => {
   });
 });
 
-/**
- * Quantities became editable after the quote format was designed, and for a while
- * the signature covered only the seed — so the page priced the edited basket while
- * the server priced the seeded one and silently charged that instead. A €55 gap on
- * the demo cart, in the server's favour, with nothing to show it happened.
- */
-describe('resolveAmount prices the basket that was quoted', () => {
-  const quoteFor = (cart) => signQuote({seed: 'abc123', cart, zone: 'peninsula', rates: ratesFor({id: 'peninsula'})});
-
-  it('uses the signed cart, not a cart re-derived from the seed', () => {
-    const edited = [{productId: PRODUCTS[0].id, quantity: 7}];
-    const {quote, sig} = quoteFor(edited);
-    const resolved = resolveAmount({quote, sig, optionId: 'standard'});
-
-    expect(resolved.goods).toBe(PRODUCTS[0].price * 7);
-    expect(resolved.goods).not.toBe(cartTotal(seededCart('abc123')));
-    expect(resolved.amount).toBe(resolved.goods + 499);
-  });
-
-  it('still prices the seeded cart when the quote carries none', () => {
-    const {quote, sig} = quoteFor(undefined);
-    expect(resolveAmount({quote, sig, optionId: 'standard'}).goods).toBe(cartTotal(seededCart('abc123')));
-  });
-
-  it('cannot be replayed against a bigger basket, because the cart is signed', () => {
-    const {quote, sig} = quoteFor([{productId: PRODUCTS[0].id, quantity: 1}]);
-    const tampered = Buffer.from(
-      JSON.stringify({
-        ...JSON.parse(Buffer.from(quote, 'base64url').toString('utf8')),
-        cart: [{productId: PRODUCTS[0].id, quantity: 99}]
-      })
-    ).toString('base64url');
-
-    expect(() => resolveAmount({quote: tampered, sig, optionId: 'standard'})).toThrow(/Invalid shipping quote/);
-  });
-});
-
-describe('signed quotes', () => {
-  const base = {seed: 'abc123', zone: 'canary', rates: ratesFor({id: 'canary'})};
-
-  it('round-trips a quote it signed', () => {
-    const {quote, sig} = signQuote(base);
-    const verified = verifyQuote(quote, sig);
-    expect(verified.seed).toBe('abc123');
-    expect(verified.zone).toBe('canary');
-    expect(verified.rates).toEqual(base.rates);
-  });
-
-  it('rejects a tampered payload', () => {
-    const {quote, sig} = signQuote(base);
-    const forged = Buffer.from(JSON.stringify({...base, zone: 'peninsula', exp: 9999999999})).toString('base64url');
-    expect(() => verifyQuote(forged, sig)).toThrow(/Invalid/);
-    expect(() => verifyQuote(quote, 'not-the-signature')).toThrow(/Invalid/);
-  });
-
-  it('rejects a missing quote or signature', () => {
-    expect(() => verifyQuote(undefined, undefined)).toThrow(/Missing/);
-    expect(() => verifyQuote('something', undefined)).toThrow(/Missing/);
-  });
-
-  it('rejects an expired quote even when the signature is genuine', () => {
-    const {quote, sig} = signQuote(base);
-    const payload = JSON.parse(Buffer.from(quote, 'base64url').toString('utf8'));
-    vi.setSystemTime((payload.exp + 1) * 1000);
-    expect(() => verifyQuote(quote, sig)).toThrow(/expired/);
-    vi.useRealTimers();
-  });
-
-  it('binds the seed, so a quote cannot be replayed against another cart', () => {
-    const {quote, sig} = signQuote(base);
-    expect(verifyQuote(quote, sig).seed).toBe('abc123');
-  });
-});
-
 describe('parseConfig round-trip', () => {
   const at = (query) => parseConfig(new URL(`https://demo.test/${query}`));
 
   it('survives a query string it produced', () => {
-    const original = at('?seed=abc123&theme=monoline&layout=grid&shipping=0&country=NL');
+    const original = at('?seed=abc123&theme=monoline&country=NL');
     const reparsed = at(`?${toQuery(original)}`);
     expect(reparsed.theme).toBe('monoline');
-    expect(reparsed.layout).toBe('grid');
-    expect(reparsed.shipping).toBe(false);
     expect(reparsed.country).toBe('NL');
     expect(reparsed.seed).toBe('abc123');
   });

@@ -289,6 +289,7 @@ const mountPaymentRequest = () => {
  * that is the amount the popup charges.
  */
 const openFormOrder = () => {
+  if (page.orderHeld()) return false;
   page.setError(null);
   if (!page.validateForm()) return false;
   if (!page.selectedOption()) {

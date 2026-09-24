@@ -5,6 +5,7 @@ import {formatPrice} from '../lib/cart.js';
 import {themeFor} from '../data/themes.js';
 import {monei} from '../lib/monei.js';
 import {parseConfig, toQuery} from '../lib/config.js';
+import {RECEIPT_COOKIE} from '../lib/payment.js';
 
 const config = parseConfig(Astro.url);
 const theme = themeFor(config.theme);
@@ -44,7 +45,13 @@ const state = !payment
         : 'other';
 const statusText = payment?.status?.toLowerCase().replaceAll('_', ' ');
 
+// A receipt link can be shared, so the shopper's details show only in the browser
+// that opened this payment; anyone else sees the order, amount and status.
+const owner = Boolean(payment) && Astro.cookies.get(RECEIPT_COOKIE)?.value === payment.id;
+const customer = owner ? payment.customer : null;
+
 const method = (() => {
+  if (!owner) return null;
   const pm = payment?.paymentMethod;
   if (!pm) return null;
   if (pm.bizum) return `Bizum · ${pm.bizum.phoneNumber ?? ''}`.trim();
@@ -59,8 +66,8 @@ const formatAddress = (details) => {
   const parts = [a.line1, a.line2, [a.city, a.state, a.zip].filter(Boolean).join(', '), a.country];
   return parts.filter(Boolean).join(' · ');
 };
-const shippingAddress = formatAddress(payment?.shippingDetails);
-const billingAddress = formatAddress(payment?.billingDetails);
+const shippingAddress = owner ? formatAddress(payment.shippingDetails) : null;
+const billingAddress = owner ? formatAddress(payment.billingDetails) : null;
 
 const card = `${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`;
 const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-sm font-medium`;
@@ -72,9 +79,7 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
     {
       state === 'succeeded' && (
         <>
-          <h1 class={`text-2xl ${theme.page.heading}`}>
-            Thank you{payment.customer?.name ? `, ${payment.customer.name}` : ''}!
-          </h1>
+          <h1 class={`text-2xl ${theme.page.heading}`}>Thank you{customer?.name ? `, ${customer.name}` : ''}!</h1>
           <p class={`mt-2 text-sm ${theme.page.muted}`}>
             Order <strong>{payment.orderId}</strong> is confirmed.
           </p>
@@ -132,16 +137,16 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
           <dd class="tabular-nums">{formatPrice(payment.amount, payment.currency)}</dd>
           <dt class={theme.page.muted}>Status</dt>
           <dd>{payment.status}</dd>
-          {payment.customer?.name && (
+          {customer?.name && (
             <>
               <dt class={theme.page.muted}>Name</dt>
-              <dd>{payment.customer.name}</dd>
+              <dd>{customer.name}</dd>
             </>
           )}
-          {payment.customer?.email && (
+          {customer?.email && (
             <>
               <dt class={theme.page.muted}>Email</dt>
-              <dd>{payment.customer.email}</dd>
+              <dd>{customer.email}</dd>
             </>
           )}
           {method && (

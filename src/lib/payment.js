@@ -27,6 +27,9 @@ export const goodsFor = (cart) => {
   return goods;
 };
 
+// Names the payment this browser opened, so only it sees the shopper's details on the receipt.
+export const RECEIPT_COOKIE = 'monei-receipt';
+
 export const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
 
@@ -89,7 +92,7 @@ export const createPayment = async ({
  */
 export const paymentRoute =
   (respond) =>
-  async ({request}) => {
+  async ({request, cookies}) => {
     if (!client) return json({error: 'MONEI_API_KEY is not configured'}, 500);
 
     let body;
@@ -136,6 +139,13 @@ export const paymentRoute =
         shippingDetails,
         config,
         baseUrl: origin(request.url)
+      });
+      cookies?.set(RECEIPT_COOKIE, payment.id, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: new URL(request.url).protocol === 'https:',
+        maxAge: 60 * 60 * 24
       });
       return respond(payment);
     } catch (error) {

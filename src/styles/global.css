@@ -349,10 +349,10 @@ body[data-numerals] .tabular-nums {
   border-color: var(--color-emerald-500);
 }
 
-/* A wallet button cannot be greyed out from here — it lives in a cross-origin frame
-   — so the whole mount box is taken out of reach instead. `is-busy` covers rates
-   being replaced, `is-locked` a method that has no rate to pay for yet; they move
-   independently, so neither may clear the other. */
+/* The Bizum and PayPal buttons live in cross-origin frames and cannot be greyed out
+   from here, so the mount box is taken out of reach instead (with `inert` set beside
+   it for the keyboard). `is-busy` covers rates being replaced, `is-locked` a method
+   that has no rate to pay for yet; they move independently, so neither may clear the other. */
 .is-busy,
 .is-locked {
   pointer-events: none;

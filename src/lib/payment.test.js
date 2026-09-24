@@ -185,6 +185,29 @@ describe('paymentRoute', () => {
     expect(callbackUrl).toBe('https://shop.test/api/callback');
   });
 
+  /** A receipt link can be shared; the cookie is what tells the paying browser apart. */
+  it('marks the paying browser as the owner of the payment it opened', async () => {
+    const set = vi.fn();
+    await paymentRoute((payment) => Response.json({id: payment.id}))({
+      request: new Request('https://shop.test/api/payment', {method: 'POST', body: JSON.stringify(ORDER)}),
+      cookies: {set}
+    });
+
+    expect(set).toHaveBeenCalledWith('monei-receipt', 'pay_1', expect.objectContaining({httpOnly: true, secure: true}));
+  });
+
+  it('sets no owner cookie when the payment could not be opened', async () => {
+    const set = vi.fn();
+    create.mockRejectedValueOnce(new Error('MONEI down'));
+    const response = await paymentRoute(() => Response.json({}))({
+      request: new Request('https://shop.test/api/payment', {method: 'POST', body: JSON.stringify(ORDER)}),
+      cookies: {set}
+    });
+
+    expect(response.status).toBe(502);
+    expect(set).not.toHaveBeenCalled();
+  });
+
   it('keeps a separate wallet billing address instead of copying the shipping one', async () => {
     const billing = {name: 'Ana', address: {country: 'ES', zip: '08001', city: 'Barcelona', line1: 'Rambla 1'}};
     await post({...ORDER, billing});

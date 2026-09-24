@@ -102,17 +102,27 @@ export const validateForm = () => {
 };
 
 /**
- * Every express button pays the amount the shown rates priced, so none of them may
- * be reachable while those rates are being replaced.
+ * The mounts are cross-origin frames that cannot be disabled from here. `pointer-events`
+ * stops a click; `inert` stops keyboard focus reaching the button inside.
+ */
+const holdMount = (node, reason, held) => {
+  if (!node) return;
+  node.classList.toggle(reason, held);
+  node.inert = node.classList.contains('is-busy') || node.classList.contains('is-locked');
+};
+
+/** A payment in flight or a rate lookup holds the page order still. */
+export const orderHeld = () => busy || pricing;
+
+/**
+ * Bizum and PayPal pay the amount the shown rates priced, so neither may be
+ * reachable while those rates are being replaced.
  */
 export const setPricing = (busy) => {
   pricing = busy;
   el('shipping-spinner')?.classList.toggle('is-pending', busy);
 
-  for (const container of ['payment-request', 'paypal', 'bizum']) {
-    const node = el(container);
-    if (node) node.classList.toggle('is-busy', busy);
-  }
+  for (const container of ['paypal', 'bizum']) holdMount(el(container), 'is-busy', busy);
   for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = busy;
   refreshPayButton();
 };
@@ -145,8 +155,8 @@ const BIZUM_MAX = 500;
  * of reach instead.
  */
 export const syncRateGate = () => {
-  el('paypal')?.classList.toggle('is-locked', !selectedOption());
-  el('bizum')?.classList.toggle('is-locked', !selectedOption() || currentTotal() >= BIZUM_MAX);
+  holdMount(el('paypal'), 'is-locked', !selectedOption());
+  holdMount(el('bizum'), 'is-locked', !selectedOption() || currentTotal() >= BIZUM_MAX);
 };
 
 export const renderTotals = () => {

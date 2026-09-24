@@ -1,6 +1,6 @@
 import {PRODUCTS} from '../data/products.js';
 import {MAX_QUANTITY, newSeed, seededCart} from './cart.js';
-import {normalizeCountry} from './countries.js';
+import {DEFAULT_COUNTRY, normalizeCountry} from './countries.js';
 
 // The demo's whole state lives in the query string, so a link reproduces an exact
 // configuration. The URL is hand-editable, so every value is whitelisted and
@@ -19,12 +19,15 @@ export const CARD_UIS = ['input', 'parts'];
 // Apple Pay or Google Pay from the browser, with no prop to constrain the choice.
 export const METHODS = ['card', 'wallet', 'paypal', 'bizum'];
 
+// `null` is "every method the account allows"; an empty list is none.
+export const methodAllowed = (methods, id) => methods === null || methods.includes(id);
+
 export const DEFAULTS = {
   theme: 'aurora',
   seed: null, // generated when absent, then written back with replaceState
   methods: null, // null means "every method the account has enabled"
   cardUi: null, // null means "whichever the theme prefers"
-  country: 'ES',
+  country: DEFAULT_COUNTRY,
   flow: 'components',
   panel: false, // settings rail open; server-rendered so it cannot flash closed
   code: false, // code rail open, same reason

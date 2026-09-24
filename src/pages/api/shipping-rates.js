@@ -1,7 +1,5 @@
-import {cartTotal} from '../../lib/cart.js';
 import {matchZone, ratesFor, shippableRatesFor} from '../../lib/shipping.js';
-import {parseCart} from '../../lib/config.js';
-import {json} from '../../lib/payment.js';
+import {goodsFor, json} from '../../lib/payment.js';
 
 export const prerender = false;
 
@@ -24,11 +22,12 @@ export const POST = async ({request}) => {
   const rates = wallet ? shippableRatesFor(zone) : ratesFor(zone);
   if (rates.length === 0) return json({error: 'unserviceable', zone: zone.id, label: zone.label}, 422);
 
-  // Quantities are the shopper's, so they go through the same whitelist as the URL param.
-  const items = parseCart(typeof cart === 'string' ? cart : null);
-  if (!items) return json({error: 'Invalid cart'}, 400);
-  const goods = cartTotal(items);
-  if (goods <= 0) return json({error: 'empty'}, 422);
+  let goods;
+  try {
+    goods = goodsFor(cart);
+  } catch (error) {
+    return json({error: error.code}, error.code === 'empty' ? 422 : 400);
+  }
 
   return json({
     zone: zone.id,

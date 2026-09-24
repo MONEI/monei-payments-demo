@@ -274,8 +274,7 @@ body[data-numerals] .tabular-nums {
   }
 }
 
-/* A cart change is a server render, so there is no old state to transition from —
-   the new one announces itself instead. */
+/* A cart edit rewrites the line in place, so the changed line announces itself. */
 [data-cart-line].just-changed {
   animation: cart-line-in 900ms ease-out;
 }

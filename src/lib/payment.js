@@ -1,24 +1,30 @@
 import {cartTotal, newOrderId} from './cart.js';
 import {STORE} from '../data/store.js';
-import {matchZone, rateFor} from './shipping.js';
+import {matchZone, rateFor, zipDecidesZone} from './shipping.js';
 import {CURRENCY, parseCart, parseConfig, toQuery} from './config.js';
-import {monei as client} from './monei.js';
-
-const env = import.meta.env ?? process.env;
+import {isValidPostcode} from './countries.js';
+import {monei as client, env} from './monei.js';
 
 // Generated per page load in the browser, so no two shoppers share one.
 const SESSION_RE = /^[A-Za-z0-9]{16,64}$/;
 
+// `PUBLIC_URL` wins so a tunnel still gets its public URL.
+const origin = (requestUrl) => (env.PUBLIC_URL || new URL(requestUrl).origin).replace(/\/$/, '');
+
+const invalid = (message, code = message) => Object.assign(new Error(message), {code});
+
 /**
- * `HOSTNAME` wins so a tunnel still gets its public URL; without it the request's
- * own origin is used. A tunnel or a deployment serves HTTPS; the local dev server
- * serves plain HTTP.
+ * The posted cart priced from the catalogue. A cart with any line the whitelist
+ * drops is refused whole, since pricing what is left would charge a different
+ * basket from the one on the page.
  */
-const origin = (requestUrl) => {
-  if (!env.HOSTNAME) return requestUrl ? new URL(requestUrl).origin : 'http://localhost:4321';
-  const host = env.HOSTNAME;
-  const scheme = host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https';
-  return `${scheme}://${host}`;
+export const goodsFor = (cart) => {
+  const items = typeof cart === 'string' ? parseCart(cart) : null;
+  const entries = cart === '' ? 0 : String(cart).split(',').length;
+  if (!items || items.length !== entries) throw invalid('Invalid cart');
+  const goods = cartTotal(items);
+  if (goods <= 0) throw invalid('The cart is empty', 'empty');
+  return goods;
 };
 
 export const json = (body, status = 200) =>
@@ -26,19 +32,18 @@ export const json = (body, status = 200) =>
 
 /**
  * Recomputes the amount rather than trusting the request. Wallet tokens carry no
- * amount, so a posted `finalAmount` is only a claim: prices come from the fixed
+ * amount, so a posted `walletAmount` is only a claim: prices come from the fixed
  * catalogue, and shipping from the zone of the address the order ships to.
  */
 export const resolveAmount = ({cart, address, optionId}) => {
-  const items = parseCart(typeof cart === 'string' ? cart : null);
-  if (!items) throw new Error('Invalid cart');
-  const goods = cartTotal(items);
-  if (goods <= 0) throw new Error('The cart is empty');
-  if (!address?.country) throw new Error('Missing shipping address');
+  const goods = goodsFor(cart);
+  if (!address?.country) throw invalid('Missing shipping address');
+  // Where the postcode picks the zone, a malformed one would fall through to a cheaper one.
+  const country = String(address.country).trim().toUpperCase();
+  if (zipDecidesZone(country) && !isValidPostcode(country, address.zip)) throw invalid('Invalid postcode');
 
   const zone = matchZone(address);
-  const rate = rateFor(zone.id, optionId);
-  return {amount: goods + rate.amount, goods, rate, zone: zone.id};
+  return {amount: goods + rateFor(zone.id, optionId).amount, goods, zone: zone.id};
 };
 
 /**
@@ -55,12 +60,12 @@ export const createPayment = async ({
   shippingDetails,
   sessionId,
   config,
-  baseUrl = origin()
+  baseUrl
 }) => {
   const orderId = newOrderId();
 
-  // The payment processor returns the shopper to these URLs directly, so the demo's
-  // config survives the redirect only if it travels on them.
+  // MONEI returns the shopper to these URLs directly, so the demo's config survives
+  // the redirect only if it travels on them.
   const state = config ? `&${config}` : '';
 
   return monei.payments.create({
@@ -98,8 +103,7 @@ export const paymentRoute =
     if (typeof sessionId !== 'string' || !SESSION_RE.test(sessionId)) return json({error: 'Invalid session'}, 400);
 
     // Reparsed rather than forwarded: `search` is the client's query string, and it
-    // ends up in a redirect URL the payment processor follows, so only whitelisted
-    // params may pass.
+    // ends up in a redirect URL MONEI follows, so only whitelisted params may pass.
     const config = toQuery(parseConfig(new URL(`http://x/?${String(search ?? '').replace(/^\?/, '')}`)));
 
     let resolved;

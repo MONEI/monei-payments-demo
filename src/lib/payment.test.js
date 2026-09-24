@@ -1,6 +1,10 @@
-import {describe, expect, it, vi} from 'vitest';
-import {createPayment, resolveAmount} from './payment.js';
-import {cartTotal} from './cart.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+
+const create = vi.fn();
+vi.mock('./monei.js', () => ({monei: {payments: {create: (...args) => create(...args)}}, env: {}}));
+
+const {createPayment, paymentRoute, resolveAmount} = await import('./payment.js');
+const {cartTotal} = await import('./cart.js');
 
 const CART = [
   {productId: 'ethiopia-guji', quantity: 2},
@@ -66,6 +70,22 @@ describe('resolveAmount', () => {
     expect(() => resolve({cart: undefined})).toThrow(/invalid cart/i);
   });
 
+  it('refuses the whole cart when one line fails, rather than charging for the rest', () => {
+    expect(() => resolve({cart: 'ethiopia-guji:100,stoneware-cup:1'})).toThrow(/invalid cart/i);
+    expect(() => resolve({cart: 'stoneware-cup:1,stoneware-cup:2'})).toThrow(/invalid cart/i);
+  });
+
+  /** `38 002` is a Canary postcode typed with a space; matched loosely it would price as mainland. */
+  it('refuses a malformed postcode where the postcode decides the zone', () => {
+    for (const zip of ['38 002', '38-002', '3800', '']) {
+      expect(() => resolve({address: {country: 'ES', zip}, optionId: 'standard'})).toThrow(/invalid postcode/i);
+    }
+  });
+
+  it('does not ask for a postcode format where one zone covers the whole country', () => {
+    expect(resolve({address: {country: 'US', zip: 'anything'}, optionId: 'international'}).zone).toBe('row');
+  });
+
   it('refuses an emptied cart rather than charging for shipping alone', () => {
     expect(() => resolve({cart: ''})).toThrow(/empty/i);
   });
@@ -79,6 +99,7 @@ describe('createPayment', () => {
       amount: 2599,
       currency: 'EUR',
       sessionId: 'abc123',
+      baseUrl: 'https://shop.test',
       ...overrides
     });
     return create.mock.calls[0][0];
@@ -114,5 +135,62 @@ describe('createPayment', () => {
 
     expect(first.orderId).toMatch(/^[A-Z0-9]{12}$/);
     expect(first.orderId).not.toBe(second.orderId);
+  });
+});
+
+describe('paymentRoute', () => {
+  const SESSION = '0123456789abcdef0123456789abcdef';
+  const ORDER = {
+    sessionId: SESSION,
+    cart: 'ethiopia-guji:2,stoneware-cup:1',
+    address: {country: 'ES', zip: '28014', line1: 'Calle 1', city: 'Madrid'},
+    optionId: 'standard'
+  };
+  const post = (body) =>
+    paymentRoute((payment) => Response.json({id: payment.id}))({
+      request: new Request('https://shop.test/api/payment', {method: 'POST', body: JSON.stringify(body)})
+    });
+
+  beforeEach(() => {
+    create.mockReset();
+    create.mockResolvedValue({id: 'pay_1', status: 'PENDING'});
+  });
+
+  it('charges the amount it computed, not one the client could supply', async () => {
+    const response = await post({...ORDER, amount: 1});
+
+    expect(response.status).toBe(200);
+    expect(create.mock.calls[0][0].amount).toBe(cartTotal(CART) + 499);
+  });
+
+  it('refuses a wallet total that disagrees with its own, before opening a payment', async () => {
+    const response = await post({...ORDER, walletAmount: 100});
+
+    expect(response.status).toBe(422);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('refuses a missing or malformed sessionId, since the components tokenized under it', async () => {
+    expect((await post({...ORDER, sessionId: undefined})).status).toBe(400);
+    expect((await post({...ORDER, sessionId: '../x'})).status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('lets only whitelisted params onto the URLs MONEI redirects the shopper to', async () => {
+    await post({...ORDER, search: '?theme=monoline&next=https://evil.test'});
+    const {completeUrl, callbackUrl} = create.mock.calls[0][0];
+
+    expect(completeUrl).toContain('theme=monoline');
+    expect(completeUrl).not.toContain('evil');
+    expect(callbackUrl).toBe('https://shop.test/api/callback');
+  });
+
+  it('keeps a separate wallet billing address instead of copying the shipping one', async () => {
+    const billing = {name: 'Ana', address: {country: 'ES', zip: '08001', city: 'Barcelona', line1: 'Rambla 1'}};
+    await post({...ORDER, billing});
+    const sent = create.mock.calls[0][0];
+
+    expect(sent.billingDetails.address).toEqual(billing.address);
+    expect(sent.shippingDetails.address).toEqual(ORDER.address);
   });
 });

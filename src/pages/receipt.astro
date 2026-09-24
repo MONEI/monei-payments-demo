@@ -29,14 +29,20 @@ if (id && monei) {
 // These are not failures: a 3D Secure return or a Bizum challenge lands here before
 // the payment processor has confirmed, and a "Try again" button would let the
 // shopper pay twice.
-const PENDING = ['PENDING', 'AUTHORIZED', 'PENDING_PROCESSING'];
+const PENDING = ['PENDING', 'PENDING_PROCESSING'];
+// Only these end with no money taken, so only these offer a retry. Anything else —
+// authorized, refunded, paid out — is shown as it is.
+const FAILED = ['FAILED', 'CANCELED', 'EXPIRED'];
 const state = !payment
   ? 'unknown'
   : payment.status === 'SUCCEEDED'
     ? 'succeeded'
     : PENDING.includes(payment.status)
       ? 'pending'
-      : 'failed';
+      : FAILED.includes(payment.status)
+        ? 'failed'
+        : 'other';
+const statusText = payment?.status?.toLowerCase().replaceAll('_', ' ');
 
 const method = (() => {
   const pm = payment?.paymentMethod;
@@ -53,6 +59,8 @@ const formatAddress = (details) => {
   const parts = [a.line1, a.line2, [a.city, a.state, a.zip].filter(Boolean).join(', '), a.country];
   return parts.filter(Boolean).join(' · ');
 };
+const shippingAddress = formatAddress(payment?.shippingDetails);
+const billingAddress = formatAddress(payment?.billingDetails);
 
 const card = `${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`;
 const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-sm font-medium`;
@@ -89,6 +97,16 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
         <>
           <h1 class={`text-2xl ${theme.page.heading}`}>Payment not completed</h1>
           <p class={`mt-2 text-sm ${theme.page.muted}`}>{payment.statusMessage ?? 'The payment did not go through.'}</p>
+        </>
+      )
+    }
+    {
+      state === 'other' && (
+        <>
+          <h1 class={`text-2xl ${theme.page.heading}`}>Payment {statusText}</h1>
+          <p class={`mt-2 text-sm ${theme.page.muted}`}>
+            Order <strong>{payment.orderId}</strong> is {statusText}.
+          </p>
         </>
       )
     }
@@ -132,16 +150,16 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
               <dd>{method}</dd>
             </>
           )}
-          {formatAddress(payment.shippingDetails) && (
+          {shippingAddress && (
             <>
               <dt class={theme.page.muted}>Shipping address</dt>
-              <dd>{formatAddress(payment.shippingDetails)}</dd>
+              <dd>{shippingAddress}</dd>
             </>
           )}
-          {formatAddress(payment.billingDetails) && (
+          {billingAddress && (
             <>
               <dt class={theme.page.muted}>Billing address</dt>
-              <dd>{formatAddress(payment.billingDetails)}</dd>
+              <dd>{billingAddress}</dd>
             </>
           )}
         </dl>

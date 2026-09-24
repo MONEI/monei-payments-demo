@@ -1,5 +1,5 @@
 ---
-import {CARD_UIS, FLOWS, THEMES} from '../lib/config.js';
+import {CARD_UIS, FLOWS, METHODS, THEMES, methodAllowed} from '../lib/config.js';
 import {THEME_DATA} from '../data/themes.js';
 import {zoneSummary} from '../lib/shipping.js';
 import {formatPrice} from '../lib/cart.js';
@@ -19,7 +19,7 @@ const redirect = config.flow === 'redirect';
 
 // The hosted page collects the card itself, and an unchecked Card row removes the
 // fields altogether; neither leaves anything for this setting to change.
-const cardOff = redirect || !(config.methods === null || config.methods.includes('card'));
+const cardOff = redirect || !methodAllowed(config.methods, 'card');
 
 const METHOD_LABELS = {
   card: 'Card',
@@ -28,10 +28,7 @@ const METHOD_LABELS = {
   bizum: 'Bizum'
 };
 
-const UNAVAILABLE = {};
-
-// `/client-payment-methods` answers per caller, so a row starts optimistic and the
-// browser corrects it once the component reports whether it loaded.
+// Shown when a method is on the account but its component reports it unsupported here.
 const REASON = {bizum: 'Spain only'};
 
 // The account reports the two wallets separately; the single row stands for either.
@@ -143,12 +140,9 @@ const hint = `text-[11px] ${theme.page.muted}`;
         {redirect && <p class={`mt-1 ${hint}`}>The hosted page offers its own, so these do not apply.</p>}
         <div class="mt-2 space-y-1.5">
           {
-            Object.entries(METHOD_LABELS).map(([id, label]) => {
+            METHODS.map((id) => {
               const ids = ACCOUNT_IDS[id] ?? [id];
-              const onAccount =
-                (enabled === null || ids.some((i) => enabled.includes(i)) || REASON[id]) &&
-                !UNAVAILABLE[id] &&
-                !redirect;
+              const onAccount = (enabled === null || ids.some((i) => enabled.includes(i))) && !redirect;
               return (
                 <label class={`${row} ${onAccount ? 'cursor-pointer' : 'opacity-50'}`}>
                   <span class="flex min-w-0 items-center gap-2">
@@ -156,11 +150,11 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       type="checkbox"
                       class={`shrink-0 ${onAccount ? 'cursor-pointer' : ''}`}
                       value={id}
-                      checked={onAccount && (config.methods === null || config.methods.includes(id))}
+                      checked={onAccount && methodAllowed(config.methods, id)}
                       disabled={!onAccount}
                       data-method={id}
                     />
-                    {label}
+                    {METHOD_LABELS[id]}
                   </span>
                   {onAccount ? (
                     <>
@@ -170,9 +164,7 @@ const hint = `text-[11px] ${theme.page.muted}`;
                       </span>
                     </>
                   ) : (
-                    !redirect && (
-                      <span class={`${hint} shrink-0 text-right`}>{UNAVAILABLE[id] ?? 'Not on this account'}</span>
-                    )
+                    !redirect && <span class={`${hint} shrink-0 text-right`}>Not on this account</span>
                   )}
                 </label>
               );

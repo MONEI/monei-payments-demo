@@ -70,13 +70,17 @@ export const cartLines = (items) =>
 /** Goods only, in cents. Shipping is added from the zone's rate. */
 export const cartTotal = (items) => cartLines(items).reduce((sum, line) => sum + line.lineTotal, 0);
 
-export const formatPrice = (cents, currency = 'EUR', locale = 'en-IE') =>
-  new Intl.NumberFormat(locale, {style: 'currency', currency}).format(cents / 100);
+const formatters = new Map();
+
+export const formatPrice = (cents, currency = 'EUR', locale = 'en-IE') => {
+  const key = `${locale}|${currency}`;
+  if (!formatters.has(key)) formatters.set(key, new Intl.NumberFormat(locale, {style: 'currency', currency}));
+  return formatters.get(key).format(cents / 100);
+};
 
 /**
- * Alphanumeric, as the API requires, and random per attempt rather than derived
- * from the seed — MONEI uses orderId as a duplicate-payment guard, so a stable
- * one would let a shared link be paid only once.
+ * Random per attempt rather than derived from the seed: MONEI uses orderId as a
+ * duplicate-payment guard, so a stable one would let a shared link be paid only once.
  */
 export const newOrderId = () => {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

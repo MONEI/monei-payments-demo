@@ -1,13 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {
-  initialShippingOptions,
-  matchZone,
-  rateFor,
-  ratesFor,
-  shippableRatesFor,
-  zipDecidesZone,
-  zoneIds
-} from './shipping.js';
+import {initialShippingOptions, matchZone, rateFor, ratesFor, shippableRatesFor, zipDecidesZone} from './shipping.js';
 import {parseConfig, toQuery} from './config.js';
 import {countryList} from './countries.js';
 
@@ -52,7 +44,7 @@ describe('matchZone ordering', () => {
       {country: 'zz', zip: '!!!'}
     ];
     for (const input of inputs) {
-      expect(zoneIds()).toContain(matchZone(input).id);
+      expect(['canary', 'peninsula', 'row']).toContain(matchZone(input).id);
     }
   });
 
@@ -117,12 +109,7 @@ describe('rates', () => {
   });
 });
 
-/**
- * Both wallets read the option list once, when the sheet is constructed. An empty
- * list opens a sheet with no shipping row, and the first address change cannot add
- * one — so the seed must be non-empty for every country the rail can select,
- * including the ones we refuse to ship to.
- */
+/** A wallet sheet opens with these, so every country the rail can select gets some. */
 describe('initialShippingOptions', () => {
   it('never seeds a wallet sheet with an empty list', () => {
     for (const country of [...countryList().map((c) => c.code), '', undefined, 'ZZ']) {

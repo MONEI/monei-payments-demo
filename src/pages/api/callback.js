@@ -13,7 +13,7 @@ export const POST = async ({request}) => {
   const signature = request.headers.get('monei-signature');
 
   if (!raw) {
-    console.error('Callback body was empty — the request stream was already consumed');
+    console.error('Callback body was empty');
     return new Response('Empty body', {status: 400});
   }
 

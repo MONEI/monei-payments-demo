@@ -11,11 +11,11 @@ const BIZUM_TEST_PHONE = '+34500000000';
 let config;
 let sessionId;
 let card = null;
+let cardParts = [];
 let paymentRequest = null;
 let payPal = null;
 let bizum = null;
-let walletOption = null;
-let walletUnserviceable = false;
+let walletOrder = null;
 let ratesRequest = 0;
 let formOrderAtOpen = null;
 
@@ -23,6 +23,25 @@ let formOrderAtOpen = null;
 // payment with it, and MONEI expects a different one for each customer.
 const newSessionId = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+
+// Every server call here is a JSON POST, and both sides of it go to the event log.
+const postJson = async (path, body) => {
+  emit(`POST ${path}`, body);
+  let response = null;
+  let data;
+  try {
+    response = await fetch(path, {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    data = await response.json();
+  } catch {
+    // A network error or a body that is not JSON; either way there is nothing to use.
+  }
+  emit(`← ${response?.status ?? 'network error'}`, data);
+  return {ok: Boolean(response?.ok && data), data: data ?? {}};
+};
 
 const updateAmount = (component, amount = page.currentTotal()) => {
   // Rejects asynchronously once the component's frame is gone, so the promise has
@@ -49,37 +68,25 @@ const loadRates = async () => {
   // A country alone is not enough to price Spain, where the postcode decides
   // between mainland and the Canaries. Quoting the cheaper zone on a guess shows a
   // total that moves once the shopper finishes typing.
-  if (!address.country || (config.zipZones.includes(address.country) && !/^\d{5}$/.test(address.zip))) {
+  if (!address.country || (config.zipZones.includes(address.country) && !page.postcodeComplete())) {
+    // Clears a lookup this one supersedes, whose own reply is now ignored.
+    page.setPricing(false);
     page.showRatesNote('Enter an address to see rates.');
     reprice();
     return;
   }
 
-  emit('POST /api/shipping-rates', {cart: config.cart, address});
   page.setPricing(true);
-
-  let response;
-  let data;
-  try {
-    response = await fetch('/api/shipping-rates', {
-      method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify({cart: config.cart, address})
-    });
-    data = await response.json();
-  } catch {
-    response = null;
-  }
+  const {ok, data} = await postJson('/api/shipping-rates', {cart: config.cart, address});
   if (request !== ratesRequest) return;
   page.setPricing(false);
-  emit(`← ${response?.status ?? 'network error'}`, data);
 
-  if (!response?.ok) {
+  if (!ok) {
     const message = {
       unserviceable: "This shop doesn't ship to that country.",
       empty: 'Add something to the cart first.'
     };
-    page.showRatesNote(message[data?.error] ?? 'Could not load shipping rates.', {error: true});
+    page.showRatesNote(message[data.error] ?? 'Could not load shipping rates.', {error: true});
     reprice();
     return;
   }
@@ -149,9 +156,15 @@ const mountCard = () => {
         page.setCardComplete(event.complete);
       }
     });
-    monei.CardNumber({group: card, placeholder: '1234 1234 1234 1234'}).render('#card-number');
-    monei.CardExpiry({group: card, placeholder: 'MM/YY'}).render('#card-expiry');
-    monei.CardCvc({group: card, placeholder: 'CVC'}).render('#card-cvc');
+    // Destroying the group leaves its parts mounted, so each is kept to destroy on its own.
+    cardParts = [
+      monei.CardNumber({group: card, placeholder: '1234 1234 1234 1234'}),
+      monei.CardExpiry({group: card, placeholder: 'MM/YY'}),
+      monei.CardCvc({group: card, placeholder: 'CVC'})
+    ];
+    cardParts[0].render('#card-number');
+    cardParts[1].render('#card-expiry');
+    cardParts[2].render('#card-cvc');
     return;
   }
 
@@ -165,57 +178,39 @@ const mountCard = () => {
   card.render('#card-input');
 };
 
+/**
+ * The sheet prices the cart as it stood when this ran, and the page stays editable
+ * behind it, so that cart is pinned here and paid for on submit: the order is always
+ * the basket the sheet showed. Both wallets call this as the sheet opens.
+ */
 const walletRates = async (address) => {
   emit('onShippingAddressChange', address);
+  page.setExpressError(null);
+  const {cart, goods} = config;
 
   // Cleared first, so a failed lookup of any kind leaves nothing to pay with: the
   // sheet stays open and submittable after the error.
-  walletOption = null;
+  walletOrder = null;
 
-  let response;
-  let data;
-  try {
-    response = await fetch('/api/shipping-rates', {
-      method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify({cart: config.cart, address, wallet: true})
-    });
-    data = await response.json();
-  } catch {
-    response = null;
-  }
-  emit(`← ${response?.status ?? 'network error'}`, data);
+  const {ok, data} = await postJson('/api/shipping-rates', {cart, address, wallet: true});
 
   // The sheet shows an address as unserviceable when this callback throws.
-  if (!response?.ok) {
-    walletUnserviceable = data?.error === 'unserviceable';
-    throw new Error(data?.error ?? 'No rates for this address');
-  }
+  if (!ok) throw new Error(data.error ?? 'No rates for this address');
 
-  walletUnserviceable = false;
-  walletOption = data.shippingOptions[0].id;
+  walletOrder = {cart, goods, optionId: data.shippingOptions[0].id};
 
   return {shippingOptions: data.shippingOptions, amount: data.amount};
 };
 
 const walletSubmit = async (result) => {
-  // Dismissing the sheet fires no callback, so the lock is released here and by the
-  // `pointerdown` listener rather than on a close event that does not exist.
-  page.lockCart(false);
-
   if (result.error || !result.token) {
     return page.setExpressError(result.error ?? 'The wallet did not return a payment method.');
   }
 
-  if (!walletOption) {
-    emit('approved, not created', {
-      reason: walletUnserviceable ? 'unserviceable address' : 'no shipping option',
-      paymentMethod: result.paymentMethod
-    });
+  if (!walletOrder) {
+    emit('approved, not created', {reason: 'no shipping option', paymentMethod: result.paymentMethod});
     return page.setExpressError(
-      walletUnserviceable
-        ? "This shop doesn't ship to that address, so the order was not placed. Nothing was charged."
-        : 'The wallet did not report a shipping address, so the order could not be priced.'
+      'The wallet reported no address this shop can price, so the order was not placed. Nothing was charged.'
     );
   }
 
@@ -230,7 +225,8 @@ const walletSubmit = async (result) => {
   await submitPayment(
     {
       paymentToken: result.token,
-      optionId: result.shippingOption?.id ?? walletOption,
+      cart: walletOrder.cart,
+      optionId: result.shippingOption?.id ?? walletOrder.optionId,
       // The wallet's own display total. A claim to check against the recomputed
       // amount, never an amount to charge.
       walletAmount: result.finalAmount,
@@ -246,19 +242,10 @@ const mountPaymentRequest = () => {
   const container = document.getElementById('payment-request');
   if (!container) return;
 
-  container.hidden = page.isRedirectFlow() || !page.hasSomethingToBuy() || !page.methodAllowed('wallet');
-  if (container.hidden) return;
-
-  // Locked from our own listener rather than `onBeforeOpen`: Safari opens the Apple
-  // Pay sheet only from inside the tap's own task. The container outlives a remount,
-  // so the listener is added once.
-  if (container.dataset.wired !== 'true') {
-    container.dataset.wired = 'true';
-    container.addEventListener('pointerdown', () => {
-      page.setExpressError(null);
-      page.lockCart(true);
-    });
-  }
+  const shown = !page.isRedirectFlow() && page.hasSomethingToBuy() && page.methodAllowed('wallet');
+  container.hidden = !shown;
+  page.showExpress(shown);
+  if (!shown) return;
 
   paymentRequest = window.monei.PaymentRequest({
     accountId: config.accountId,
@@ -267,9 +254,7 @@ const mountPaymentRequest = () => {
     sessionId,
     requestShipping: true,
     requestBilling: true,
-    // Apple Pay reads `shippingMethods` when the sheet is constructed and Google
-    // Pay reads `shippingOptionParameters` at the same point, so an empty list
-    // here means the first sheet opens with no shipping at all.
+    // The options the sheet opens with, before it knows the address.
     shippingOptions: config.initialShippingOptions,
     style: {height: 47, borderRadius: config.walletRadius},
 
@@ -277,14 +262,13 @@ const mountPaymentRequest = () => {
 
     onShippingOptionChange: async (option) => {
       emit('onShippingOptionChange', option);
-      walletOption = walletOption && option.id;
-      return {amount: config.goods + option.amount};
+      if (walletOrder) walletOrder = {...walletOrder, optionId: option.id};
+      return {amount: (walletOrder?.goods ?? config.goods) + option.amount};
     },
 
     onSubmit: walletSubmit,
 
     onError: (error) => {
-      page.lockCart(false);
       emit('PaymentRequest.onError', {message: error?.message ?? String(error)});
       page.setExpressError(error?.message ?? 'The wallet could not complete this payment.');
     },
@@ -375,15 +359,16 @@ const mountPayPal = () => {
     amount: page.currentTotal(),
     currency: config.currency,
     sessionId,
-    // A number: PayPal's buttons take `borderRadius` in pixels.
-    style: {height: 47, borderRadius: Number.parseInt(config.walletRadius, 10) || 0},
+    // Top-level rather than in `style`: the component converts this one to the number
+    // PayPal's buttons need, and passes a `style.borderRadius` string through as is.
+    borderRadius: config.walletRadius,
+    style: {height: 47},
 
     onBeforeOpen: openFormOrder,
     onSubmit: submitFormOrder('PayPal'),
     onError: componentError('PayPal'),
 
-    // `true` means PayPal is available, not that its buttons rendered; a render
-    // failure arrives through `onError`.
+    // `true` means PayPal is available, not that its buttons rendered.
     onLoad: (isSupported) => {
       emit('PayPal.onLoad', {isSupported});
       page.methodLoaded('paypal', isSupported);
@@ -396,23 +381,16 @@ const mountPayPal = () => {
 const payByRedirect = async () => {
   page.setBusy(true);
 
-  const formOrder = page.order();
-  emit('POST /api/redirect-payment', {cart: config.cart, optionId: formOrder.optionId, amount: page.currentTotal()});
+  const {ok, data} = await postJson('/api/redirect-payment', {
+    sessionId,
+    cart: config.cart,
+    ...page.order(),
+    search: window.location.search
+  });
+  if (ok) return window.location.assign(data.redirectUrl);
 
-  try {
-    const response = await fetch('/api/redirect-payment', {
-      method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify({sessionId, cart: config.cart, ...formOrder, search: window.location.search})
-    });
-    const data = await response.json();
-    emit(`← ${response.status}`, data);
-    if (!response.ok) throw new Error(data.error ?? 'Payment could not be created');
-    window.location.assign(data.redirectUrl);
-  } catch (error) {
-    page.setBusy(false);
-    page.setError(`${error.message}. Nothing was charged — you can try again.`);
-  }
+  page.setBusy(false);
+  page.setError(`${data.error ?? 'Payment could not be created'}. Nothing was charged — you can try again.`);
 };
 
 const pay = async () => {
@@ -453,23 +431,18 @@ const receiptUrl = (paymentId) => {
  * this point, and each needs the same `nextAction` branch. `showError` is the error
  * line next to the button the shopper used.
  */
-const submitPayment = async (body, showError = page.setError) => {
-  emit('POST /api/payment', {cart: body.cart ?? config.cart, optionId: body.optionId, walletAmount: body.walletAmount});
-
-  let data;
-  try {
-    const response = await fetch('/api/payment', {
-      method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify({sessionId, cart: config.cart, ...body, search: window.location.search})
-    });
-    data = await response.json();
-    emit(`← ${response.status}`, data);
-    if (!response.ok) throw new Error(data.error ?? 'Payment failed');
-  } catch (error) {
+const submitPayment = async ({paymentToken, ...order}, showError = page.setError) => {
+  // The token stays in the browser: the server only prices the order and opens the payment.
+  const {ok, data} = await postJson('/api/payment', {
+    sessionId,
+    cart: config.cart,
+    ...order,
+    search: window.location.search
+  });
+  if (!ok) {
     page.setBusy(false);
     // A token exists but no payment does, so nothing was charged and a retry is safe.
-    return showError(`${error.message}. Nothing was charged — you can try again.`);
+    return showError(`${data.error ?? 'Payment failed'}. Nothing was charged — you can try again.`);
   }
 
   const receipt = receiptUrl(data.id);
@@ -477,7 +450,7 @@ const submitPayment = async (body, showError = page.setError) => {
 
   let result;
   try {
-    result = await window.monei.confirmPayment({paymentId: data.id, paymentToken: body.paymentToken});
+    result = await window.monei.confirmPayment({paymentId: data.id, paymentToken});
     emit('← confirmPayment', {status: result?.status, statusCode: result?.statusCode});
   } catch (error) {
     // The payment exists either way, so its own status decides the outcome.
@@ -499,20 +472,15 @@ const submitPayment = async (body, showError = page.setError) => {
 
 const mountAll = async () => {
   // The previous page's iframes would otherwise linger, and a stale CardGroup
-  // keeps its controller frame attached to a document that no longer exists.
-  for (const component of [card, paymentRequest, payPal, bizum]) {
-    try {
-      await component?.destroy();
-    } catch {
-      // Already gone with the old document.
-    }
-  }
+  // keeps its controller frame attached to a document that no longer exists. A
+  // component already gone with the old document rejects, which is fine.
+  await Promise.allSettled([card, ...cardParts, paymentRequest, payPal, bizum].map((c) => c?.destroy()));
   card = null;
+  cardParts = [];
   paymentRequest = null;
   payPal = null;
   bizum = null;
-  walletOption = null;
-  walletUnserviceable = false;
+  walletOrder = null;
 
   mountCard();
   mountPaymentRequest();
@@ -524,9 +492,14 @@ const mountAll = async () => {
 };
 
 // Queued: a cart edit can start a remount while the last one is still destroying
-// components, and two running at once mount everything twice.
+// components, and two running at once mount everything twice. A failed mount is
+// reported and the queue carries on, so the next remount can still run.
 let mounting = Promise.resolve();
-const remount = () => (mounting = mounting.then(mountAll));
+const remount = () =>
+  (mounting = mounting.then(mountAll).catch((error) => {
+    emit('mount failed', {message: error?.message ?? String(error)});
+    page.setError('The payment form could not load. Reload the page to try again.');
+  }));
 
 const start = async () => {
   const button = document.getElementById('pay');
@@ -535,12 +508,12 @@ const start = async () => {
 
   config = page.readPage();
   sessionId = newSessionId();
-  await remount();
 
   button.addEventListener('click', pay);
   for (const name of ['country', 'zip']) {
     document.querySelector(`[name="${name}"]`)?.addEventListener('change', loadRates);
   }
+  await remount();
 };
 
 // Fires on the first load as well as after every client-side navigation.

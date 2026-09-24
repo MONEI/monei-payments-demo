@@ -48,10 +48,7 @@ describe('parseConfig', () => {
     expect(at('?methods=hack').methods).toEqual([]);
   });
 
-  /**
-   * Unchecking every method used to round-trip as "all methods": the empty param
-   * was read back as the absent one, so the rail turned itself on again.
-   */
+  /** Read back as the absent param, an empty one would turn every method on again. */
   it('tells no methods apart from every method', () => {
     expect(at('?seed=abc123').methods).toBeNull();
     expect(at('?seed=abc123&methods=').methods).toEqual([]);

@@ -8,7 +8,7 @@ import CardForm from '../components/card-form.astro';
 import ExpressCheckout from '../components/express-checkout.astro';
 import CodePanel from '../components/code-panel.astro';
 import Rail from '../components/rail.astro';
-import {accountId} from '../lib/monei.js';
+import {accountId, fetchAccountMethods} from '../lib/monei.js';
 import ProductArt from '../components/product-art.astro';
 import {PRODUCTS} from '../data/products.js';
 import {cartLines, cartTotal, formatPrice} from '../lib/cart.js';
@@ -16,7 +16,6 @@ import {parseConfig, serializeCart, toQuery} from '../lib/config.js';
 import {initialShippingOptions, zipDecidesZone} from '../lib/shipping.js';
 import {countryList} from '../lib/countries.js';
 import {cardUiFor, themeFor} from '../data/themes.js';
-import {fetchAccountMethods} from '../lib/monei.js';
 
 const config = parseConfig(Astro.url);
 const theme = themeFor(config.theme);
@@ -24,9 +23,7 @@ const cardUi = cardUiFor(theme, config.cardUi);
 const lines = cartLines(config.cart);
 const total = cartTotal(config.cart);
 
-// null means the lookup failed — unknown, not "none enabled".
-const account = await fetchAccountMethods();
-const enabled = account?.methods ?? null;
+const enabled = await fetchAccountMethods();
 const inCart = new Set(config.cart.map((i) => i.productId));
 
 const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
@@ -34,7 +31,6 @@ const failedPayment = Astro.url.searchParams.has('error');
 
 const clientConfig = {
   accountId,
-  seed: config.seed,
   currency: config.currency,
   goods: total,
   cart: serializeCart(config.cart),
@@ -126,11 +122,19 @@ const clientConfig = {
       </div>
       <aside class="order-2 space-y-4">
         <CartSummary theme={theme} lines={lines} total={total} />
-        <TestCards theme={theme} paypalEnabled={true} />
+        <TestCards theme={theme} />
       </aside>
     </div>
   </main>
-  {canonicalQuery && <script is:inline set:html={`history.replaceState(history.state, '', '?${canonicalQuery}');`} />}
+  {/* The rails' own view state stays out of shared links, but not out of this tab's URL. */}
+  {
+    canonicalQuery && (
+      <script
+        is:inline
+        set:html={`const q = new URLSearchParams('${canonicalQuery}'); const own = new URLSearchParams(location.search); for (const k of ['panel', 'code', 'tab']) if (own.has(k)) q.set(k, own.get(k)); history.replaceState(history.state, '', '?' + q);`}
+      />
+    )
+  }
   <script id="demo-config" type="application/json" set:html={JSON.stringify(clientConfig)} />
   <script id="demo-cart" type="application/json" set:html={JSON.stringify(config.cart)} />
   <script>

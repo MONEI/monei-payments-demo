@@ -71,8 +71,6 @@ export const rateFor = (zoneId, optionId) => {
   return rate;
 };
 
-export const zoneIds = () => ZONES.map((z) => z.id);
-
 /** Each zone's label and cheapest delivered rate, for printing the table beside the store. */
 export const zoneSummary = () =>
   ZONES.map((zone) => ({label: zone.label, amount: Math.min(...shippableRatesFor(zone).map((r) => r.amount))}));
@@ -85,10 +83,7 @@ export const zipDecidesZone = (country) => {
   return ZONES.some((zone) => zone.match.zip !== undefined && countryMatches(zone.match.country, code));
 };
 
-/**
- * Both wallets read the option list when the sheet is constructed, so an empty one
- * opens a sheet that cannot price shipping at all.
- */
+/** The options a wallet sheet opens with, before it knows the address. */
 export const initialShippingOptions = (country) => {
   const rates = shippableRatesFor(matchZone({country}));
   return rates.length > 0 ? rates : shippableRatesFor({id: 'peninsula'});

@@ -1,5 +1,6 @@
 ---
 import {countryList, people} from '../lib/countries.js';
+import {matchZone} from '../lib/shipping.js';
 
 const {theme, country} = Astro.props;
 const countries = countryList();
@@ -14,6 +15,9 @@ const label = `block text-xs font-medium ${theme.page.muted}`;
 const helper = `${theme.page.radius} cursor-pointer border ${theme.page.border} px-2.5 py-1.5 text-xs font-medium sm:whitespace-nowrap`;
 
 const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
+// Mainland only: the other Spanish zones have no collect-in-store option, and a paid
+// rate would push the total past the €5 Bizum's test environment accepts.
+const bizumSamples = samples.ES.filter((s) => matchZone({country: 'ES', zip: s.zip}).id === 'peninsula');
 ---
 
 <section id="address" class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} p-6`}>
@@ -79,7 +83,7 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     </label>
   </div>
 </section>
-<script define:vars={{samples, PEOPLE: people()}}>
+<script define:vars={{samples, bizumSamples, PEOPLE: people()}}>
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
   const FIELDS = ['name', 'email', 'line1', 'country', 'zip', 'city'];
@@ -128,26 +132,22 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     fill.dataset.wired = 'true';
     const form = zip.closest('section');
 
-    fill.addEventListener('click', () => {
-      const code = pick(Object.keys(samples));
-      const address = pick(samples[code]);
-      const person = pick(PEOPLE);
-
+    const fillAddress = (code, address, person) => {
       country.value = code;
       // The postcode field's pattern still belongs to the previous country, so a
       // valid address would be flagged invalid without re-syncing first.
       sync();
-
-      const set = (name, value) => {
+      const values = {name: person.name, email: person.email, ...address};
+      for (const name of ['name', 'email', 'line1', 'city', 'zip']) {
         const input = form.querySelector(`[name="${name}"]`);
-        if (input) input.value = value;
-      };
-      set('name', person.name);
-      set('email', person.email);
-      set('line1', address.line1);
-      set('city', address.city);
-      set('zip', address.zip);
+        if (input) input.value = values[name];
+      }
       validate();
+    };
+
+    fill.addEventListener('click', () => {
+      const code = pick(Object.keys(samples));
+      fillAddress(code, pick(samples[code]), pick(PEOPLE));
 
       // Assigning .value fires no event, so anything listening for a change — the
       // shipping lookup among it — would price a stale address.
@@ -156,7 +156,7 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     });
 
     /**
-     * Bizum's test mode only approves under €5, and one basket in the shop reaches
+     * Bizum's test environment accepts only payments under €5, and one basket in the shop reaches
      * that: a single pack of filter papers collected in store. Assembling it by hand
      * means emptying the cart and finding the one free shipping option, so the demo
      * does it in a click.
@@ -164,23 +164,7 @@ const samples = Object.fromEntries(countries.map((c) => [c.code, c.samples]));
     const preset = document.getElementById('bizum-preset');
     preset?.addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('monei:set-cart', {detail: [{productId: 'filter-papers', quantity: 1}]}));
-
-      const person = pick(PEOPLE);
-      // Mainland only: the Canary postcodes have no collect-in-store option, and a
-      // paid rate would push the total past the €5 Bizum approves under.
-      const address = pick(samples.ES.filter((s) => !/^(35|38)/.test(s.zip)));
-      country.value = 'ES';
-      sync();
-      const set = (name, value) => {
-        const input = form.querySelector(`[name="${name}"]`);
-        if (input) input.value = value;
-      };
-      set('name', person.name);
-      set('email', person.email);
-      set('line1', address.line1);
-      set('city', address.city);
-      set('zip', address.zip);
-      validate();
+      fillAddress('ES', pick(bizumSamples), pick(PEOPLE));
 
       // Collect in store is the only rate that keeps the total under €5. Stated as a
       // preference rather than applied to one render, because the cart change and the

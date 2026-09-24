@@ -1,3 +1,6 @@
+import {formatPrice} from '../lib/cart.js';
+import {methodAllowed as allowed} from '../lib/config.js';
+
 const el = (id) => document.getElementById(id);
 
 /**
@@ -16,7 +19,6 @@ let shippingOut;
 let cardComplete = false;
 let busy = false;
 let pricing = false;
-let walletOpen = false;
 let preferredOption = null;
 
 export const readPage = () => {
@@ -30,21 +32,15 @@ export const readPage = () => {
   cardComplete = false;
   busy = false;
   pricing = false;
-  walletOpen = false;
+  preferredOption = null;
   return config;
 };
 
-const money = (cents) =>
-  new Intl.NumberFormat('en-IE', {style: 'currency', currency: config.currency}).format(cents / 100);
+const money = (cents) => formatPrice(cents, config.currency);
 
-/**
- * The rail is rendered on the server, but `/client-payment-methods` answers per
- * caller — so a method the server could not see may still work here, and vice
- * versa. The component's own `onLoad` is the only authority.
- */
-export const methodAllowed = (id) => config.methods === null || config.methods.includes(id);
+export const methodAllowed = (id) => allowed(config.methods, id);
 
-// Every component requires a non-zero amount and throws on zero rather than
+// The payment components require a non-zero amount and throw on zero rather than
 // rendering a disabled state.
 export const hasSomethingToBuy = () => config.goods > 0;
 
@@ -79,7 +75,7 @@ export const currentTotal = () => {
 // here and only `setBusy` changes it.
 const refreshPayButton = () => {
   if (!payButton) return;
-  payButton.disabled = busy || pricing || walletOpen || !cardComplete || !selectedOption();
+  payButton.disabled = busy || pricing || !cardComplete || !selectedOption();
   const idle = isRedirectFlow() ? `Continue to payment · ${money(currentTotal())}` : `Pay ${money(currentTotal())}`;
   payButton.textContent = busy ? 'Processing…' : idle;
 };
@@ -117,11 +113,15 @@ export const setPricing = (busy) => {
     const node = el(container);
     if (node) node.classList.toggle('is-busy', busy);
   }
-  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) {
-    control.disabled = busy || walletOpen;
-  }
+  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = busy;
   refreshPayButton();
 };
+
+/**
+ * Where the postcode picks the zone, rates wait for a complete one; the input's
+ * `pattern` comes from the same country table the server checks against.
+ */
+export const postcodeComplete = () => document.querySelector('#address [name="zip"]')?.checkValidity() ?? false;
 
 /** What the shopper typed and picked: everything the server needs to price the order. */
 export const order = () => {
@@ -165,6 +165,7 @@ export const renderRates = (options, onChange) => {
   // Whatever is selected survives the re-render if the new rates still offer it, so an
   // address edit does not silently move the shopper onto a different one. A preset's
   // request outranks that, and has to outlive the several lookups its own click starts.
+  if (preferredOption && !options.some((o) => o.id === preferredOption)) preferredOption = null;
   const chosen = preferredOption ?? selectedOption();
   const preferred = options.find((o) => o.id === chosen) ?? options[0];
   shippingBox.innerHTML = options
@@ -227,6 +228,11 @@ export const syncCheckoutPanel = () => {
   if (panel) panel.hidden = seen === 0;
 };
 
+export const showExpress = (shown) => {
+  const section = el('express');
+  if (section) section.hidden = !shown;
+};
+
 // A cart edit remounts without a fresh render, so a hide from last time stands.
 export const showCard = (shown) => {
   const fields = el('card-fields');
@@ -274,31 +280,6 @@ export const methodLoaded = (id, isSupported) => {
   }
 
   syncCheckoutPanel();
-};
-
-/**
- * The open sheet holds a total the server priced from the cart it saw. A cart
- * change while it is open would make the sheet quote a price /api/payment then
- * refuses, so the quantity controls go read-only for as long as it is open.
- *
- * `PaymentRequest` reports no dismissal of the sheet, so this cannot be released
- * on a close event. `pointerdown` anywhere in the document is the recovery:
- * reaching the page at all means the sheet is no longer over it.
- */
-export const lockCart = (locked) => {
-  walletOpen = locked;
-  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = locked;
-  refreshPayButton();
-
-  // Armed a tick late: the tap that opens the sheet is itself a `pointerdown`, and on
-  // a touch screen it fires before the sheet appears — arming synchronously unlocks
-  // on the very gesture that locked.
-  if (locked) setTimeout(() => document.addEventListener('pointerdown', unlockCart, {once: true, capture: true}), 0);
-  else document.removeEventListener('pointerdown', unlockCart, {capture: true});
-};
-
-const unlockCart = () => {
-  if (walletOpen) lockCart(false);
 };
 
 // The demo's Bizum preset needs a specific rate, and the address it fills triggers

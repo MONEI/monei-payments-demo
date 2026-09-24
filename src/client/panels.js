@@ -1,9 +1,8 @@
 import {go as navigateOnce} from './nav.js';
 
 /**
- * The rail's open state lives in the URL so the server renders it already open.
- * Restoring it client-side made it flash closed on every navigation, since the
- * fresh markup starts at zero width until JS corrects it.
+ * The rail's open state lives in the URL so the server renders it already open;
+ * the fresh markup otherwise starts at zero width until JS corrects it.
  */
 const isOpen = () => new URLSearchParams(location.search).get('panel') === '1';
 
@@ -52,7 +51,9 @@ const wire = () => {
   const methods = [...rail.querySelectorAll('[data-method]')].filter((i) => !i.disabled);
   for (const input of methods) {
     input.addEventListener('change', () => {
-      const chosen = methods.filter((i) => i.checked).map((i) => i.value);
+      // A row the browser disabled after onLoad is unsupported here, not switched off,
+      // so it stays in the list a shared link carries.
+      const chosen = methods.filter((i) => i.checked || i.disabled).map((i) => i.value);
       const begun = go((q) => {
         // All available methods checked is the default, so the param comes off and
         // the shared link stays short. None checked writes an empty value, which is

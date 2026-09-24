@@ -1,8 +1,6 @@
 /**
  * `card` is passed to the Components as `style` and `fonts` (see `CardInputStyle`
- * in the monei.js reference). The `--monei-*` CSS variables are not a merchant
- * API — the iframes set those on themselves from `style.base` — so theming has to
- * go through these props.
+ * in the monei.js reference), which is how the card fields are themed.
  *
  * `page` drives this store's own markup and nothing else. `cardUi` picks which
  * card component the theme mounts: one iframe, or three the merchant places.
@@ -49,7 +47,7 @@ export const THEME_DATA = {
             'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap'
         }
       ],
-      preload: ['montserrat-400-latin.woff2', 'montserrat-600-latin.woff2', 'fira-code-400-latin.woff2']
+      preload: ['montserrat-latin.woff2', 'fira-code-latin.woff2']
     }
   },
 
@@ -85,7 +83,7 @@ export const THEME_DATA = {
         }
       },
       fonts: [{cssSrc: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap'}],
-      preload: ['outfit-400-latin.woff2', 'outfit-500-latin.woff2']
+      preload: ['outfit-latin.woff2']
     }
   }
 };

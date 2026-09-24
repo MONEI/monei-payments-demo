@@ -1,37 +1,31 @@
+import dotenv from 'dotenv';
 import {Monei} from '@monei-js/node-sdk';
 
-const env = import.meta.env ?? process.env;
+// Read from `process.env` at runtime, so no secret is inlined into the build. In
+// development the values come from `.env.local` or `.env`; a host sets them directly.
+dotenv.config({path: ['.env.local', '.env'], quiet: true});
+
+export const env = process.env;
 
 export const accountId = env.MONEI_ACCOUNT_ID;
 
 export const monei = env.MONEI_API_KEY ? new Monei(env.MONEI_API_KEY) : null;
 
-const METHODS_URL = 'https://api.monei.com/v1/client-payment-methods';
+const METHODS_TTL_MS = 5 * 60 * 1000;
+let methodsCache = null;
 
 /**
- * Payment methods enabled on the account. The SDK's own `getPaymentMethods` ships
- * in the browser bundle and the node SDK has no equivalent, so this calls the same
- * public endpoint the Components call.
- *
- * Returns null on any failure, meaning "unknown — show every method and let each
- * Component's onLoad report support". The store must never be blocked by it.
+ * Payment methods enabled on the account, or null when unknown: then every method
+ * shows and each Component's onLoad reports support.
  */
-export const fetchAccountMethods = async () => {
-  if (!accountId) return null;
-  try {
-    const res = await fetch(`${METHODS_URL}?accountId=${encodeURIComponent(accountId)}`, {
-      signal: AbortSignal.timeout(4000)
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data.paymentMethods)) return null;
-    return {
-      methods: data.paymentMethods,
-      livemode: Boolean(data.livemode),
-      countryCode: data.countryCode ?? null,
-      cardBrands: data.metadata?.card?.brands ?? []
-    };
-  } catch {
-    return null;
-  }
+export const fetchAccountMethods = () => {
+  if (!monei) return Promise.resolve(null);
+  if (methodsCache && Date.now() - methodsCache.at < METHODS_TTL_MS) return methodsCache.promise;
+
+  const promise = monei.paymentMethods
+    .getAllowed(undefined, undefined, undefined, undefined, {timeout: 4000})
+    .then((data) => (Array.isArray(data.paymentMethods) ? data.paymentMethods : null))
+    .catch(() => null);
+  methodsCache = {at: Date.now(), promise};
+  return promise;
 };

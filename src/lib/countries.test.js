@@ -7,12 +7,13 @@ describe('countryList', () => {
     expect(countryList()[0].code).toBe('ES');
   });
 
-  it('derives a text keyboard for alphanumeric postcodes', () => {
+  /** An iPhone's numeric keypad has no '-', so PT's `1100-053` needs the full keyboard. */
+  it('offers the numeric keypad only for digit-only postcodes', () => {
     const by = Object.fromEntries(countryList().map((c) => [c.code, c.inputmode]));
     expect(by.NL).toBe('text');
     expect(by.GB).toBe('text');
+    expect(by.PT).toBe('text');
     expect(by.ES).toBe('numeric');
-    expect(by.PT).toBe('numeric');
   });
 
   it('carries no unserviceable flag, so every listed country can be paid for', () => {

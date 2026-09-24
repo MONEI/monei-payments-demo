@@ -1,5 +1,5 @@
 ---
-const {theme, paypalEnabled} = Astro.props;
+const {theme} = Astro.props;
 
 const CARDS = [
   {number: '4444 4444 4444 4422', label: 'Visa · Frictionless'},
@@ -41,26 +41,24 @@ const copyButton = `copy accent-text cursor-pointer text-left font-mono text-xs 
       ))
     }
   </ul>
-  {
-    paypalEnabled && (
-      <div class={`mt-4 border-t ${theme.page.border} pt-3`}>
-        <h3 class={`text-xs font-medium ${theme.page.muted}`}>PayPal sandbox</h3>
-        <ul class="mt-2 space-y-1.5">
-          {PAYPAL.map((entry) => (
-            <li class="flex items-center gap-2">
-              <span class="relative min-w-0">
-                <button type="button" class={copyButton} data-copy={entry.value}>
-                  {entry.value}
-                </button>
-                <span class="copied">Copied</span>
-              </span>
-              <span class={`text-xs ${theme.page.muted}`}>{entry.label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
+  <div class={`mt-4 border-t ${theme.page.border} pt-3`}>
+    <h3 class={`text-xs font-medium ${theme.page.muted}`}>PayPal sandbox</h3>
+    <ul class="mt-2 space-y-1.5">
+      {
+        PAYPAL.map((entry) => (
+          <li class="flex items-center gap-2">
+            <span class="relative min-w-0">
+              <button type="button" class={copyButton} data-copy={entry.value}>
+                {entry.value}
+              </button>
+              <span class="copied">Copied</span>
+            </span>
+            <span class={`text-xs ${theme.page.muted}`}>{entry.label}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
   <p class={`mt-3 text-xs ${theme.page.muted}`}>
     <a class="underline" href="https://docs.monei.com/testing/" rel="noopener"> Full list of test cards </a>
   </p>
@@ -75,7 +73,11 @@ const copyButton = `copy accent-text cursor-pointer text-left font-mono text-xs 
       button.dataset.wired = 'true';
 
       button.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(button.dataset.copy);
+        try {
+          await navigator.clipboard.writeText(button.dataset.copy);
+        } catch {
+          return;
+        }
         // A toast over the number rather than in place of it: swapping the label
         // reflowed the row, and the value is what the reader came for.
         button.parentElement.querySelector('.copied')?.classList.add('is-shown');

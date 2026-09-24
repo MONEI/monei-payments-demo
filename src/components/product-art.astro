@@ -27,30 +27,11 @@ const {art, class: className = ''} = Astro.props;
     )
   }
   {
-    art === 'sack' && (
-      <>
-        <path d="M14 26h36l-4 30H18l-4-30Z" />
-        <path d="M20 26c2-6 6-9 12-9s10 3 12 9" />
-        <path d="M24 36h16M24 44h10" />
-      </>
-    )
-  }
-  {
     art === 'dripper' && (
       <>
         <path d="M16 18h32l-8 16H24l-8-16Z" />
         <path d="M28 34v6" />
         <path d="M22 46h20l-2 10H24l-2-10Z" />
-      </>
-    )
-  }
-  {
-    art === 'grinder' && (
-      <>
-        <rect x="22" y="24" width="20" height="26" rx="3" />
-        <path d="M32 24v-8M32 16h8" />
-        <circle cx="32" cy="37" r="5" />
-        <path d="M22 50h20" />
       </>
     )
   }

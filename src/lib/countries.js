@@ -105,7 +105,7 @@ export const countryList = () =>
     name,
     example,
     samples,
-    inputmode: /[A-Z]/.test(example) ? 'text' : 'numeric',
+    inputmode: /^\d+$/.test(example) ? 'numeric' : 'text',
     // The `pattern` attribute is implicitly anchored and case-sensitive, so the
     // anchors come off and a lowercase alternative goes in.
     pattern: postcode.source.replace(/^\^|\$$/g, '').replace(/A-Z/g, 'A-Za-z')

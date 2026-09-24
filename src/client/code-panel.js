@@ -26,9 +26,15 @@ const render = (entries) => {
 const escape = (detail) =>
   JSON.stringify(detail, null, 1).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// The log is rebuilt on every event, so it is only drawn while someone can see it.
+const renderIfOpen = (entries) => {
+  if (el('code-rail')?.dataset.open === 'true') render(entries);
+};
+
 const setOpen = (rail, open) => {
   rail.dataset.open = String(open);
   el('code-toggle')?.setAttribute('aria-expanded', String(open));
+  if (open) render(events());
 
   const url = new URL(location.href);
   if (open) url.searchParams.set('code', '1');
@@ -66,7 +72,8 @@ const wire = () => {
 
   el('code-copy')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
-    const original = button.textContent;
+    // Kept from the first click, so a second one inside the timeout cannot store "Copied".
+    button.dataset.label ??= button.textContent;
     const visible = panel.querySelector('[data-pane]:not([hidden])');
 
     // Clipboard access is refused outright in some contexts, and an unhandled
@@ -77,11 +84,12 @@ const wire = () => {
     } catch {
       button.textContent = 'Press ⌘/Ctrl+C';
     }
-    setTimeout(() => (button.textContent = original), 1600);
+    clearTimeout(Number(button.dataset.timer));
+    button.dataset.timer = String(setTimeout(() => (button.textContent = button.dataset.label), 1600));
   });
 
   render(events());
-  return onEvent(render);
+  return onEvent(renderIfOpen);
 };
 
 document.addEventListener('keydown', (event) => {

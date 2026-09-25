@@ -297,10 +297,6 @@ body[data-numerals] .tabular-nums {
   }
 }
 
-[data-shop-item][data-in-cart] {
-  border-color: var(--accent);
-}
-
 /* A cart edit rewrites the line in place, so the changed line announces itself. */
 [data-cart-line].just-changed {
   animation: cart-line-in 900ms ease-out;

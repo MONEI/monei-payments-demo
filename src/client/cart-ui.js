@@ -34,7 +34,6 @@ const renderShopButtons = (lines) => {
   const quantities = new Map(lines.map((l) => [l.productId, l.quantity]));
   for (const item of document.querySelectorAll('[data-shop-item]')) {
     const quantity = quantities.get(item.dataset.shopItem);
-    item.toggleAttribute('data-in-cart', Boolean(quantity));
     item.querySelector('[data-cart-add]').hidden = Boolean(quantity);
     item.querySelector('[data-shop-stepper]').hidden = !quantity;
     item.querySelector('[data-shop-qty]').textContent = quantity ?? 0;

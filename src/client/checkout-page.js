@@ -82,6 +82,8 @@ const refreshPayButton = () => {
 
 export const setBusy = (value) => {
   busy = value;
+  const overlay = el('pay-overlay');
+  if (overlay) overlay.hidden = !busy;
   refreshPayButton();
 };
 

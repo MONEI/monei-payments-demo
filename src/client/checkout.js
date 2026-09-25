@@ -204,10 +204,12 @@ const walletRates = async (address) => {
 
 const walletSubmit = async (result) => {
   if (result.error || !result.token) {
+    page.setBusy(false);
     return page.setExpressError(result.error ?? 'The wallet did not return a payment method.');
   }
 
   if (!walletOrder) {
+    page.setBusy(false);
     emit('approved, not created', {reason: 'no shipping option', paymentMethod: result.paymentMethod});
     return page.setExpressError(
       'The wallet reported no address this shop can price, so the order was not placed. Nothing was charged.'
@@ -266,9 +268,14 @@ const mountPaymentRequest = () => {
       return {amount: (walletOrder?.goods ?? config.goods) + option.amount};
     },
 
+    // Apple Pay runs this with its sheet already open, and closes the sheet on `false`.
+    onBeforeOpen: () => !page.orderHeld(),
+    // Runs as the shopper authorizes, before the SDK creates the token.
+    onBeforeSubmit: () => page.setBusy(true),
     onSubmit: walletSubmit,
 
     onError: (error) => {
+      page.setBusy(false);
       emit('PaymentRequest.onError', {message: error?.message ?? String(error)});
       page.setExpressError(error?.message ?? 'The wallet could not complete this payment.');
     },
@@ -306,6 +313,7 @@ const submitFormOrder = (name) => async (result) => {
   }
 
   emit(`${name}.onSubmit`, {amount: page.currentTotal(), token: `${result.token.slice(0, 12)}…`});
+  page.setBusy(true);
   await submitPayment({paymentToken: result.token, ...formOrderAtOpen});
 };
 

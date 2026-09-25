@@ -29,11 +29,14 @@ const renderCart = (lines) => {
   if (subtotal) subtotal.textContent = formatPrice(cartTotal(lines));
 };
 
-/** The shop's buttons read "Add to cart" until the product is in the basket. */
+/** A shop card shows "Add" until the product is in the basket, and a stepper after. */
 const renderShopButtons = (lines) => {
-  const inCart = new Set(lines.map((l) => l.productId));
-  for (const button of document.querySelectorAll('[data-cart-add]')) {
-    button.textContent = inCart.has(button.dataset.cartAdd) ? 'Add another' : 'Add to cart';
+  const quantities = new Map(lines.map((l) => [l.productId, l.quantity]));
+  for (const item of document.querySelectorAll('[data-shop-item]')) {
+    const quantity = quantities.get(item.dataset.shopItem);
+    item.querySelector('[data-cart-add]').hidden = Boolean(quantity);
+    item.querySelector('[data-shop-stepper]').hidden = !quantity;
+    item.querySelector('[data-shop-qty]').textContent = quantity ?? 0;
   }
 };
 
@@ -101,5 +104,11 @@ export const initCartUi = (initialLines) => {
     if (!button) return;
     const id = button.dataset.cartAdd ?? button.dataset.cartStep;
     change(id, button.dataset.cartAdd ? 1 : Number(button.dataset.delta));
+
+    // A shop card swaps "Add" and its stepper, and focus would drop out of a hidden one.
+    const item = button.closest('[data-shop-item]');
+    if (item && button.closest('[hidden]')) {
+      item.querySelector('[data-cart-add]:not([hidden]), [data-shop-stepper]:not([hidden]) [data-delta="1"]')?.focus();
+    }
   });
 };

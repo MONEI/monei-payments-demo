@@ -18,8 +18,8 @@ const lineRow = `${theme.page.radius} -mx-2 flex items-start gap-3 p-2`;
 ---
 
 {/* Outside the card, so it lines up with "Shop" at the top of the other column. */}
-<h2 class={`text-sm ${theme.page.heading}`}>Your order</h2>
-<section class={`${theme.page.surface} ${theme.page.radius} mt-4 border ${theme.page.border} p-6`}>
+<h2 class={`text-xl ${theme.page.heading}`}>Your order</h2>
+<section class={`${theme.page.surface} ${theme.page.radius} mt-6 border ${theme.page.border} p-6`}>
   <ul class="space-y-1">
     {
       rows.map(({product, line}) => (
@@ -54,11 +54,8 @@ const lineRow = `${theme.page.radius} -mx-2 flex items-start gap-3 p-2`;
           </div>
           {/* A flex item defaults to `min-width: auto`, so without this the price
               holds the row — and the page — open wider than a narrow phone. */}
-          <span class="flex min-w-0 items-center gap-1.5 self-start">
-            <span class="spinner" aria-hidden="true" />
-            <span class="text-sm tabular-nums" data-cart-line-total>
-              {formatPrice(line?.lineTotal ?? 0)}
-            </span>
+          <span class="min-w-0 self-start text-sm tabular-nums" data-cart-line-total>
+            {formatPrice(line?.lineTotal ?? 0)}
           </span>
         </li>
       ))

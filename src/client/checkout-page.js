@@ -80,8 +80,15 @@ const refreshPayButton = () => {
   payButton.textContent = busy ? 'Processing…' : idle;
 };
 
+const syncCartControls = () => {
+  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = orderHeld();
+};
+
 export const setBusy = (value) => {
   busy = value;
+  const overlay = el('pay-overlay');
+  if (overlay) overlay.hidden = !busy;
+  syncCartControls();
   refreshPayButton();
 };
 
@@ -123,7 +130,7 @@ export const setPricing = (busy) => {
   el('shipping-spinner')?.classList.toggle('is-pending', busy);
 
   for (const container of ['paypal', 'bizum']) holdMount(el(container), 'is-busy', busy);
-  for (const control of document.querySelectorAll('[data-cart-add], [data-cart-step]')) control.disabled = busy;
+  syncCartControls();
   refreshPayButton();
 };
 

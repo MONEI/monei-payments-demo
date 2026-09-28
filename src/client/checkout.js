@@ -457,9 +457,17 @@ const submitPayment = async ({paymentToken, ...order}, showError = page.setError
   const receipt = receiptUrl(data.id);
   emit('monei.confirmPayment()', {paymentId: data.id});
 
+  // The card rails reject a confirmation with no cardholder name, and the payment
+  // carries none: the token holds the card, the name is typed into this page's form.
+  const cardholderName = order.customer?.name;
+
   let result;
   try {
-    result = await window.monei.confirmPayment({paymentId: data.id, paymentToken});
+    result = await window.monei.confirmPayment({
+      paymentId: data.id,
+      paymentToken,
+      ...(cardholderName && {paymentMethod: {card: {cardholderName}}})
+    });
     emit('← confirmPayment', {status: result?.status, statusCode: result?.statusCode});
   } catch (error) {
     // The payment exists either way, so its own status decides the outcome.

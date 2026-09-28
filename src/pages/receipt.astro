@@ -91,8 +91,8 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
         <>
           <h1 class={`text-2xl ${theme.page.heading}`}>Payment processing</h1>
           <p class={`mt-2 text-sm ${theme.page.muted}`}>
-            The payment processor has not confirmed this payment yet. This page checks again every few seconds for about
-            a minute — the webhook is what confirms it server-side.
+            The payment processor has not confirmed this payment yet. Reload to check again — the webhook confirms it
+            server-side either way.
           </p>
         </>
       )
@@ -188,33 +188,6 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
       methods into your own checkout.
     </p>
   </main>
-  {
-    /* Each check is a MONEI API call, so an abandoned tab stops after about a minute.
-      The client router keeps the timer alive across a navigation, and the URL only changes
-      once the next page arrives, so a reload waits a round while one is loading. */
-  }
-  {
-    state === 'pending' && (
-      <script
-        is:inline
-        set:html={`const u = new URL(location.href);
-const n = Number(u.searchParams.get('poll') || 0);
-if (n < 15) {
-  let leaving = false;
-  const onLeave = () => { leaving = true; };
-  document.addEventListener('astro:before-preparation', onLeave);
-  const check = () => {
-    if (leaving && location.href === u.href) { leaving = false; setTimeout(check, 4000); return; }
-    document.removeEventListener('astro:before-preparation', onLeave);
-    if (location.href !== u.href) return;
-    u.searchParams.set('poll', String(n + 1));
-    location.replace(u);
-  };
-  setTimeout(check, 4000);
-}`}
-      />
-    )
-  }
   {/* The address is kept for a retry, and a paid order has nothing to retry. */}
   {state === 'succeeded' && <script is:inline set:html="try { sessionStorage.removeItem('monei:address') } catch {}" />}
 </StoreLayout>

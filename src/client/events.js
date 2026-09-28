@@ -11,6 +11,8 @@ export const emit = (label, detail) => {
   entries.push({at: new Date(), label, detail});
   if (entries.length > MAX) entries.shift();
   for (const listener of listeners) listener(entries);
+  // The panel's log dies with the page, and paying navigates away.
+  console.info(`[monei] ${label}`, detail ?? '');
 };
 
 export const events = () => entries;

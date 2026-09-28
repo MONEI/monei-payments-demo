@@ -184,16 +184,34 @@ const button = `${theme.page.radius} block w-full px-4 py-2.5 text-center text-s
       </a>
     </div>
     <p class={`mt-6 text-xs ${theme.page.muted}`}>
-      See the <a class="underline" href="https://docs.monei.com/" rel="noopener">documentation</a>
-      for integrating these payment methods into your own checkout.
+      See the <a class="underline" href="https://docs.monei.com/" rel="noopener">documentation</a> for integrating these payment
+      methods into your own checkout.
     </p>
   </main>
-  {/* Each check is a MONEI API call, so an abandoned tab stops after about a minute. */}
+  {
+    /* Each check is a MONEI API call, so an abandoned tab stops after about a minute.
+      The client router keeps the timer alive across a navigation, and the URL only changes
+      once the next page arrives, so a reload waits a round while one is loading. */
+  }
   {
     state === 'pending' && (
       <script
         is:inline
-        set:html="const u = new URL(location.href); const n = Number(u.searchParams.get('poll') || 0); if (n < 15) setTimeout(() => { u.searchParams.set('poll', String(n + 1)); location.replace(u); }, 4000);"
+        set:html={`const u = new URL(location.href);
+const n = Number(u.searchParams.get('poll') || 0);
+if (n < 15) {
+  let leaving = false;
+  const onLeave = () => { leaving = true; };
+  document.addEventListener('astro:before-preparation', onLeave);
+  const check = () => {
+    if (leaving && location.href === u.href) { leaving = false; setTimeout(check, 4000); return; }
+    document.removeEventListener('astro:before-preparation', onLeave);
+    if (location.href !== u.href) return;
+    u.searchParams.set('poll', String(n + 1));
+    location.replace(u);
+  };
+  setTimeout(check, 4000);
+}`}
       />
     )
   }

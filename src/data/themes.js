@@ -18,6 +18,8 @@ export const THEME_DATA = {
       surface: 'bg-white',
       border: 'border-[#e8e3f5]',
       radius: 'rounded-xl',
+      // The shop's add and quantity controls.
+      buttonRadius: 'rounded-full',
       heading: 'font-semibold tracking-tight',
       fontFamily: '"Montserrat", ui-sans-serif, system-ui, sans-serif',
       numerals: '"Fira Code", ui-monospace, monospace'
@@ -64,6 +66,7 @@ export const THEME_DATA = {
       surface: 'bg-white',
       border: 'border-[#ddd8d0]',
       radius: 'rounded-none',
+      buttonRadius: 'rounded-none',
       heading: 'font-medium tracking-tight',
       fontFamily: '"Outfit", ui-sans-serif, system-ui, sans-serif'
     },

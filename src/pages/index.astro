@@ -24,7 +24,19 @@ const lines = cartLines(config.cart);
 const total = cartTotal(config.cart);
 
 const enabled = await fetchAccountMethods();
-const inCart = new Set(config.cart.map((i) => i.productId));
+const quantities = new Map(config.cart.map((i) => [i.productId, i.quantity]));
+
+const stepButton = `${theme.page.buttonRadius} flex h-11 w-11 cursor-pointer items-center justify-center disabled:cursor-default disabled:opacity-40`;
+const stepIcon = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': 2.2,
+  'stroke-linecap': 'round',
+  'aria-hidden': 'true'
+};
 
 const canonicalQuery = config.seedGenerated ? toQuery(config) : null;
 const failedPayment = Astro.url.searchParams.has('error');
@@ -62,7 +74,7 @@ const clientConfig = {
         </p>
       )
     }
-    <p class={`text-sm ${theme.page.muted}`}>
+    <p class={`text-[17px] leading-normal ${theme.page.muted}`}>
       A working checkout built on <a class="underline" href="https://docs.monei.com/monei-js/overview/" rel="noopener"
         >MONEI Components</a
       >. Nothing charges a real card.
@@ -81,33 +93,65 @@ const clientConfig = {
       }
       <div class="contents lg:flex lg:flex-col lg:gap-10">
         <section class="order-1">
-          <h2 class={`text-sm ${theme.page.heading}`}>Shop</h2>
-          <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+          <h2 class={`text-xl ${theme.page.heading}`}>Shop</h2>
+          <ul class="mt-6 grid gap-3.5 sm:grid-cols-2">
             {
               PRODUCTS.map((product) => (
                 <li
-                  class={`${theme.page.surface} ${theme.page.radius} border ${theme.page.border} flex flex-col gap-3 p-4`}
+                  class={`${theme.page.surface} ${theme.page.radius} border-[1.5px] ${theme.page.border} flex items-start gap-3.5 py-[18px] pr-[18px] pl-4`}
+                  data-shop-item={product.id}
                 >
-                  <div class="flex gap-4">
-                    <ProductArt art={product.art} class={`h-14 w-14 shrink-0 ${theme.page.muted}`} />
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium">{product.name}</p>
-                      <p class={`mt-0.5 text-xs ${theme.page.muted}`}>{product.detail}</p>
-                      <p class="mt-2 text-sm tabular-nums">
-                        {formatPrice(product.price)}
-                        {product.weight && <span class={`ml-1 text-xs ${theme.page.muted}`}>{product.weight}</span>}
-                      </p>
+                  <ProductArt art={product.art} class={`h-[52px] w-[52px] shrink-0 ${theme.page.muted}`} />
+                  <div class="flex min-w-0 flex-1 flex-col gap-1 self-stretch">
+                    <p class="text-[17px] font-semibold">{product.name}</p>
+                    <p class={`text-sm leading-[1.4] ${theme.page.muted}`}>{product.detail}</p>
+                    {product.weight && <p class={`text-[13px] tabular-nums ${theme.page.muted}`}>{product.weight}</p>}
+                    <div class="mt-auto flex items-center justify-between gap-3 pt-2.5">
+                      <span class="text-lg font-medium tabular-nums">{formatPrice(product.price)}</span>
+                      <button
+                        type="button"
+                        class={`${theme.page.buttonRadius} flex h-11 cursor-pointer items-center gap-1.5 border ${theme.page.border} pr-[18px] pl-3.5 text-[15px] font-semibold disabled:cursor-default disabled:opacity-40`}
+                        data-cart-add={product.id}
+                        aria-label={`Add ${product.name} to cart`}
+                        hidden={quantities.has(product.id)}
+                      >
+                        <svg {...stepIcon}>
+                          <path d="M5 12h14M12 5v14" />
+                        </svg>
+                        Add
+                      </button>
+                      <div
+                        class={`${theme.page.buttonRadius} flex h-11 items-center border ${theme.page.border} px-0.5`}
+                        data-shop-stepper
+                        hidden={!quantities.has(product.id)}
+                      >
+                        <button
+                          type="button"
+                          class={stepButton}
+                          data-cart-step={product.id}
+                          data-delta="-1"
+                          aria-label={`One fewer ${product.name}`}
+                        >
+                          <svg {...stepIcon}>
+                            <path d="M5 12h14" />
+                          </svg>
+                        </button>
+                        <span class="min-w-5 text-center font-medium tabular-nums" data-shop-qty>
+                          {quantities.get(product.id) ?? 0}
+                        </span>
+                        <button
+                          type="button"
+                          class={stepButton}
+                          data-cart-step={product.id}
+                          data-delta="1"
+                          aria-label={`One more ${product.name}`}
+                        >
+                          <svg {...stepIcon}>
+                            <path d="M5 12h14M12 5v14" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div class="mt-auto flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      class={`${theme.page.radius} h-7 flex-1 cursor-pointer border ${theme.page.border} px-2 text-xs font-medium disabled:cursor-default disabled:opacity-40`}
-                      data-cart-add={product.id}
-                    >
-                      {inCart.has(product.id) ? 'Add another' : 'Add to cart'}
-                    </button>
-                    <span class="spinner" aria-hidden="true" />
                   </div>
                 </li>
               ))
@@ -126,6 +170,10 @@ const clientConfig = {
       </aside>
     </div>
   </main>
+  <div id="pay-overlay" role="status" hidden>
+    <span class="spinner" aria-hidden="true"></span>
+    <span class="sr-only">Processing payment…</span>
+  </div>
   {/* The rails' own view state stays out of shared links, but not out of this tab's URL. */}
   {
     canonicalQuery && (

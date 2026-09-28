@@ -424,7 +424,7 @@ const pay = async () => {
     return page.setError(error.message ?? 'Could not read the card.');
   }
 
-  await submitPayment({paymentToken: token, ...page.order()});
+  await submitPayment({paymentToken: token, card: true, ...page.order()});
 };
 
 // The demo's settings travel on the receipt link, so a retry keeps the theme and cart.
@@ -440,7 +440,7 @@ const receiptUrl = (paymentId) => {
  * this point, and each needs the same `nextAction` branch. `showError` is the error
  * line next to the button the shopper used.
  */
-const submitPayment = async ({paymentToken, ...order}, showError = page.setError) => {
+const submitPayment = async ({paymentToken, card, ...order}, showError = page.setError) => {
   // The token stays in the browser: the server only prices the order and opens the payment.
   const {ok, data} = await postJson('/api/payment', {
     sessionId,
@@ -459,7 +459,8 @@ const submitPayment = async ({paymentToken, ...order}, showError = page.setError
 
   // The card rails reject a confirmation with no cardholder name, and the payment
   // carries none: the token holds the card, the name is typed into this page's form.
-  const cardholderName = order.customer?.name;
+  // The wallets and the redirect methods carry their own and take no card details.
+  const cardholderName = card ? order.customer?.name : null;
 
   let result;
   try {
